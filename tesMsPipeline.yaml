@@ -17,7 +17,7 @@ pool:
   vmImage: ubuntu-latest
 parameters:
   - name: updatesettings
-    type: dropdown
+    type: string
     default: 'false'
     values:
       - 'true'
