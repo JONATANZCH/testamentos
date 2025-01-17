@@ -37,6 +37,7 @@ stages:
       awsqaCredentials : 'TESAWSDEV'
       awsProdCredentials : 'TESAWSDEV'
       Nestjs : 'true'
+      generatePrisma: 'false'
       NodeVersion : '20.x'
       updatesettings: ${{ parameters.updatesettings }}
       appsettings:
