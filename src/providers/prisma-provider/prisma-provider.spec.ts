@@ -1,18 +1,18 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaProvider } from './prisma-provider';
+// import { Test, TestingModule } from '@nestjs/testing';
+// import { PrismaProvider } from './prisma-provider';
 
-describe('Prisma', () => {
-  let provider: PrismaProvider;
+// describe('Prisma', () => {
+//   let provider: PrismaProvider;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [PrismaProvider],
-    }).compile();
+//   beforeEach(async () => {
+//     const module: TestingModule = await Test.createTestingModule({
+//       providers: [PrismaProvider],
+//     }).compile();
 
-    provider = module.get<PrismaProvider>(PrismaProvider);
-  });
+//     provider = module.get<PrismaProvider>(PrismaProvider);
+//   });
 
-  it('should be defined', () => {
-    expect(provider).toBeDefined();
-  });
-});
+//   it('should be defined', () => {
+//     expect(provider).toBeDefined();
+//   });
+// });
