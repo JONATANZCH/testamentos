@@ -1,0 +1,52 @@
+trigger:
+ branches:
+   include:
+     - master
+ paths:
+  exclude:
+    - tesMsPipeline.yaml
+
+resources:
+  repositories:
+    - repository: devops
+      type: git
+      name: DevopsProjects/DevopsProjects
+variables:
+  - group: Tesdev
+pool:
+  vmImage: ubuntu-latest
+parameters:
+- name: updatesettings 
+  type: boolean # data type of the parameter; required
+  default: 'false'
+stages:
+  - template: templates/lambdaDocker.yaml@devops
+    parameters:
+      DOCKER_REPOSITORY_NAME: 'test'
+      dockerfilepath : '.'
+      ecrAwsAccount : 'TESAWSDEV'
+      ecrAwsregion : $(AWSREGION)
+      lambdaname : 'test'
+      LibraryDev : 'Tesdev'
+      LibraryQa : 'Tesdev'
+      LibraryProd : 'Tesdev'
+      awsdevCredentials : 'TESAWSDEV'
+      awsqaCredentials : 'TESAWSDEV'
+      awsProdCredentials : 'TESAWSDEV'
+      Nestjs : 'true'
+      NodeVersion : '20.x'
+      updatesettings: ${{ parameters.updatesettings }}
+      appsettings:
+        delay: '1'
+        dev:
+          memorysize: 128
+          timeout: 480
+          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment)}'
+        qa:
+          memorysize: 256
+          timeout: 480
+          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment)}'
+        prod:
+          memorysize: 512
+          timeout: 480
+          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment)}'
