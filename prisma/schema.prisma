@@ -7,7 +7,8 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// model SomeEntity {
-//   id    Int    @id @default(autoincrement())
-//   field String
-// }
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+}
