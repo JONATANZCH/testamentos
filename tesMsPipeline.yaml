@@ -16,9 +16,12 @@ variables:
 pool:
   vmImage: ubuntu-latest
 parameters:
-- name: updatesettings 
-  type: boolean # data type of the parameter; required
-  default: 'false'
+  - name: updatesettings
+    type: dropdown
+    default: 'false'
+    values:
+      - 'true'
+      - 'false'
 stages:
   - template: templates/lambdaDocker.yaml@devops
     parameters:
