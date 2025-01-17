@@ -29,9 +29,9 @@ importers:
       '@prisma/client':
         specifier: ^6.2.1
         version: 6.2.1(prisma@6.2.1)
-      getprisma-client:
-        specifier: ^1.0.0
-        version: 1.0.0(prisma@6.2.1)
+      getprismaclient:
+        specifier: 1.15.12
+        version: 1.15.12(prisma@6.2.1)
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -646,6 +646,15 @@ packages:
   '@pkgr/core@0.1.1':
     resolution: {integrity: sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
+
+  '@prisma/client@5.22.0':
+    resolution: {integrity: sha1-2hypwTP77+ieDaeBx14cWdpfiAI=}
+    engines: {node: '>=16.13'}
+    peerDependencies:
+      prisma: '*'
+    peerDependenciesMeta:
+      prisma:
+        optional: true
 
   '@prisma/client@6.2.1':
     resolution: {integrity: sha1-PX0Mhmm7pJAkfh//9nuTpRa9eJ8=}
@@ -1806,8 +1815,8 @@ packages:
     resolution: {integrity: sha512-ts6Wi+2j3jQjqi70w5AlN8DFnkSwC+MqmxEzdEALB2qXZYV3X/b1CTfgPLGJNMeAWxdPfU8FO1ms3NUfaHCPYg==}
     engines: {node: '>=10'}
 
-  getprisma-client@1.0.0:
-    resolution: {integrity: sha1-tQ3yIX42IOtA+761WIh6UZTd0/k=}
+  getprismaclient@1.15.12:
+    resolution: {integrity: sha1-lTmny0G4ngQvr7R8woXqR2BvCc4=}
 
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
@@ -4062,6 +4071,10 @@ snapshots:
 
   '@pkgr/core@0.1.1': {}
 
+  '@prisma/client@5.22.0(prisma@6.2.1)':
+    optionalDependencies:
+      prisma: 6.2.1
+
   '@prisma/client@6.2.1(prisma@6.2.1)':
     optionalDependencies:
       prisma: 6.2.1
@@ -5472,9 +5485,9 @@ snapshots:
 
   get-stream@6.0.1: {}
 
-  getprisma-client@1.0.0(prisma@6.2.1):
+  getprismaclient@1.15.12(prisma@6.2.1):
     dependencies:
-      '@prisma/client': 6.2.1(prisma@6.2.1)
+      '@prisma/client': 5.22.0(prisma@6.2.1)
     transitivePeerDependencies:
       - prisma
 
