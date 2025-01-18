@@ -1,9 +1,20 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { AppService } from './app.service';
+import { ConfigService } from '@nestjs/config';
+import 'reflect-metadata';
 
-@Controller('testamentos')
+@Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly configService: ConfigService,
+  ) {
+    const stage = this.configService.get<string>('NODE_ENV') || 'dev';
+
+    const basePath = `${stage}/testamentos`;
+
+    Reflect.defineMetadata('path', basePath, AppController);
+  }
 
   @Get()
   getAll(): string {
