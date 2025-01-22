@@ -28,6 +28,7 @@ steps:
     script: |
       # Write your commands here
       ls -la
+      cat .npmrc
       npm install -g pnpm
       echo pnpm installed now running pnpm install!
       pnpm install 
