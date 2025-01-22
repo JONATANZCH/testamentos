@@ -21,6 +21,17 @@ steps:
 - task: npmAuthenticate@0
   inputs:
     workingFile: '$(Build.SourcesDirectory)/.npmrc'
+
+- task: Bash@3
+  displayName: Debug info on npmrc
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Write your commands here
+      ls -la
+      cat .npmrc
+    workingDirectory: '$(Build.SourcesDirectory)/'
+
 - task: Bash@3
   displayName: Nestjs - pnpm install
   inputs:
