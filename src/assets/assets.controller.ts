@@ -11,12 +11,19 @@ import {
 import { AssetsService } from './assets.service';
 import { CreateAssetDto, UpdateAssetDto } from './dto';
 import { GeneralResponseDto } from 'src/common';
+import { ConfigService } from 'src/config';
 
 @Controller()
 export class AssetsController {
   private readonly environment: string;
 
-  constructor(private readonly assetsService: AssetsService) {}
+  constructor(
+    private readonly assetsService: AssetsService,
+    private readonly configService: ConfigService,
+  ) {
+    this.environment = this.configService.getNodeEnv();
+    Reflect.defineMetadata('path', this.environment, AssetsController);
+  }
 
   @Get('/user/:userId/assets')
   async getUserAssets(

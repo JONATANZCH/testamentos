@@ -12,12 +12,19 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
+import { ConfigService } from '../config';
 
 @Controller()
 export class UsersController {
   private readonly environment: string;
 
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
+  ) {
+    this.environment = this.configService.getNodeEnv();
+    Reflect.defineMetadata('path', this.environment, UsersController);
+  }
 
   @Post('user')
   async createUser(
@@ -27,7 +34,7 @@ export class UsersController {
     return this.usersService.createUser(createUserDto);
   }
 
-  @Get('users')
+  @Get('user')
   async getAllUsers(
     @Query() paginationDto: PaginationDto,
   ): Promise<GeneralResponseDto> {
