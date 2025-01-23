@@ -37,7 +37,7 @@ stages:
       awsqaCredentials : 'TESAWSDEV'
       awsProdCredentials : 'TESAWSDEV'
       Nestjs : 'true'
-      generatePrisma: 'false'
+      generatePrisma: 'true'
       generatePrismaPkgName: 'testgetprismaclient'
       NodeVersion : '20.x'
       updatesettings: ${{ parameters.updatesettings }}
