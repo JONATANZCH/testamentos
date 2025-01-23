@@ -1,28 +1,32 @@
 import { Injectable } from '@nestjs/common';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 import { getPrismaClient } from 'testgetprismaclient';
+import { SecretsManager } from '@aws-sdk/client-secrets-manager';
+let prismaInstance: any = null;
 
 @Injectable()
 export class PrismaProvider {
-  private prismaInstance: any = null;
-
   async getPrismaClient(): Promise<any> {
-    if (!this.prismaInstance) {
-      console.log('Initializing Prisma client...');
-      try {
-        this.prismaInstance = await getPrismaClient();
-      } catch (error) {
-        console.error('Error initializing Prisma client:', error);
-        throw new Error('Failed to initialize Prisma client');
+    try {
+      if (prismaInstance === null) {
+        const secretid = process.env.AWS_SECRET_ID;
+        const prismaNPMVersion = '3.0';
+        const AWS_REGION = process.env.AWS_REGION;
+        console.log('secretid ->', secretid);
+        console.log('prismaNPMVersion ->', prismaNPMVersion);
+        console.log('REGION ->', AWS_REGION);
+        prismaInstance = await getPrismaClient(
+          secretid,
+          SecretsManager,
+          prismaNPMVersion,
+          AWS_REGION,
+        );
+        console.log('Prisma instance successfully created');
       }
-    }
-    return this.prismaInstance;
-  }
-
-  async disconnectClient(): Promise<void> {
-    if (this.prismaInstance) {
-      await this.prismaInstance.$disconnect();
-      console.log('Prisma client disconnected.');
+      return prismaInstance;
+    } catch (error) {
+      console.log('Pastpost Error-> v8jhus');
+      console.error('Error getting prisma instance', error);
+      return null;
     }
   }
 }
