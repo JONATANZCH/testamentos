@@ -10,20 +10,13 @@ import {
 } from '@nestjs/common';
 import { AddressesService } from './addresses.service';
 import { CreateAddressDto, UpdateAddressDto } from './dto';
-import { ConfigService } from 'src/config';
 import { GeneralResponseDto } from 'src/common';
 
 @Controller()
 export class AddressesController {
   private readonly environment: string;
 
-  constructor(
-    private readonly addressesService: AddressesService,
-    private readonly configService: ConfigService,
-  ) {
-    this.environment = this.configService.getNodeEnv();
-    Reflect.defineMetadata('path', this.environment, AddressesController);
-  }
+  constructor(private readonly addressesService: AddressesService) {}
 
   @Get('user/:userId/address')
   async getUserAddresses(

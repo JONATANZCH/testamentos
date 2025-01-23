@@ -46,12 +46,12 @@ stages:
         dev:
           memorysize: 128
           timeout: 480
-          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment)}'
+          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment),AWS_SECRET_ID=$(AWS_SECRET_ID)}'
         qa:
           memorysize: 256
           timeout: 480
-          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment)}'
+          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment),AWS_SECRET_ID=$(AWS_SECRET_ID)}'
         prod:
           memorysize: 512
           timeout: 480
-          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment)}'
+          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment),AWS_SECRET_ID=$(AWS_SECRET_ID)}'

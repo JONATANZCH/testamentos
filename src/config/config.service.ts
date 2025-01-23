@@ -14,6 +14,8 @@ export class ConfigService {
     const schema = Joi.object<EnvConfig>({
       environment: Joi.string().valid('dev', 'prod', 'qa'),
       PORT: Joi.number(),
+      AWSREGION: Joi.string().required(),
+      AWS_SECRET_ID: Joi.string().required(),
     });
 
     const { error, value } = schema.validate(envVariables, {

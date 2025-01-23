@@ -6,6 +6,8 @@ import { ConfigService } from './config';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  const environment = configService.getNodeEnv();
+  app.setGlobalPrefix(environment);
   // When we have data and they have decorators then they are automatically validated
   app.useGlobalPipes(
     new ValidationPipe({
