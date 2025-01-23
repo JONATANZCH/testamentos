@@ -10,7 +10,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateAddressDto, CreateUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { ConfigService } from '../config';
 
@@ -27,11 +27,11 @@ export class UsersController {
   }
 
   @Post('user')
-  async create(
+  async createUser(
     @Body() createUserDto: CreateUserDto,
   ): Promise<GeneralResponseDto> {
     console.log('Create user request received');
-    return this.usersService.create(createUserDto);
+    return this.usersService.createUser(createUserDto);
   }
 
   @Get('users')
@@ -66,31 +66,5 @@ export class UsersController {
   ): Promise<GeneralResponseDto> {
     console.log('Soft delete user request received');
     return this.usersService.deleteUserPermanently(id);
-  }
-
-  @Get('user/:userId/address')
-  async getUserAddresses(
-    @Param('userId', ParseUUIDPipe) userId: string,
-  ): Promise<GeneralResponseDto> {
-    console.log('Get user addresses request received');
-    return this.usersService.getUserAddresses(userId);
-  }
-
-  @Get('user/:userId/address/:addressId')
-  async getAddressById(
-    @Param('userId', ParseUUIDPipe) userId: string,
-    @Param('addressId', ParseUUIDPipe) addressId: string,
-  ): Promise<GeneralResponseDto> {
-    console.log('Get user address by ID request received');
-    return this.usersService.getAddressById(userId, addressId);
-  }
-
-  @Post('user/:userId/address')
-  async createUserAddress(
-    @Param('userId', ParseUUIDPipe) userId: string,
-    @Body() createAddressDto: CreateAddressDto,
-  ): Promise<GeneralResponseDto> {
-    console.log('Create user address request received');
-    return this.usersService.createUserAddress(userId, createAddressDto);
   }
 }

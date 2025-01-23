@@ -12,7 +12,7 @@ export class ConfigService {
 
   private validateEnvVariables(envVariables: NodeJS.ProcessEnv): EnvConfig {
     const schema = Joi.object<EnvConfig>({
-      NODE_ENV: Joi.string().valid('dev', 'prod', 'qa'),
+      environment: Joi.string().valid('dev', 'prod', 'qa'),
       PORT: Joi.number(),
     });
 
@@ -42,7 +42,7 @@ export class ConfigService {
   }
 
   getNodeEnv(): string {
-    return this.get('NODE_ENV');
+    return this.get('environment');
   }
 
   getPort(): number {

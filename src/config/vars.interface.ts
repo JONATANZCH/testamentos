@@ -1,4 +1,4 @@
 export interface EnvConfig {
-  NODE_ENV: 'dev' | 'prod' | 'qa';
+  environment: 'dev' | 'prod' | 'qa';
   PORT?: number;
 }

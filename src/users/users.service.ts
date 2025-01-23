@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaProvider } from '../providers/prisma-provider/prisma-provider';
-import { CreateAddressDto, CreateUserDto, UpdateUserDto } from './dto';
+import { PrismaProvider } from '../providers';
+import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto } from '../common';
 
 @Injectable()
@@ -47,7 +47,7 @@ export class UsersService {
     }
   }
 
-  async create(createUserDto: CreateUserDto): Promise<GeneralResponseDto> {
+  async createUser(createUserDto: CreateUserDto): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       const prisma = await this.prismaProvider.getPrismaClient();
@@ -194,76 +194,6 @@ export class UsersService {
       response.code = 500;
       response.msg =
         'An unexpected error occurred while deleting the user permanently';
-      return response;
-    }
-  }
-
-  async getUserAddresses(userId: string): Promise<GeneralResponseDto> {
-    const response = new GeneralResponseDto();
-    try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      const addresses = await prisma.address.findMany({ where: { userId } });
-
-      response.code = 200;
-      response.msg = 'Addresses retrieved successfully';
-      response.response = addresses;
-      return response;
-    } catch (error) {
-      console.error('Error fetching addresses:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while fetching addresses';
-      return response;
-    }
-  }
-
-  async getAddressById(
-    userId: string,
-    addressId: string,
-  ): Promise<GeneralResponseDto> {
-    const response = new GeneralResponseDto();
-    try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      const address = await prisma.address.findFirst({
-        where: { userId, id: addressId },
-      });
-
-      if (!address) {
-        response.code = 404;
-        response.msg = 'Address not found';
-        return response;
-      }
-
-      response.code = 200;
-      response.msg = 'Address retrieved successfully';
-      response.response = address;
-      return response;
-    } catch (error) {
-      console.error('Error fetching address by ID:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while fetching the address';
-      return response;
-    }
-  }
-
-  async createUserAddress(
-    userId: string,
-    addressDto: CreateAddressDto,
-  ): Promise<GeneralResponseDto> {
-    const response = new GeneralResponseDto();
-    try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      const address = await prisma.address.create({
-        data: { userId, ...addressDto },
-      });
-
-      response.code = 201;
-      response.msg = 'Address created successfully';
-      response.response = address;
-      return response;
-    } catch (error) {
-      console.error('Error creating address:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while creating the address';
       return response;
     }
   }

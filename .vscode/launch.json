@@ -18,9 +18,9 @@
       "stopOnEntry": false,
       "console": "integratedTerminal",
       "env": {
-        "NODE_ENV": "dev",
+        "environment": "dev",
         "PORT": "3000",
-        "AWS_REGION": "us-east-2",
+        "AWSREGION": "us-east-2",
         "AWS_SECRET_ID": "dev/testamentos/mysql"
       }
     }
