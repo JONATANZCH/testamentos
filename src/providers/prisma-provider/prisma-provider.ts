@@ -11,6 +11,7 @@ export class PrismaProvider {
         const secretid = process.env.AWS_SECRET_ID;
         const prismaNPMVersion = '3.0';
         const AWSREGION = process.env.AWSREGION;
+        console.log('secretid ->', secretid);
         console.log('prismaNPMVersion ->', prismaNPMVersion);
         console.log('REGION ->', AWSREGION);
         prismaInstance = await getPrismaClient(
