@@ -14,7 +14,7 @@ import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { ConfigService } from '../config';
 
-@Controller()
+@Controller('wills')
 export class UsersController {
   private readonly environment: string;
 
@@ -22,8 +22,10 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.getNodeEnv();
+    this.environment = this.configService.getNodeEnv() + '/wills';
     Reflect.defineMetadata('path', this.environment, UsersController);
+    console.log('Version - 20250123 11:00am');
+    console.log('Environment running -> ' + this.environment);
   }
 
   @Post('user')
@@ -34,7 +36,7 @@ export class UsersController {
     return this.usersService.createUser(createUserDto);
   }
 
-  @Get('user')
+  @Get('users')
   async getAllUsers(
     @Query() paginationDto: PaginationDto,
   ): Promise<GeneralResponseDto> {

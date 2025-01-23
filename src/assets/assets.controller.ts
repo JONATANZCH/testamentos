@@ -13,7 +13,7 @@ import { CreateAssetDto, UpdateAssetDto } from './dto';
 import { GeneralResponseDto } from 'src/common';
 import { ConfigService } from 'src/config';
 
-@Controller()
+@Controller('wills')
 export class AssetsController {
   private readonly environment: string;
 
@@ -21,8 +21,10 @@ export class AssetsController {
     private readonly assetsService: AssetsService,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.getNodeEnv();
+    this.environment = this.configService.getNodeEnv() + '/wills';
     Reflect.defineMetadata('path', this.environment, AssetsController);
+    console.log('Version - 20250123 11:00am');
+    console.log('Environment running -> ' + this.environment);
   }
 
   @Get('/user/:userId/assets')

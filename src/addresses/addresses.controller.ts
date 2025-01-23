@@ -13,7 +13,7 @@ import { CreateAddressDto, UpdateAddressDto } from './dto';
 import { ConfigService } from 'src/config';
 import { GeneralResponseDto } from 'src/common';
 
-@Controller()
+@Controller('wills')
 export class AddressesController {
   private readonly environment: string;
 
@@ -21,8 +21,10 @@ export class AddressesController {
     private readonly addressesService: AddressesService,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.getNodeEnv();
+    this.environment = this.configService.getNodeEnv() + '/wills';
     Reflect.defineMetadata('path', this.environment, AddressesController);
+    console.log('Version - 20250123 11:00am');
+    console.log('Environment running -> ' + this.environment);
   }
 
   @Get('user/:userId/address')
