@@ -18,12 +18,22 @@ export class UsersService {
         return response;
       }
 
-      const offset = (page - 1) * limit;
+      // Convierte page y limit a números enteros
+      const pageNumber = parseInt(String(page), 10);
+      const limitNumber = parseInt(String(limit), 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber)) {
+        response.code = 400;
+        response.msg = 'Page and limit must be valid numbers';
+        return response;
+      }
+
+      const offset = (pageNumber - 1) * limitNumber;
 
       const [users, total] = await Promise.all([
         prisma.user.findMany({
           skip: offset,
-          take: limit,
+          take: limitNumber,
           orderBy: { createdAt: 'desc' },
         }),
         prisma.user.count(),
@@ -33,9 +43,9 @@ export class UsersService {
       response.msg = 'Users retrieved successfully';
       response.response = {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(total / limitNumber),
         users,
       };
       return response;
