@@ -29,7 +29,7 @@ stages:
       dockerfilepath : '.'
       ecrAwsAccount : 'TESAWSDEV'
       ecrAwsregion : $(AWSREGION)
-      lambdaname : 'test'
+      lambdaname : 'WillC_users'
       LibraryDev : 'Tesdev'
       LibraryQa : 'Tesdev'
       LibraryProd : 'Tesdev'
