@@ -22,7 +22,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.getNodeEnv() + '/wills';
+    this.environment = this.configService.getNodeEnv() + 'wills/users';
     Reflect.defineMetadata('path', this.environment, UsersController);
     console.log('Version - 20250123 11:00am');
     console.log('Environment running -> ' + this.environment);
