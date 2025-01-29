@@ -14,7 +14,7 @@ import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { ConfigService } from '../config';
 
-@Controller('wills')
+@Controller('wills/users')
 export class UsersController {
   private readonly environment: string;
 
@@ -28,7 +28,7 @@ export class UsersController {
     console.log('Environment running -> ' + this.environment);
   }
 
-  @Post('user')
+  @Post()
   async createUser(
     @Body() createUserDto: CreateUserDto,
   ): Promise<GeneralResponseDto> {
@@ -36,7 +36,7 @@ export class UsersController {
     return this.usersService.createUser(createUserDto);
   }
 
-  @Get('users')
+  @Get()
   async getAllUsers(
     @Query() paginationDto: PaginationDto,
   ): Promise<GeneralResponseDto> {
@@ -45,7 +45,7 @@ export class UsersController {
     return this.usersService.getAllUsers(page, limit);
   }
 
-  @Get('user/:id')
+  @Get('/:id')
   async getUserById(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<GeneralResponseDto> {
@@ -53,7 +53,7 @@ export class UsersController {
     return await this.usersService.findById(id);
   }
 
-  @Put('user/:id')
+  @Put('/:id')
   async updateUser(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
@@ -62,7 +62,7 @@ export class UsersController {
     return this.usersService.updateUser(id, updateUserDto);
   }
 
-  @Delete('user/:id')
+  @Delete('/:id')
   async softDeleteUser(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<GeneralResponseDto> {
