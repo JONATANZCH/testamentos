@@ -6,19 +6,24 @@ import { PrismaProvider } from '../providers';
 
 @Injectable()
 export class AssetsService {
-  constructor(private readonly prismaProvider: PrismaProvider) {}
+  private prisma: any = null;
+  private _prismaprovider: PrismaProvider;
+
+  constructor(private prismaprovider: PrismaProvider) {
+    this._prismaprovider = prismaprovider;
+  }
 
   async getUserAssets(userId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Tstament Error-> dxaj7 db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
-      const assets = await prisma.asset.findMany({ where: { userId } });
+      const assets = await this.prisma.asset.findMany({ where: { userId } });
 
       response.code = 200;
       response.msg = 'Assets retrieved successfully';
@@ -38,14 +43,14 @@ export class AssetsService {
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Testament Error-> 2nj7 db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
-      const asset = await prisma.asset.findFirst({
+      const asset = await this.prisma.asset.findFirst({
         where: { id: assetId, userId },
       });
 
@@ -73,14 +78,14 @@ export class AssetsService {
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Testament Error-> cenc7 db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
-      const asset = await prisma.asset.create({
+      const asset = await this.prisma.asset.create({
         data: { userId, ...createAssetDto },
       });
 
@@ -103,14 +108,14 @@ export class AssetsService {
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Testament Error-> ccb# db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
-      const asset = await prisma.asset.update({
+      const asset = await this.prisma.asset.update({
         where: { id: assetId, userId },
         data: updateAssetDto,
       });
@@ -133,14 +138,14 @@ export class AssetsService {
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Testament Error-> dwd!2 db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
-      await prisma.asset.delete({ where: { id: assetId, userId } });
+      await this.prisma.asset.delete({ where: { id: assetId, userId } });
 
       response.code = 200;
       response.msg = 'Asset deleted successfully';

@@ -6,19 +6,25 @@ import { Address } from './entities';
 
 @Injectable()
 export class AddressesService {
-  constructor(private readonly prismaProvider: PrismaProvider) {}
+  private prisma: any = null;
+  private _prismaprovider: PrismaProvider;
+  constructor(private prismaprovider: PrismaProvider) {
+    this._prismaprovider = prismaprovider;
+  }
 
   async getUserAddresses(userId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Testament Error-> cw"$d db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
-      const addresses = await prisma.address.findMany({ where: { userId } });
+      const addresses = await this.prisma.address.findMany({
+        where: { userId },
+      });
 
       response.code = 200;
       response.msg = 'Addresses retrieved successfully';
@@ -38,14 +44,14 @@ export class AddressesService {
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Testament Error->cec"d db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
-      const address = await prisma.address.findFirst({
+      const address = await this.prisma.address.findFirst({
         where: { userId, id: addressId },
       });
 
@@ -73,14 +79,14 @@ export class AddressesService {
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Testament Error->wcc[] db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
-      const address: Address = await prisma.address.create({
+      const address: Address = await this.prisma.address.create({
         data: { userId, ...addressDto },
       });
 
@@ -103,14 +109,14 @@ export class AddressesService {
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Testament Error->dw$sa db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
-      const address: Address = await prisma.address.update({
+      const address: Address = await this.prisma.address.update({
         where: { userId, id: addressId },
         data: updateAddressDto,
       });
@@ -138,14 +144,14 @@ export class AddressesService {
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Testament Error->dwdw& db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
-      const address: Address = await prisma.address.delete({
+      const address: Address = await this.prisma.address.delete({
         where: { userId, id: addressId },
       });
 

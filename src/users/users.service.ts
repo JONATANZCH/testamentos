@@ -5,20 +5,25 @@ import { GeneralResponseDto } from '../common';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prismaProvider: PrismaProvider) {}
+  private prisma: any = null;
+  private _prismaprovider: PrismaProvider;
+
+  constructor(private prismaprovider: PrismaProvider) {
+    this._prismaprovider = prismaprovider;
+  }
 
   async getAllUsers(page: number, limit: number): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Pastpost Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
 
-      // Convierte page y limit a números enteros
+      // Convert page and limit to integers
       const pageNumber = parseInt(String(page), 10);
       const limitNumber = parseInt(String(limit), 10);
 
@@ -31,12 +36,12 @@ export class UsersService {
       const offset = (pageNumber - 1) * limitNumber;
 
       const [users, total] = await Promise.all([
-        prisma.user.findMany({
+        this.prisma.user.findMany({
           skip: offset,
           take: limitNumber,
           orderBy: { createdAt: 'desc' },
         }),
-        prisma.user.count(),
+        this.prisma.user.count(),
       ]);
 
       response.code = 200;
@@ -60,8 +65,8 @@ export class UsersService {
   async createUser(createUserDto: CreateUserDto): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Pastpost Error-> cj78');
         response.code = 500;
         response.msg =
@@ -69,7 +74,7 @@ export class UsersService {
         return response;
       }
 
-      const user = await prisma.user.create({ data: createUserDto });
+      const user = await this.prisma.user.create({ data: createUserDto });
 
       response.code = 201;
       response.msg = 'User created successfully';
@@ -92,8 +97,8 @@ export class UsersService {
   async findById(id: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Pastpost Error-> xw7q');
         response.code = 500;
         response.msg =
@@ -101,7 +106,7 @@ export class UsersService {
         return response;
       }
 
-      const user = await prisma.user.findUnique({ where: { id } });
+      const user = await this.prisma.user.findUnique({ where: { id } });
 
       if (!user) {
         response.code = 404;
@@ -127,8 +132,8 @@ export class UsersService {
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Pastpost Error-> decbj4 db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
@@ -136,7 +141,7 @@ export class UsersService {
       }
 
       if (updateUserDto.email) {
-        const existingUser = await prisma.user.findFirst({
+        const existingUser = await this.prisma.user.findFirst({
           where: {
             email: updateUserDto.email,
             NOT: { id },
@@ -152,7 +157,7 @@ export class UsersService {
         }
       }
 
-      const user = await prisma.user.update({
+      const user = await this.prisma.user.update({
         where: { id },
         data: updateUserDto,
       });
@@ -177,15 +182,15 @@ export class UsersService {
   async deleteUserPermanently(id: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
-      const prisma = await this.prismaProvider.getPrismaClient();
-      if (!prisma) {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
         console.log('Pastpost Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
       }
 
-      const user = await prisma.user.delete({
+      const user = await this.prisma.user.delete({
         where: { id },
       });
 
