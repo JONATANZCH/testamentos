@@ -5,6 +5,7 @@ import { PrismaProvider } from './providers/prisma-provider/prisma-provider';
 import { ConfigService } from './config';
 import { AssetsModule } from './assets/assets.module';
 import { AddressesModule } from './addresses/addresses.module';
+import { ContactsModule } from './contacts/contacts.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AddressesModule } from './addresses/addresses.module';
     UsersModule,
     AssetsModule,
     AddressesModule,
+    ContactsModule,
   ],
   providers: [ConfigService, PrismaProvider],
   exports: [ConfigService],
