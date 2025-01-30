@@ -6,11 +6,17 @@ import { ConfigService } from './config';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  // CORS
+  app.enableCors({
+    origin: '*', // Permitir todas las orígenes (ajústalo según tu necesidad)
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS', // Métodos HTTP permitidos
+    allowedHeaders: 'Content-Type, Accept, Authorization', // Headers permitidos
+  });
   // When we have data and they have decorators then they are automatically validated
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // remove the extra fields
-      forbidNonWhitelisted: true, // throw an error if there are extra fields
+      forbidNonWhitelisted: true, // throw an error if there are extra fields@
     }),
   );
   const port = configService.getPort();
