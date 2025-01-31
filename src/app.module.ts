@@ -6,6 +6,7 @@ import { ConfigService } from './config';
 import { AssetsModule } from './assets/assets.module';
 import { AddressesModule } from './addresses/addresses.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { PetsModule } from './pets/pets.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ContactsModule } from './contacts/contacts.module';
     AssetsModule,
     AddressesModule,
     ContactsModule,
+    PetsModule,
   ],
   providers: [ConfigService, PrismaProvider],
   exports: [ConfigService],

@@ -1,11 +1,13 @@
 export class User {
-  id: number;
+  id: string;
   email: string;
   firstName: string;
-  lastName: string;
-  middleName: string;
-  acceptTerms: boolean;
-  acceptOffers: boolean;
+  lastName?: string;
+  middleName?: string;
+  governmentId?: string;
+  birthDate?: Date;
+  nationality?: string;
+  phoneNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 }

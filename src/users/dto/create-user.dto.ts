@@ -1,9 +1,9 @@
 import {
-  IsBoolean,
   IsEmail,
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsDateString,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -13,19 +13,29 @@ export class CreateUserDto {
 
   @IsString()
   @IsOptional()
-  readonly lastName?: string = 'N/A';
+  readonly lastName?: string;
 
   @IsString()
   @IsOptional()
-  readonly middleName?: string = 'N/A';
+  readonly middleName?: string;
 
   @IsNotEmpty()
   @IsEmail()
   readonly email: string;
 
-  @IsBoolean()
-  readonly acceptTerms: boolean;
+  @IsString()
+  @IsOptional()
+  readonly governmentId?: string; // Optional national ID
 
-  @IsBoolean()
-  readonly acceptOffers: boolean;
+  @IsDateString()
+  @IsOptional()
+  readonly birthDate?: string; // Optional date of birth in ISO format
+
+  @IsString()
+  @IsOptional()
+  readonly nationality?: string; // Optional nationality
+
+  @IsString()
+  @IsOptional()
+  readonly phoneNumber?: string; // Optional phone number
 }

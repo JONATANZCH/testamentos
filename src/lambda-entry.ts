@@ -7,7 +7,7 @@ let cachedServer;
 export const handler = async (event, context) => {
   if (!cachedServer) {
     const nestApp = await NestFactory.create(AppModule);
-    
+
     // 🔹 Habilitar CORS en NestJS
     nestApp.enableCors({
       origin: '*', // Permitir cualquier origen (ajusta según necesidad)

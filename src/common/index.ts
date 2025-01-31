@@ -1,2 +1,2 @@
-export { GeneralResponseDto } from './response.dto';
-export { PaginationDto } from './pagination.dto';
+export { GeneralResponseDto } from './dto/response.dto';
+export { PaginationDto } from './dto/pagination.dto';
