@@ -85,6 +85,20 @@ export class AssetsService {
         response.msg = 'Could not connect to the database';
         return response;
       }
+
+      // Validar si la categoría existe
+      const categoryExists = await this.prisma.assetCategory.findUnique({
+        where: { id: createAssetDto.categoryId },
+      });
+
+      if (!categoryExists) {
+        response.code = 400;
+        response.msg =
+          'Invalid asset category. The specified category does not exist.';
+        return response;
+      }
+
+      // Crear el activo si la categoría es válida
       const asset = await this.prisma.asset.create({
         data: { userId, ...createAssetDto },
       });

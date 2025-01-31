@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { CountryCode } from '../../common';
 
 export class CreateAddressDto {
   @IsNotEmpty()
@@ -18,6 +19,8 @@ export class CreateAddressDto {
   zipCode: string;
 
   @IsNotEmpty()
-  @IsString()
-  country: string;
+  @IsEnum(CountryCode, {
+    message: 'Invalid country code',
+  })
+  country: CountryCode;
 }

@@ -86,6 +86,17 @@ export class AddressesService {
         response.msg = 'Could not connect to the database';
         return response;
       }
+
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!userExists) {
+        response.code = 404;
+        response.msg = 'User not found';
+        return response;
+      }
+
       const address: Address = await this.prisma.address.create({
         data: { userId, ...addressDto },
       });

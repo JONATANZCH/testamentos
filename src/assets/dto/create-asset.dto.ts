@@ -2,9 +2,8 @@ import {
   IsNotEmpty,
   IsString,
   IsOptional,
-  IsBoolean,
+  IsUUID,
   IsNumber,
-  IsObject,
 } from 'class-validator';
 
 export class CreateAssetDto {
@@ -17,18 +16,13 @@ export class CreateAssetDto {
   description?: string;
 
   @IsNotEmpty()
-  @IsString()
-  category: string;
+  @IsUUID()
+  categoryId: string;
 
   @IsNotEmpty()
   @IsNumber()
   value: number;
 
   @IsOptional()
-  @IsObject()
   metadata?: Record<string, any>;
-
-  @IsOptional()
-  @IsBoolean()
-  isInherited?: boolean;
 }
