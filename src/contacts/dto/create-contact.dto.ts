@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEmail } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsUUID } from 'class-validator';
 
 export class CreateContactDto {
   @IsString()
@@ -26,4 +26,8 @@ export class CreateContactDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsUUID()
+  legalEntityId?: string;
 }

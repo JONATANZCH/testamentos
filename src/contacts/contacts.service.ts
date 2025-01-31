@@ -106,8 +106,14 @@ export class ContactsService {
         return response;
       }
 
+      const { legalEntityId, ...contactData } = createContactDto;
+
       const contact = await this.prisma.contact.create({
-        data: { userId, ...createContactDto },
+        data: {
+          userId,
+          legalEntityId,
+          ...contactData,
+        },
       });
 
       response.code = 201;
