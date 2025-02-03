@@ -197,4 +197,73 @@ export class TestamentsService {
       return response;
     }
   }
+
+  async getActiveTestament(userId: string): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+
+      // Buscar el testamento activo
+      const activeTestament = await this.prisma.testamentHeader.findFirst({
+        where: { userId, isActive: true },
+        include: { TestamentAssignment: true },
+      });
+
+      if (!activeTestament) {
+        response.code = 404;
+        response.msg = 'No active testament found for the user';
+        return response;
+      }
+
+      response.code = 200;
+      response.msg = 'Active testament retrieved successfully';
+      response.response = activeTestament;
+      return response;
+    } catch (error) {
+      console.error('Error fetching active testament:', error);
+      response.code = 500;
+      response.msg =
+        'An unexpected error occurred while fetching the active testament';
+      return response;
+    }
+  }
+
+  async getTestamentVersions(
+    userId: string,
+    paginationDto: PaginationDto,
+  ): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      const { page, limit } = paginationDto;
+      const offset = (page - 1) * limit;
+
+      const [versions, total] = await Promise.all([
+        this.prisma.testamentHeader.findMany({
+          where: { userId },
+          skip: offset,
+          take: limit,
+          orderBy: { version: 'desc' },
+        }),
+        this.prisma.testamentHeader.count({ where: { userId } }),
+      ]);
+
+      response.code = 200;
+      response.msg = 'Testament versions retrieved successfully';
+      response.response = {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        versions,
+      };
+      return response;
+    } catch (error) {
+      console.error('Error fetching testament versions:', error);
+      response.code = 500;
+      response.msg =
+        'An unexpected error occurred while fetching testament versions';
+      return response;
+    }
+  }
 }

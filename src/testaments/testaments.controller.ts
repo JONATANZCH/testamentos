@@ -30,6 +30,21 @@ export class TestamentsController {
     Reflect.defineMetadata('path', this.environment, TestamentsController);
   }
 
+  @Get('/:userId/testaments/active')
+  async getActiveTestament(
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<GeneralResponseDto> {
+    return this.testamentsService.getActiveTestament(userId);
+  }
+
+  @Get('/:userId/testaments/versions')
+  async getTestamentVersions(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Query() paginationDto: PaginationDto,
+  ): Promise<GeneralResponseDto> {
+    return this.testamentsService.getTestamentVersions(userId, paginationDto);
+  }
+
   @Get('/:userId/testaments')
   async getUserTestaments(
     @Param('userId', ParseUUIDPipe) userId: string,
