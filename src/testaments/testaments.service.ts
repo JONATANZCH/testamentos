@@ -89,6 +89,20 @@ export class TestamentsService {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
+
+      // Validate if the contactId exists, if it was provided
+      if (createTestamentDto.contactId) {
+        const contactExists = await this.prisma.contact.findUnique({
+          where: { id: createTestamentDto.contactId },
+        });
+
+        if (!contactExists) {
+          response.code = 400;
+          response.msg = 'The provided contactId does not exist';
+          return response;
+        }
+      }
+
       // Deactivate previous versions of the will
       await this.prisma.testamentHeader.updateMany({
         where: { userId, isActive: true },
@@ -181,6 +195,52 @@ export class TestamentsService {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
+      // Validate if the assetId exists
+      const assetExists = await this.prisma.asset.findUnique({
+        where: { id: createAssignmentDto.assetId },
+      });
+
+      if (!assetExists) {
+        response.code = 400;
+        response.msg = 'The provided assetId does not exist';
+        return response;
+      }
+
+      // Validate if the beneficiaryContactId exists, if it was provided
+      if (createAssignmentDto.beneficiaryContactId) {
+        const contactExists = await this.prisma.contact.findUnique({
+          where: { id: createAssignmentDto.beneficiaryContactId },
+        });
+
+        if (!contactExists) {
+          response.code = 400;
+          response.msg = 'The provided beneficiaryContactId does not exist';
+          return response;
+        }
+      }
+
+      // **Percent Validation**
+      const existingAssignments =
+        await this.prisma.testamentAssignment.findMany({
+          where: { testamentId },
+          select: { percentage: true },
+        });
+
+      // Add the existing percentages
+      const currentPercentageSum: number = existingAssignments.reduce(
+        (sum: number, assignment: { percentage: number }) =>
+          sum + assignment.percentage,
+        0,
+      );
+
+      // Verify that the percentage does not exceed 100%
+      if (currentPercentageSum + createAssignmentDto.percentage > 100) {
+        response.code = 400;
+        response.msg = 'Total percentage for assignments exceeds 100%';
+        return response;
+      }
+
+      // Create the assignment
       const assignment = await this.prisma.testamentAssignment.create({
         data: { testamentId, ...createAssignmentDto },
       });
