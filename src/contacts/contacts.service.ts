@@ -26,13 +26,22 @@ export class ContactsService {
         response.msg = 'Could not connect to the database';
         return response;
       }
+      // Convert page and limit to integers
+      const pageNumber = parseInt(String(page), 10);
+      const limitNumber = parseInt(String(limit), 10);
 
-      const offset = (page - 1) * limit;
+      if (isNaN(pageNumber) || isNaN(limitNumber)) {
+        response.code = 400;
+        response.msg = 'Page and limit must be valid numbers';
+        return response;
+      }
+
+      const offset = (pageNumber - 1) * limitNumber;
       const [contacts, total] = await Promise.all([
         this.prisma.contact.findMany({
           where: { userId },
           skip: offset,
-          take: limit,
+          take: limitNumber,
           orderBy: { createdAt: 'desc' },
         }),
         this.prisma.contact.count({ where: { userId } }),

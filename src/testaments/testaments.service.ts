@@ -37,12 +37,6 @@ export class TestamentsService {
         response.msg = 'Could not connect to the database';
         return response;
       }
-      if (!this.prisma) {
-        console.log('Error-> db-connection-failed');
-        response.code = 500;
-        response.msg = 'Could not connect to the database';
-        return response;
-      }
       // Convert page and limit to integers
       const pageNumber = parseInt(String(page), 10);
       const limitNumber = parseInt(String(limit), 10);
