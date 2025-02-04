@@ -22,7 +22,7 @@ export class TestamentsService {
     version?: number,
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
-
+    const { page, limit } = paginationDto;
     if (status && !this.validStatuses.includes(status)) {
       response.code = 400;
       response.msg = 'Invalid testament status provided';
@@ -31,8 +31,23 @@ export class TestamentsService {
 
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
-      const { page, limit } = paginationDto;
-      const offset = (page - 1) * limit;
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        return response;
+      }
+      // Convert page and limit to integers
+      const pageNumber = parseInt(String(page), 10);
+      const limitNumber = parseInt(String(limit), 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber)) {
+        response.code = 400;
+        response.msg = 'Page and limit must be valid numbers';
+        return response;
+      }
+
+      const offset = (pageNumber - 1) * limitNumber;
 
       // Build dynamic filters
       const whereClause: any = { userId };
@@ -43,7 +58,7 @@ export class TestamentsService {
         this.prisma.testamentHeader.findMany({
           where: whereClause,
           skip: offset,
-          take: limit,
+          take: limitNumber,
           orderBy: { creationDate: 'desc' },
         }),
         this.prisma.testamentHeader.count({ where: whereClause }),
@@ -215,6 +230,29 @@ export class TestamentsService {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        return response;
+      }
+      // Validate that the testament exists for the given userId
+      const testament = await this.prisma.testamentHeader.findUnique({
+        where: { id: testamentId, userId },
+      });
+
+      if (!testament) {
+        response.code = 404;
+        response.msg = 'Testament not found';
+        return response;
+      }
+      // Validate that the testament is active
+      if (testament.status !== 'ACTIVE') {
+        response.code = 400;
+        response.msg = 'The testament is not active';
+        return response;
+      }
+
       // Validate if the assetId exists
       const assetExists = await this.prisma.asset.findUnique({
         where: { id: createAssignmentDto.assetId },
@@ -238,19 +276,26 @@ export class TestamentsService {
         }
       }
 
-      // **Percent Validation**
+      // Retrieve existing assignment percentages for the testament
       const existingAssignments =
         await this.prisma.testamentAssignment.findMany({
           where: { testamentId },
           select: { percentage: true },
         });
 
-      // Add the existing percentages
+      // Add up the existing assignment percentages
       const currentPercentageSum: number = existingAssignments.reduce(
         (sum: number, assignment: { percentage: number }) =>
           sum + assignment.percentage,
         0,
       );
+
+      // Validate that the percentage is greater than 0
+      if (createAssignmentDto.percentage <= 0) {
+        response.code = 400;
+        response.msg = 'Percentage must be greater than 0';
+        return response;
+      }
 
       // Verify that the percentage does not exceed 100%
       if (currentPercentageSum + createAssignmentDto.percentage > 100) {

@@ -22,11 +22,21 @@ export class LegalEntitiesService {
         return response;
       }
 
-      const offset = (page - 1) * limit;
+      // Convert page and limit to integers
+      const pageNumber = parseInt(String(page), 10);
+      const limitNumber = parseInt(String(limit), 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber)) {
+        response.code = 400;
+        response.msg = 'Page and limit must be valid numbers';
+        return response;
+      }
+
+      const offset = (pageNumber - 1) * limitNumber;
       const [entities, total] = await Promise.all([
         this.prisma.legalEntity.findMany({
           skip: offset,
-          take: limit,
+          take: limitNumber,
           orderBy: { name: 'asc' },
         }),
         this.prisma.legalEntity.count(),
