@@ -15,6 +15,7 @@ async function bootstrap() {
   // When we have data and they have decorators then they are automatically validated
   app.useGlobalPipes(
     new ValidationPipe({
+      transform: true, // Habilitar la transformación automática de tipos
       whitelist: true, // remove the extra fields
       forbidNonWhitelisted: true, // throw an error if there are extra fields@
     }),
