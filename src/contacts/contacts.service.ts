@@ -116,6 +116,49 @@ export class ContactsService {
       }
 
       const { legalEntityId, ...contactData } = createContactDto;
+      if (legalEntityId) {
+        const legalEntityExists = await this.prisma.legalEntity.findUnique({
+          where: { id: legalEntityId },
+        });
+
+        if (!legalEntityExists) {
+          response.code = 400;
+          response.msg = 'The provided legalEntityId does not exist';
+          return response;
+        }
+      }
+
+      if (createContactDto.email) {
+        const emailExists = await this.prisma.contact.findFirst({
+          where: {
+            userId,
+            email: createContactDto.email,
+          },
+        });
+
+        if (emailExists) {
+          response.code = 400;
+          response.msg =
+            'A contact with this email already exists for the user';
+          return response;
+        }
+      }
+
+      if (createContactDto.phoneNumber) {
+        const phoneExists = await this.prisma.contact.findFirst({
+          where: {
+            userId,
+            phoneNumber: createContactDto.phoneNumber,
+          },
+        });
+
+        if (phoneExists) {
+          response.code = 400;
+          response.msg =
+            'A contact with this phone number already exists for the user';
+          return response;
+        }
+      }
 
       const contact = await this.prisma.contact.create({
         data: {
