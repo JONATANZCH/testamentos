@@ -18,7 +18,7 @@ import {
 import { GeneralResponseDto, TestamentQueryDto } from '../common';
 import { ConfigService } from '../config';
 
-@Controller('wills/users')
+@Controller('wills')
 export class TestamentsController {
   private readonly environment: string;
 
@@ -26,11 +26,11 @@ export class TestamentsController {
     private readonly testamentsService: TestamentsService,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.getNodeEnv() + '/wills/users';
+    this.environment = this.configService.getNodeEnv() + '/wills';
     Reflect.defineMetadata('path', this.environment, TestamentsController);
   }
 
-  @Get('/:userId/testaments')
+  @Get('/users/:userId/testaments')
   async getUserTestaments(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query() queryDto: TestamentQueryDto,
@@ -44,15 +44,14 @@ export class TestamentsController {
     );
   }
 
-  @Get('/:userId/testaments/:testamentId')
+  @Get('/testaments/:testamentId')
   async getTestamentById(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
   ): Promise<GeneralResponseDto> {
-    return this.testamentsService.getTestamentById(userId, testamentId);
+    return this.testamentsService.getTestamentById(testamentId);
   }
 
-  @Post('/:userId/testaments')
+  @Post('/users/:userId/testaments')
   async createTestament(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() createTestamentDto: CreateTestamentDto,
@@ -60,14 +59,12 @@ export class TestamentsController {
     return this.testamentsService.createTestament(userId, createTestamentDto);
   }
 
-  @Put('/:userId/testaments/:testamentId')
+  @Put('/testaments/:testamentId')
   async updateTestament(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
     @Body() updateTestamentDto: UpdateTestamentDto,
   ): Promise<GeneralResponseDto> {
     return this.testamentsService.updateTestament(
-      userId,
       testamentId,
       updateTestamentDto,
     );
@@ -81,16 +78,21 @@ export class TestamentsController {
     return this.testamentsService.deleteTestament(userId, testamentId);
   }
 
-  @Post('/:userId/testaments/:testamentId/assignments')
+  @Post('testaments/:testamentId/assignments')
   async createAssignment(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
     @Body() createAssignmentDto: CreateAssignmentDto,
   ): Promise<GeneralResponseDto> {
     return this.testamentsService.createAssignment(
-      userId,
       testamentId,
       createAssignmentDto,
     );
+  }
+
+  @Delete('testaments/:testamentId/assignments')
+  async deleteAssignment(
+    @Param('testamentId', ParseUUIDPipe) testamentId: string,
+  ): Promise<GeneralResponseDto> {
+    return this.testamentsService.deleteAssignment(testamentId);
   }
 }

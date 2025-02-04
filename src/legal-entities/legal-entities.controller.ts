@@ -3,7 +3,7 @@ import { LegalEntitiesService } from './legal-entities.service';
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { ConfigService } from '../config';
 
-@Controller('wills/legal-entities')
+@Controller('wills/legalentities')
 export class LegalEntitiesController {
   private readonly environment: string;
 
@@ -11,8 +11,7 @@ export class LegalEntitiesController {
     private readonly legalEntitiesService: LegalEntitiesService,
     private readonly configService: ConfigService,
   ) {
-    this.environment =
-      this.configService.getNodeEnv() + '/wills/legal-entities';
+    this.environment = this.configService.getNodeEnv() + '/wills/legalentities';
     Reflect.defineMetadata('path', this.environment, LegalEntitiesController);
     console.log('Version - 20250130 12:00pm');
     console.log('Environment running -> ' + this.environment);

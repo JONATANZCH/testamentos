@@ -88,15 +88,12 @@ export class TestamentsService {
     }
   }
 
-  async getTestamentById(
-    userId: string,
-    testamentId: string,
-  ): Promise<GeneralResponseDto> {
+  async getTestamentById(testamentId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
       const testament = await this.prisma.testamentHeader.findFirst({
-        where: { id: testamentId, userId },
+        where: { id: testamentId },
         include: { TestamentAssignment: true },
       });
 
@@ -176,7 +173,6 @@ export class TestamentsService {
   }
 
   async updateTestament(
-    userId: string,
     testamentId: string,
     updateTestamentDto: UpdateTestamentDto,
   ): Promise<GeneralResponseDto> {
@@ -223,7 +219,6 @@ export class TestamentsService {
   }
 
   async createAssignment(
-    userId: string,
     testamentId: string,
     createAssignmentDto: CreateAssignmentDto,
   ): Promise<GeneralResponseDto> {
@@ -238,7 +233,7 @@ export class TestamentsService {
       }
       // Validate that the testament exists for the given userId
       const testament = await this.prisma.testamentHeader.findUnique({
-        where: { id: testamentId, userId },
+        where: { id: testamentId },
       });
 
       if (!testament) {
@@ -318,6 +313,57 @@ export class TestamentsService {
       response.code = 500;
       response.msg =
         'An unexpected error occurred while creating the assignment';
+      return response;
+    }
+  }
+
+  async deleteAssignment(testamentId: string): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      // Obtén la instancia de Prisma
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        return response;
+      }
+
+      // 1. Verifica que el testamento exista
+      const testament = await this.prisma.testamentHeader.findUnique({
+        where: { id: testamentId },
+      });
+
+      if (!testament) {
+        response.code = 404;
+        response.msg = 'Testament not found';
+        return response;
+      }
+
+      // 2. (Opcional) Valida que el testamento esté en estado ACTIVE si tu lógica lo requiere
+      /*
+      if (testament.status !== 'ACTIVE') {
+        response.code = 400;
+        response.msg = 'The testament is not active';
+        return response;
+      }
+      */
+
+      // 3. Elimina todas las asignaciones relacionadas con ese testamento
+      const deleteResult = await this.prisma.testamentAssignment.deleteMany({
+        where: { testamentId },
+      });
+
+      response.code = 200;
+      response.msg = 'Assignment(s) deleted successfully';
+      response.response = {
+        deletedCount: deleteResult.count,
+      };
+      return response;
+    } catch (error) {
+      console.error('Error deleting assignment(s):', error);
+      response.code = 500;
+      response.msg =
+        'An unexpected error occurred while deleting the assignment(s)';
       return response;
     }
   }
