@@ -27,12 +27,12 @@ export class PetsService {
     }
   }
 
-  async getPetById(userId: string, petId: string): Promise<GeneralResponseDto> {
+  async getPetById(petId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
       const pet = await this.prisma.pet.findFirst({
-        where: { userId, id: petId },
+        where: { id: petId },
       });
 
       if (!pet) {
@@ -77,7 +77,6 @@ export class PetsService {
   }
 
   async updatePet(
-    userId: string,
     petId: string,
     updatePetDto: UpdatePetDto,
   ): Promise<GeneralResponseDto> {
@@ -85,7 +84,7 @@ export class PetsService {
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
       const pet = await this.prisma.pet.update({
-        where: { id: petId, userId },
+        where: { id: petId },
         data: updatePetDto,
       });
 
@@ -101,11 +100,11 @@ export class PetsService {
     }
   }
 
-  async deletePet(userId: string, petId: string): Promise<GeneralResponseDto> {
+  async deletePet(petId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
-      await this.prisma.pet.delete({ where: { id: petId, userId } });
+      await this.prisma.pet.delete({ where: { id: petId } });
 
       response.code = 200;
       response.msg = 'Pet deleted successfully';

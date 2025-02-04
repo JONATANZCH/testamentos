@@ -32,12 +32,11 @@ export class PetsController {
     return this.petsService.getUserPets(userId);
   }
 
-  @Get('user/:userId/pets/:petId')
+  @Get('/pets/:petId')
   async getPetById(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('petId', ParseUUIDPipe) petId: string,
   ): Promise<GeneralResponseDto> {
-    return this.petsService.getPetById(userId, petId);
+    return this.petsService.getPetById(petId);
   }
 
   @Post('user/:userId/pets')
@@ -48,20 +47,18 @@ export class PetsController {
     return this.petsService.createPet(userId, createPetDto);
   }
 
-  @Put('user/:userId/pets/:petId')
+  @Put('/pets/:petId')
   async updatePet(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('petId', ParseUUIDPipe) petId: string,
     @Body() updatePetDto: UpdatePetDto,
   ): Promise<GeneralResponseDto> {
-    return this.petsService.updatePet(userId, petId, updatePetDto);
+    return this.petsService.updatePet(petId, updatePetDto);
   }
 
-  @Delete('user/:userId/pets/:petId')
+  @Delete('/pets/:petId')
   async deletePet(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('petId', ParseUUIDPipe) petId: string,
   ): Promise<GeneralResponseDto> {
-    return this.petsService.deletePet(userId, petId);
+    return this.petsService.deletePet(petId);
   }
 }
