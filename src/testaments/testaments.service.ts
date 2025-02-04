@@ -10,28 +10,50 @@ import { GeneralResponseDto, PaginationDto } from '../common';
 @Injectable()
 export class TestamentsService {
   private prisma: any = null;
+  // Validate valid state if provided
+  private validStatuses = ['ACTIVE', 'INACTIVE', 'DELETED', 'EXPIRED'];
 
   constructor(private readonly prismaProvider: PrismaProvider) {}
 
   async getUserTestaments(
     userId: string,
     paginationDto: PaginationDto,
+    status?: string,
+    version?: number,
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
+
+    if (status && !this.validStatuses.includes(status)) {
+      response.code = 400;
+      response.msg = 'Invalid testament status provided';
+      return response;
+    }
+
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
       const { page, limit } = paginationDto;
       const offset = (page - 1) * limit;
 
+      // Build dynamic filters
+      const whereClause: any = { userId };
+      if (status) whereClause.status = status;
+      if (version) whereClause.version = version;
+
       const [testaments, total] = await Promise.all([
         this.prisma.testamentHeader.findMany({
-          where: { userId },
+          where: whereClause,
           skip: offset,
           take: limit,
           orderBy: { creationDate: 'desc' },
         }),
-        this.prisma.testamentHeader.count({ where: { userId } }),
+        this.prisma.testamentHeader.count({ where: whereClause }),
       ]);
+
+      if (total === 0) {
+        response.code = 404;
+        response.msg = `No testaments found for the provided ${status ? `status "${status}"` : ''}`;
+        return response;
+      }
 
       response.code = 200;
       response.msg = 'Testaments retrieved successfully';
@@ -95,7 +117,6 @@ export class TestamentsService {
         const contactExists = await this.prisma.contact.findUnique({
           where: { id: createTestamentDto.contactId },
         });
-
         if (!contactExists) {
           response.code = 400;
           response.msg = 'The provided contactId does not exist';
@@ -103,27 +124,26 @@ export class TestamentsService {
         }
       }
 
-      // Deactivate previous versions of the will
-      await this.prisma.testamentHeader.updateMany({
-        where: { userId, isActive: true },
-        data: { isActive: false },
-      });
-
       // Create new Version
       const lastVersion = await this.prisma.testamentHeader.findFirst({
         where: { userId },
         orderBy: { version: 'desc' },
         select: { version: true },
       });
-
       const newVersion = (lastVersion?.version || 0) + 1;
+
+      // Deactivate previous active testament
+      await this.prisma.testamentHeader.updateMany({
+        where: { userId, status: 'ACTIVE' },
+        data: { status: 'INACTIVE' },
+      });
 
       const newTestament = await this.prisma.testamentHeader.create({
         data: {
           ...createTestamentDto,
           userId,
           version: newVersion,
-          isActive: true,
+          status: 'ACTIVE',
         },
       });
 
@@ -211,7 +231,6 @@ export class TestamentsService {
         const contactExists = await this.prisma.contact.findUnique({
           where: { id: createAssignmentDto.beneficiaryContactId },
         });
-
         if (!contactExists) {
           response.code = 400;
           response.msg = 'The provided beneficiaryContactId does not exist';
@@ -254,75 +273,6 @@ export class TestamentsService {
       response.code = 500;
       response.msg =
         'An unexpected error occurred while creating the assignment';
-      return response;
-    }
-  }
-
-  async getActiveTestament(userId: string): Promise<GeneralResponseDto> {
-    const response = new GeneralResponseDto();
-    try {
-      this.prisma = await this.prismaProvider.getPrismaClient();
-
-      // Buscar el testamento activo
-      const activeTestament = await this.prisma.testamentHeader.findFirst({
-        where: { userId, isActive: true },
-        include: { TestamentAssignment: true },
-      });
-
-      if (!activeTestament) {
-        response.code = 404;
-        response.msg = 'No active testament found for the user';
-        return response;
-      }
-
-      response.code = 200;
-      response.msg = 'Active testament retrieved successfully';
-      response.response = activeTestament;
-      return response;
-    } catch (error) {
-      console.error('Error fetching active testament:', error);
-      response.code = 500;
-      response.msg =
-        'An unexpected error occurred while fetching the active testament';
-      return response;
-    }
-  }
-
-  async getTestamentVersions(
-    userId: string,
-    paginationDto: PaginationDto,
-  ): Promise<GeneralResponseDto> {
-    const response = new GeneralResponseDto();
-    try {
-      this.prisma = await this.prismaProvider.getPrismaClient();
-      const { page, limit } = paginationDto;
-      const offset = (page - 1) * limit;
-
-      const [versions, total] = await Promise.all([
-        this.prisma.testamentHeader.findMany({
-          where: { userId },
-          skip: offset,
-          take: limit,
-          orderBy: { version: 'desc' },
-        }),
-        this.prisma.testamentHeader.count({ where: { userId } }),
-      ]);
-
-      response.code = 200;
-      response.msg = 'Testament versions retrieved successfully';
-      response.response = {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        versions,
-      };
-      return response;
-    } catch (error) {
-      console.error('Error fetching testament versions:', error);
-      response.code = 500;
-      response.msg =
-        'An unexpected error occurred while fetching testament versions';
       return response;
     }
   }

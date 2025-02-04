@@ -1,10 +1,6 @@
-import { IsNotEmpty, IsString, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsUUID } from 'class-validator';
 
 export class CreateTestamentDto {
-  @IsNotEmpty()
-  @IsString()
-  status: string;
-
   @IsOptional()
   @IsString()
   terms?: string;

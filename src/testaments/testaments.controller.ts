@@ -15,7 +15,7 @@ import {
   UpdateTestamentDto,
   CreateAssignmentDto,
 } from './dto';
-import { GeneralResponseDto, PaginationDto } from '../common';
+import { GeneralResponseDto, TestamentQueryDto } from '../common';
 import { ConfigService } from '../config';
 
 @Controller('wills/users')
@@ -30,27 +30,18 @@ export class TestamentsController {
     Reflect.defineMetadata('path', this.environment, TestamentsController);
   }
 
-  @Get('/:userId/testaments/active')
-  async getActiveTestament(
-    @Param('userId', ParseUUIDPipe) userId: string,
-  ): Promise<GeneralResponseDto> {
-    return this.testamentsService.getActiveTestament(userId);
-  }
-
-  @Get('/:userId/testaments/versions')
-  async getTestamentVersions(
-    @Param('userId', ParseUUIDPipe) userId: string,
-    @Query() paginationDto: PaginationDto,
-  ): Promise<GeneralResponseDto> {
-    return this.testamentsService.getTestamentVersions(userId, paginationDto);
-  }
-
   @Get('/:userId/testaments')
   async getUserTestaments(
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Query() paginationDto: PaginationDto,
+    @Query() queryDto: TestamentQueryDto,
   ): Promise<GeneralResponseDto> {
-    return this.testamentsService.getUserTestaments(userId, paginationDto);
+    const { page, limit, status, version } = queryDto;
+    return this.testamentsService.getUserTestaments(
+      userId,
+      { page, limit },
+      status,
+      version,
+    );
   }
 
   @Get('/:userId/testaments/:testamentId')

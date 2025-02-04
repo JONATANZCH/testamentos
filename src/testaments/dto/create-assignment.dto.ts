@@ -5,6 +5,7 @@ import {
   IsOptional,
   Min,
   Max,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateAssignmentDto {
@@ -19,8 +20,8 @@ export class CreateAssignmentDto {
   readonly percentage: number;
 
   @IsNotEmpty()
-  @IsString()
-  readonly assignmentType: string;
+  @IsUUID()
+  readonly assignmentTypeId: string;
 
   @IsOptional()
   @IsString()
