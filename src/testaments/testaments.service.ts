@@ -37,6 +37,12 @@ export class TestamentsService {
         response.msg = 'Could not connect to the database';
         return response;
       }
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        return response;
+      }
       // Convert page and limit to integers
       const pageNumber = parseInt(String(page), 10);
       const limitNumber = parseInt(String(limit), 10);
@@ -92,6 +98,12 @@ export class TestamentsService {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        return response;
+      }
       const testament = await this.prisma.testamentHeader.findFirst({
         where: { id: testamentId },
         include: { TestamentAssignment: true },
@@ -123,6 +135,12 @@ export class TestamentsService {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        return response;
+      }
 
       // Validate if the contactId exists, if it was provided
       if (createTestamentDto.contactId) {
@@ -179,6 +197,26 @@ export class TestamentsService {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        return response;
+      }
+      // Validate if contactId has been sent and check its existence
+      if (updateTestamentDto.contactId) {
+        const contactExists = await this.prisma.contact.findUnique({
+          where: { id: updateTestamentDto.contactId },
+        });
+
+        if (!contactExists) {
+          response.code = 400;
+          response.msg =
+            'Invalid contactId: The contact does not exist in the system.';
+          return response;
+        }
+      }
+
       const testament = await this.prisma.testamentHeader.update({
         where: { id: testamentId },
         data: updateTestamentDto,
@@ -189,10 +227,23 @@ export class TestamentsService {
       response.response = testament;
       return response;
     } catch (error) {
-      console.error('Error updating testament:', error);
-      response.code = 500;
-      response.msg =
-        'An unexpected error occurred while updating the testament';
+      // Catch known Prisma bugs (e.g. foreign key constraints)
+      if (error.code === 'P2003') {
+        response.code = 400;
+        response.msg = `Invalid data: Foreign key constraint failed on field "${error.meta?.field_name}".`;
+      } else if (error.code === 'P2025') {
+        // Prism error when record does not exist
+        response.code = 404;
+        response.msg =
+          'Testament not found: The provided testamentId does not exist.';
+      } else {
+        // Other unforeseen errors
+        console.error('Unexpected error updating testament:', error);
+        response.code = 500;
+        response.msg =
+          'An unexpected error occurred while updating the testament.';
+      }
+
       return response;
     }
   }
@@ -204,6 +255,12 @@ export class TestamentsService {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        return response;
+      }
       await this.prisma.testamentHeader.delete({ where: { id: testamentId } });
 
       response.code = 200;

@@ -17,7 +17,6 @@ export class UpdateTestamentDto {
   @IsString()
   readonly notes?: string;
 
-  // Agregas este campo para que se pueda actualizar el status
   @IsOptional()
   @IsString()
   readonly status?: string;
