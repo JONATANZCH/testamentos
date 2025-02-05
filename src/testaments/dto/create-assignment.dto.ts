@@ -5,7 +5,7 @@ import {
   IsOptional,
   Min,
   Max,
-  IsUUID,
+  IsIn,
 } from 'class-validator';
 
 export class CreateAssignmentDto {
@@ -20,12 +20,14 @@ export class CreateAssignmentDto {
   readonly percentage: number;
 
   @IsNotEmpty()
-  @IsUUID()
-  readonly assignmentTypeId: string;
+  @IsIn(['c', 'le'], {
+    message: "assignmentType must be 'c' (contact) or 'le' (legal entity)",
+  })
+  readonly assignmentType: string;
 
   @IsOptional()
   @IsString()
-  readonly beneficiaryContactId?: string;
+  readonly assignmentId?: string;
 
   @IsOptional()
   @IsString()

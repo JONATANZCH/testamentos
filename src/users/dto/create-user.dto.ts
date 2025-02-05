@@ -4,9 +4,20 @@ import {
   IsOptional,
   IsString,
   IsDateString,
+  IsEnum,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { Gender } from '../../common/enums/gender.enum';
+import { CountryCode } from '../../common/enums/country-code.enum';
+import { CountryPhoneCode } from '../../common/enums/country-phone-code.enum';
+import { MaritalStatus } from '../../common/enums/marital-status.enum';
+import { mapCountryPhoneCode } from '../../common/utils/mapCountryPhoneCode';
 
 export class CreateUserDto {
+  @IsNotEmpty()
+  @IsEmail()
+  readonly email: string;
+
   @IsNotEmpty()
   @IsString()
   readonly firstName: string;
@@ -19,23 +30,43 @@ export class CreateUserDto {
   @IsOptional()
   readonly middleName?: string;
 
-  @IsNotEmpty()
-  @IsEmail()
-  readonly email: string;
-
   @IsString()
   @IsOptional()
-  readonly governmentId?: string; // Optional national ID
+  readonly governmentId?: string;
 
   @IsDateString()
   @IsOptional()
-  readonly birthDate?: string; // Optional date of birth in ISO format
+  readonly birthDate?: string;
 
   @IsString()
   @IsOptional()
-  readonly nationality?: string; // Optional nationality
+  @IsEnum(CountryCode, {
+    message: 'Invalid country code',
+  })
+  readonly nationality?: string;
 
   @IsString()
   @IsOptional()
-  readonly phoneNumber?: string; // Optional phone number
+  @IsEnum(Gender, {
+    message: 'Gender not valid',
+  })
+  readonly gender: Gender;
+
+  @IsString()
+  @IsOptional()
+  readonly phoneNumber?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => mapCountryPhoneCode(value))
+  @IsEnum(CountryPhoneCode, {
+    message: 'Invalid country phone code',
+  })
+  readonly countryCode?: CountryPhoneCode;
+
+  @IsString()
+  @IsOptional()
+  @IsEnum(MaritalStatus, {
+    message: 'Invalid marital status',
+  })
+  readonly maritalstatus?: string;
 }

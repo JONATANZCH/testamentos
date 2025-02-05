@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsEmail, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEmail,
+  IsUUID,
+  IsEnum,
+  IsBoolean,
+} from 'class-validator';
+import { CountryCode } from '../../common/enums/country-code.enum';
+import { CountryPhoneCode } from '../../common/enums/country-phone-code.enum';
 
 export class CreateContactDto {
   @IsString()
@@ -12,8 +21,16 @@ export class CreateContactDto {
   relationToUser?: string;
 
   @IsOptional()
-  @IsString()
-  category?: string;
+  @IsEnum(CountryPhoneCode, {
+    message: 'countryPhoneCode must be a valid country phone code',
+  })
+  countryPhoneCode?: CountryPhoneCode;
+
+  @IsOptional()
+  @IsEnum(CountryCode, {
+    message: 'country must be a valid country code',
+  })
+  country?: CountryCode;
 
   @IsOptional()
   @IsString()
@@ -30,4 +47,8 @@ export class CreateContactDto {
   @IsOptional()
   @IsUUID()
   legalEntityId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  trustedContact?: boolean;
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto } from '../common';
+import { reverseCountryPhoneCodeMap } from '../common/utils/reverseCountryPhoneCodeMap';
 
 @Injectable()
 export class UsersService {
@@ -74,7 +75,21 @@ export class UsersService {
         return response;
       }
 
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: createUserDto.email },
+      });
+
+      if (existingUser) {
+        response.code = 409;
+        response.msg = 'A user with this email already exists';
+        return response;
+      }
+
       const user = await this.prisma.user.create({ data: createUserDto });
+
+      if (user.countryCode) {
+        user.countryCode = reverseCountryPhoneCodeMap[user.countryCode];
+      }
 
       response.code = 201;
       response.msg = 'User created successfully';

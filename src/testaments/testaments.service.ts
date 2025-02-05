@@ -307,15 +307,26 @@ export class TestamentsService {
         return response;
       }
 
-      // Validate if the beneficiaryContactId exists, if it was provided
-      if (createAssignmentDto.beneficiaryContactId) {
+      // Validate if the assignmentId exists, if it was provided
+      if (createAssignmentDto.assignmentId) {
+        // Validate in Contact table
         const contactExists = await this.prisma.contact.findUnique({
-          where: { id: createAssignmentDto.beneficiaryContactId },
+          where: { id: createAssignmentDto.assignmentId },
         });
+
+        // If not found in Contact, check in LegalEntity
         if (!contactExists) {
-          response.code = 400;
-          response.msg = 'The provided beneficiaryContactId does not exist';
-          return response;
+          const legalEntityExists = await this.prisma.legalEntity.findUnique({
+            where: { id: createAssignmentDto.assignmentId },
+          });
+
+          // If not found in either table, return an error response
+          if (!legalEntityExists) {
+            response.code = 400;
+            response.msg =
+              'The provided assignmentId does not exist in the system';
+            return response;
+          }
         }
       }
 
