@@ -35,13 +35,12 @@ export class AssetsController {
     return this.assetsService.getUserAssets(userId);
   }
 
-  @Get('/user/:userId/asset/:assetId')
+  @Get('/asset/:assetId')
   async getAssetById(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('assetId', ParseUUIDPipe) assetId: string,
   ): Promise<GeneralResponseDto> {
     console.log('Get asset by id request received');
-    return this.assetsService.getAssetById(userId, assetId);
+    return this.assetsService.getAssetById(assetId);
   }
 
   @Post('/user/:userId/asset')
@@ -53,22 +52,20 @@ export class AssetsController {
     return this.assetsService.createAsset(userId, createAssetDto);
   }
 
-  @Put('/user/:userId/asset/:assetId')
+  @Put('/asset/:assetId')
   async updateAsset(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('assetId', ParseUUIDPipe) assetId: string,
     @Body() updateAssetDto: UpdateAssetDto,
   ): Promise<GeneralResponseDto> {
     console.log('Update asset request received');
-    return this.assetsService.updateAsset(userId, assetId, updateAssetDto);
+    return this.assetsService.updateAsset(assetId, updateAssetDto);
   }
 
-  @Delete('/user/:userId/asset/:assetId')
+  @Delete('/asset/:assetId')
   async deleteAsset(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('assetId', ParseUUIDPipe) assetId: string,
   ): Promise<GeneralResponseDto> {
     console.log('Delete asset request received');
-    return this.assetsService.deleteAsset(userId, assetId);
+    return this.assetsService.deleteAsset(assetId);
   }
 }

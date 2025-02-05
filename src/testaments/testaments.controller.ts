@@ -70,12 +70,11 @@ export class TestamentsController {
     );
   }
 
-  @Delete('/:userId/testaments/:testamentId')
+  @Delete('/testaments/:testamentId')
   async deleteTestament(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
   ): Promise<GeneralResponseDto> {
-    return this.testamentsService.deleteTestament(userId, testamentId);
+    return this.testamentsService.deleteTestament(testamentId);
   }
 
   @Post('testaments/:testamentId/assignments')

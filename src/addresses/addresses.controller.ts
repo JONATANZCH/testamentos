@@ -35,13 +35,12 @@ export class AddressesController {
     return this.addressesService.getUserAddresses(userId);
   }
 
-  @Get('user/:userId/address/:addressId')
+  @Get('/address/:addressId')
   async getAddressById(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('addressId', ParseUUIDPipe) addressId: string,
   ): Promise<GeneralResponseDto> {
     console.log('Get user address by ID request received');
-    return this.addressesService.getAddressById(userId, addressId);
+    return this.addressesService.getAddressById(addressId);
   }
 
   @Post('user/:userId/address')
@@ -53,26 +52,20 @@ export class AddressesController {
     return this.addressesService.createUserAddress(userId, createAddressDto);
   }
 
-  @Put('user/:userId/address/:addressId')
+  @Put('/address/:addressId')
   async updateAddress(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('addressId', ParseUUIDPipe) addressId: string,
     @Body() updateAddressDto: UpdateAddressDto,
   ): Promise<GeneralResponseDto> {
     console.log('Update user address request received');
-    return this.addressesService.updateAddress(
-      userId,
-      addressId,
-      updateAddressDto,
-    );
+    return this.addressesService.updateAddress(addressId, updateAddressDto);
   }
 
-  @Delete('user/:userId/address/:addressId')
+  @Delete('/address/:addressId')
   async deleteAddress(
-    @Param('userId', ParseUUIDPipe) userId: string,
     @Param('addressId', ParseUUIDPipe) addressId: string,
   ): Promise<GeneralResponseDto> {
     console.log('Delete user address request received');
-    return this.addressesService.deleteAddress(userId, addressId);
+    return this.addressesService.deleteAddress(addressId);
   }
 }

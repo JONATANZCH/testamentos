@@ -37,10 +37,7 @@ export class AssetsService {
     }
   }
 
-  async getAssetById(
-    userId: string,
-    assetId: string,
-  ): Promise<GeneralResponseDto> {
+  async getAssetById(assetId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
@@ -51,7 +48,7 @@ export class AssetsService {
         return response;
       }
       const asset = await this.prisma.asset.findFirst({
-        where: { id: assetId, userId },
+        where: { id: assetId },
       });
 
       if (!asset) {
@@ -116,7 +113,6 @@ export class AssetsService {
   }
 
   async updateAsset(
-    userId: string,
     assetId: string,
     updateAssetDto: UpdateAssetDto,
   ): Promise<GeneralResponseDto> {
@@ -130,7 +126,7 @@ export class AssetsService {
         return response;
       }
       const asset = await this.prisma.asset.update({
-        where: { id: assetId, userId },
+        where: { id: assetId },
         data: updateAssetDto,
       });
 
@@ -146,10 +142,7 @@ export class AssetsService {
     }
   }
 
-  async deleteAsset(
-    userId: string,
-    assetId: string,
-  ): Promise<GeneralResponseDto> {
+  async deleteAsset(assetId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
@@ -159,7 +152,7 @@ export class AssetsService {
         response.msg = 'Could not connect to the database';
         return response;
       }
-      await this.prisma.asset.delete({ where: { id: assetId, userId } });
+      await this.prisma.asset.delete({ where: { id: assetId } });
 
       response.code = 200;
       response.msg = 'Asset deleted successfully';

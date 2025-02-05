@@ -38,10 +38,7 @@ export class AddressesService {
     }
   }
 
-  async getAddressById(
-    userId: string,
-    addressId: string,
-  ): Promise<GeneralResponseDto> {
+  async getAddressById(addressId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
@@ -52,7 +49,7 @@ export class AddressesService {
         return response;
       }
       const address = await this.prisma.address.findFirst({
-        where: { userId, id: addressId },
+        where: { id: addressId },
       });
 
       if (!address) {
@@ -114,7 +111,6 @@ export class AddressesService {
   }
 
   async updateAddress(
-    userId: string,
     addressId: string,
     updateAddressDto: UpdateAddressDto,
   ): Promise<GeneralResponseDto> {
@@ -128,7 +124,7 @@ export class AddressesService {
         return response;
       }
       const address: Address = await this.prisma.address.update({
-        where: { userId, id: addressId },
+        where: { id: addressId },
         data: updateAddressDto,
       });
 
@@ -149,10 +145,7 @@ export class AddressesService {
     }
   }
 
-  async deleteAddress(
-    userId: string,
-    addressId: string,
-  ): Promise<GeneralResponseDto> {
+  async deleteAddress(addressId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
@@ -163,7 +156,7 @@ export class AddressesService {
         return response;
       }
       const address: Address = await this.prisma.address.delete({
-        where: { userId, id: addressId },
+        where: { id: addressId },
       });
 
       response.code = 200;

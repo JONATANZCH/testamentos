@@ -242,10 +242,7 @@ export class TestamentsService {
     }
   }
 
-  async deleteTestament(
-    userId: string,
-    testamentId: string,
-  ): Promise<GeneralResponseDto> {
+  async deleteTestament(testamentId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();

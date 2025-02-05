@@ -65,10 +65,7 @@ export class ContactsService {
     }
   }
 
-  async getContactById(
-    userId: string,
-    contactId: string,
-  ): Promise<GeneralResponseDto> {
+  async getContactById(contactId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
@@ -80,7 +77,7 @@ export class ContactsService {
       }
 
       const contact = await this.prisma.contact.findFirst({
-        where: { id: contactId, userId },
+        where: { id: contactId },
       });
 
       if (!contact) {
@@ -128,38 +125,6 @@ export class ContactsService {
         }
       }
 
-      if (createContactDto.email) {
-        const emailExists = await this.prisma.contact.findFirst({
-          where: {
-            userId,
-            email: createContactDto.email,
-          },
-        });
-
-        if (emailExists) {
-          response.code = 400;
-          response.msg =
-            'A contact with this email already exists for the user';
-          return response;
-        }
-      }
-
-      if (createContactDto.phoneNumber) {
-        const phoneExists = await this.prisma.contact.findFirst({
-          where: {
-            userId,
-            phoneNumber: createContactDto.phoneNumber,
-          },
-        });
-
-        if (phoneExists) {
-          response.code = 400;
-          response.msg =
-            'A contact with this phone number already exists for the user';
-          return response;
-        }
-      }
-
       const contact = await this.prisma.contact.create({
         data: {
           userId,
@@ -181,7 +146,6 @@ export class ContactsService {
   }
 
   async updateContact(
-    userId: string,
     contactId: string,
     updateContactDto: UpdateContactDto,
   ): Promise<GeneralResponseDto> {
@@ -196,7 +160,7 @@ export class ContactsService {
       }
 
       const contact = await this.prisma.contact.update({
-        where: { id: contactId, userId },
+        where: { id: contactId },
         data: updateContactDto,
       });
 
@@ -217,10 +181,7 @@ export class ContactsService {
     }
   }
 
-  async deleteContact(
-    userId: string,
-    contactId: string,
-  ): Promise<GeneralResponseDto> {
+  async deleteContact(contactId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
@@ -232,7 +193,7 @@ export class ContactsService {
       }
 
       await this.prisma.contact.delete({
-        where: { id: contactId, userId },
+        where: { id: contactId },
       });
 
       response.code = 200;
