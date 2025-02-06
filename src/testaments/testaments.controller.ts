@@ -14,6 +14,7 @@ import {
   CreateTestamentDto,
   UpdateTestamentDto,
   CreateAssignmentDto,
+  UpdateAssignmentDto,
 } from './dto';
 import { GeneralResponseDto, TestamentQueryDto } from '../common';
 import { ConfigService } from '../config';
@@ -77,7 +78,7 @@ export class TestamentsController {
     return this.testamentsService.deleteTestament(testamentId);
   }
 
-  @Post('testaments/:testamentId/assignments')
+  @Post('/testaments/:testamentId/assignments')
   async createAssignment(
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
     @Body() body: CreateAssignmentDto | CreateAssignmentDto[],
@@ -147,6 +148,17 @@ export class TestamentsController {
         },
       ],
     };
+  }
+
+  @Put('/testaments/:assignmentId/assignments')
+  async updateAssignment(
+    @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
+    @Body() updateAssignmentDto: UpdateAssignmentDto,
+  ): Promise<GeneralResponseDto> {
+    return this.testamentsService.updateAssignment(
+      assignmentId,
+      updateAssignmentDto,
+    );
   }
 
   @Delete('testaments/:testamentId/assignments')

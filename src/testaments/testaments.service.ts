@@ -4,6 +4,7 @@ import {
   CreateTestamentDto,
   UpdateTestamentDto,
   CreateAssignmentDto,
+  UpdateAssignmentDto,
 } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
 
@@ -364,6 +365,111 @@ export class TestamentsService {
       response.code = 500;
       response.msg =
         'An unexpected error occurred while creating the assignment';
+      return response;
+    }
+  }
+
+  async updateAssignment(
+    assignmentId: string,
+    updateAssignmentDto: UpdateAssignmentDto,
+  ): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        return response;
+      }
+
+      // Validar que la asignación exista
+      const existingAssignment =
+        await this.prisma.testamentAssignment.findUnique({
+          where: { id: assignmentId },
+        });
+
+      if (!existingAssignment) {
+        response.code = 404;
+        response.msg = 'Assignment not found';
+        return response;
+      }
+
+      // Validar assetId si se modifica
+      if (updateAssignmentDto.assetId) {
+        const assetExists = await this.prisma.asset.findUnique({
+          where: { id: updateAssignmentDto.assetId },
+        });
+        if (!assetExists) {
+          response.code = 400;
+          response.msg = 'The provided assetId does not exist';
+          return response;
+        }
+      }
+
+      // 3. Validar assignmentId si se modifica
+      if (updateAssignmentDto.assignmentId) {
+        let entityExists: boolean;
+
+        // Si el tipo es 'c' (contact), validar en la tabla Contact
+        if (updateAssignmentDto.assignmentType === 'c') {
+          entityExists = !!(await this.prisma.contact.findUnique({
+            where: { id: updateAssignmentDto.assignmentId },
+          }));
+        } else {
+          // Si el tipo es 'le' (legal entity), validar en la tabla LegalEntity
+          entityExists = !!(await this.prisma.legalEntity.findUnique({
+            where: { id: updateAssignmentDto.assignmentId },
+          }));
+        }
+
+        if (!entityExists) {
+          response.code = 400;
+          response.msg = 'assignmentId does not match assignmentType';
+          return response;
+        }
+      }
+
+      // 4. Validar porcentajes acumulados
+      const assetIdToCheck =
+        updateAssignmentDto.assetId || existingAssignment.assetId;
+      const existingAssignments =
+        await this.prisma.testamentAssignment.findMany({
+          where: {
+            assetId: assetIdToCheck,
+            id: { not: assignmentId },
+          },
+          select: { percentage: true },
+        });
+
+      const currentPercentageSum = existingAssignments.reduce(
+        (sum, assignment) => sum + assignment.percentage,
+        0,
+      );
+
+      if (
+        updateAssignmentDto.percentage !== undefined &&
+        currentPercentageSum + updateAssignmentDto.percentage > 100
+      ) {
+        response.code = 400;
+        response.msg = 'Total percentage exceeds 100% for this asset';
+        return response;
+      }
+
+      // Actualizar
+      const updatedAssignment = await this.prisma.testamentAssignment.update({
+        where: { id: assignmentId },
+        data: updateAssignmentDto,
+      });
+
+      response.code = 200;
+      response.msg = 'Assignment updated successfully';
+      response.response = updatedAssignment;
+      return response;
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      response.code = 500;
+      response.msg = 'Error updating assignment';
       return response;
     }
   }

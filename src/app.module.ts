@@ -9,6 +9,7 @@ import { ContactsModule } from './contacts/contacts.module';
 import { PetsModule } from './pets/pets.module';
 import { LegalEntitiesModule } from './legal-entities/legal-entities.module';
 import { TestamentsModule } from './testaments/testaments.module';
+import { ExecutorModule } from './executor/executor.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { TestamentsModule } from './testaments/testaments.module';
     PetsModule,
     LegalEntitiesModule,
     TestamentsModule,
+    ExecutorModule,
   ],
   providers: [ConfigService, PrismaProvider],
   exports: [ConfigService],
