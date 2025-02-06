@@ -9,9 +9,10 @@ import {
 import { Transform } from 'class-transformer';
 import { Gender } from '../../common/enums/gender.enum';
 import { CountryCode } from '../../common/enums/country-code.enum';
-import { CountryPhoneCode } from '../../common/enums/country-phone-code.enum';
 import { MaritalStatus } from '../../common/enums/marital-status.enum';
-import { mapCountryPhoneCode } from '../../common/utils/mapCountryPhoneCode';
+import { CountryPhoneCode } from '../../common/enums/country-phone-code.enum';
+import { countryPhoneCodeMap } from '../../common/utils/mapCountryPhoneCode';
+import { BadRequestException } from '@nestjs/common';
 
 export class CreateUserDto {
   @IsNotEmpty()
@@ -60,8 +61,16 @@ export class CreateUserDto {
   @IsOptional()
   readonly phoneNumber?: string;
 
-  @IsOptional()
-  @Transform(({ value }) => mapCountryPhoneCode(value))
+  @IsNotEmpty()
+  @Transform(({ value }) => {
+    if (!value) return undefined;
+    const mapped = countryPhoneCodeMap[value];
+    if (!mapped) {
+      // Si no existe ese código, lanza excepción 400
+      throw new BadRequestException(`Invalid country phone code: ${value}`);
+    }
+    return mapped;
+  })
   @IsEnum(CountryPhoneCode, {
     message: 'Invalid country phone code',
   })
