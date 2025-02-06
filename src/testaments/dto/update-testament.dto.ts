@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 
 export class UpdateTestamentDto {
   @IsOptional()
@@ -11,13 +11,12 @@ export class UpdateTestamentDto {
 
   @IsOptional()
   @IsString()
-  readonly contactId?: string;
-
-  @IsOptional()
-  @IsString()
   readonly notes?: string;
 
   @IsOptional()
   @IsString()
+  @IsIn(['ACTIVE', 'INACTIVE'], {
+    message: 'Status must be one of the following: ACTIVE, INACTIVE',
+  })
   readonly status?: string;
 }

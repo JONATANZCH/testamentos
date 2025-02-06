@@ -151,18 +151,12 @@ export class TestamentsService {
       });
       const newVersion = (lastVersion?.version || 0) + 1;
 
-      // Deactivate previous active testament
-      await this.prisma.testamentHeader.updateMany({
-        where: { userId, status: 'ACTIVE' },
-        data: { status: 'INACTIVE' },
-      });
-
       const newTestament = await this.prisma.testamentHeader.create({
         data: {
           ...createTestamentDto,
           userId,
           version: newVersion,
-          status: 'ACTIVE',
+          status: 'INACTIVE',
         },
       });
 
@@ -192,18 +186,30 @@ export class TestamentsService {
         response.msg = 'Could not connect to the database';
         return response;
       }
-      // Validate if contactId has been sent and check its existence
-      if (updateTestamentDto.contactId) {
-        const contactExists = await this.prisma.contact.findUnique({
-          where: { id: updateTestamentDto.contactId },
+
+      // Verificar si el status es 'ACTIVE'
+      if (updateTestamentDto.status === 'ACTIVE') {
+        // Obtener el userId del testamento a actualizar
+        const currentTestament = await this.prisma.testamentHeader.findUnique({
+          where: { id: testamentId },
+          select: { userId: true },
         });
 
-        if (!contactExists) {
-          response.code = 400;
-          response.msg =
-            'Invalid contactId: The contact does not exist in the system.';
+        if (!currentTestament) {
+          response.code = 404;
+          response.msg = 'Testament not found';
           return response;
         }
+
+        // Actualizar todos los testamentos de este usuario a 'INACTIVE'
+        await this.prisma.testamentHeader.updateMany({
+          where: {
+            userId: currentTestament.userId,
+            status: 'ACTIVE',
+            id: { not: testamentId }, // Excluir el testamento actual
+          },
+          data: { status: 'INACTIVE' },
+        });
       }
 
       const testament = await this.prisma.testamentHeader.update({
