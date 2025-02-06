@@ -1,12 +1,22 @@
 import { configure as serverlessExpress } from '@codegenie/serverless-express';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
 
 let cachedServer;
 
 export const handler = async (event, context) => {
   if (!cachedServer) {
     const nestApp = await NestFactory.create(AppModule);
+
+    // 🔹 Aplica el ValidationPipe aquí
+    nestApp.useGlobalPipes(
+      new ValidationPipe({
+        transform: true, // Habilitar la transformación automática de tipos
+        whitelist: true, // Remover campos extra
+        forbidNonWhitelisted: true, // Lanzar error si hay campos extra
+      }),
+    );
 
     // 🔹 Habilitar CORS en NestJS
     nestApp.enableCors({
