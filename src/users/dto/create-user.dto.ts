@@ -20,15 +20,19 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsString()
-  readonly firstName: string;
-
-  @IsString()
-  @IsOptional()
-  readonly lastName?: string;
+  readonly name: string;
 
   @IsString()
   @IsOptional()
   readonly middleName?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly fatherLastName?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly motherLastName?: string;
 
   @IsString()
   @IsOptional()

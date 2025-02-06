@@ -5,6 +5,7 @@ import {
   IsUUID,
   IsEnum,
   IsBoolean,
+  IsNotEmpty,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { CountryCode } from '../../common/enums/country-code.enum';
@@ -13,11 +14,21 @@ import { RelationToUser } from '../../common/enums/relation-to-user.enum';
 import { mapCountryPhoneCode } from '../../common/utils/mapCountryPhoneCode';
 
 export class CreateContactDto {
+  @IsNotEmpty()
   @IsString()
-  firstName: string;
+  readonly name: string;
 
   @IsString()
-  lastName: string;
+  @IsOptional()
+  readonly middleName?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly fatherLastName?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly motherLastName?: string;
 
   @IsOptional()
   @IsEnum(RelationToUser, {
