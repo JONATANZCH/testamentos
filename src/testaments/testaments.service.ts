@@ -290,23 +290,6 @@ export class TestamentsService {
         response.msg = 'Testament not found';
         return response;
       }
-      // Validate that the testament is active
-      if (testament.status !== 'ACTIVE') {
-        response.code = 400;
-        response.msg = 'The testament is not active';
-        return response;
-      }
-
-      // Validate if the assetId exists
-      const assetExists = await this.prisma.asset.findUnique({
-        where: { id: createAssignmentDto.assetId },
-      });
-
-      if (!assetExists) {
-        response.code = 400;
-        response.msg = 'The provided assetId does not exist';
-        return response;
-      }
 
       // Validate if the assignmentId exists, if it was provided
       if (createAssignmentDto.assignmentId) {
