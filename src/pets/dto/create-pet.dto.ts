@@ -3,7 +3,9 @@ import {
   IsString,
   IsOptional,
   IsDateString,
+  IsEnum,
 } from 'class-validator';
+import { PetSpecies } from '../../common/enums/pets-species.enum';
 
 export class CreatePetDto {
   @IsNotEmpty()
@@ -11,12 +13,10 @@ export class CreatePetDto {
   readonly name: string;
 
   @IsNotEmpty()
-  @IsString()
+  @IsEnum(PetSpecies, {
+    message: `Invalid species. The allowed values are: ${Object.values(PetSpecies).join(', ')}`,
+  })
   readonly species: string;
-
-  @IsString()
-  @IsOptional()
-  readonly breed?: string;
 
   @IsDateString()
   @IsOptional()

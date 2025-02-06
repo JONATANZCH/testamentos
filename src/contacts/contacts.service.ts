@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import { CreateContactDto, UpdateContactDto } from './dto';
 import { GeneralResponseDto } from '../common';
+import { reverseCountryPhoneCodeMap } from '../common/utils/reverseCountryPhoneCodeMap';
 
 @Injectable()
 export class ContactsService {
@@ -46,6 +47,17 @@ export class ContactsService {
         }),
         this.prisma.contact.count({ where: { userId } }),
       ]);
+
+      if (total === 0) {
+        response.code = 404;
+        response.msg = "You don't have any registered contacts yet";
+        return response;
+      }
+
+      if (contacts.countryPhoneCode) {
+        contacts.countryPhoneCode =
+          reverseCountryPhoneCodeMap[contacts.countryPhoneCode];
+      }
 
       response.code = 200;
       response.msg = 'Contacts retrieved successfully';
@@ -132,6 +144,11 @@ export class ContactsService {
           ...contactData,
         },
       });
+
+      if (contact.countryPhoneCode) {
+        contact.countryPhoneCode =
+          reverseCountryPhoneCodeMap[contact.countryPhoneCode];
+      }
 
       response.code = 201;
       response.msg = 'Contact created successfully';

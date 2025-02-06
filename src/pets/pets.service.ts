@@ -14,6 +14,11 @@ export class PetsService {
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
       const pets = await this.prisma.pet.findMany({ where: { userId } });
+      if (!pets) {
+        response.code = 404;
+        response.msg = "You don't have any registered pets yet";
+        return response;
+      }
 
       response.code = 200;
       response.msg = 'Pets retrieved successfully';
@@ -35,7 +40,7 @@ export class PetsService {
         where: { id: petId },
       });
 
-      if (!pet) {
+      if (!pet || pet.length === 0) {
         response.code = 404;
         response.msg = 'Pet not found';
         return response;

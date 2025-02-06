@@ -109,6 +109,13 @@ export class TestamentsService {
         return response;
       }
 
+      if (
+        Array.isArray(testament.TestamentAssignment) &&
+        testament.TestamentAssignment.length === 0
+      ) {
+        delete testament.TestamentAssignment;
+      }
+
       response.code = 200;
       response.msg = 'Testament retrieved successfully';
       response.response = testament;
@@ -134,18 +141,6 @@ export class TestamentsService {
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
-      }
-
-      // Validate if the contactId exists, if it was provided
-      if (createTestamentDto.contactId) {
-        const contactExists = await this.prisma.contact.findUnique({
-          where: { id: createTestamentDto.contactId },
-        });
-        if (!contactExists) {
-          response.code = 400;
-          response.msg = 'The provided contactId does not exist';
-          return response;
-        }
       }
 
       // Create new Version

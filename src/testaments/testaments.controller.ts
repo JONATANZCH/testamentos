@@ -135,7 +135,7 @@ export class TestamentsController {
     // If all assignments were processed successfully, a success response is returned.
     return {
       code: 201,
-      msg: 'All assignments processed successfully',
+      msg: 'All assignments created successfully',
       response: successfulResults,
     };
   }

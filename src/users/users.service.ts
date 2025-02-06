@@ -45,6 +45,10 @@ export class UsersService {
         this.prisma.user.count(),
       ]);
 
+      if (users.countryCode) {
+        users.countryCode = reverseCountryPhoneCodeMap[users.countryCode];
+      }
+
       response.code = 200;
       response.msg = 'Users retrieved successfully';
       response.response = {
@@ -87,8 +91,9 @@ export class UsersService {
 
       const user = await this.prisma.user.create({ data: createUserDto });
 
-      if (user.countryCode) {
-        user.countryCode = reverseCountryPhoneCodeMap[user.countryCode];
+      if (user.countryPhoneCode) {
+        user.countryPhoneCode =
+          reverseCountryPhoneCodeMap[user.countryPhoneCode];
       }
 
       response.code = 201;
@@ -122,6 +127,11 @@ export class UsersService {
       }
 
       const user = await this.prisma.user.findUnique({ where: { id } });
+
+      if (user.countryPhoneCode) {
+        user.countryPhoneCode =
+          reverseCountryPhoneCodeMap[user.countryPhoneCode];
+      }
 
       if (!user) {
         response.code = 404;

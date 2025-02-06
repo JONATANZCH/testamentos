@@ -8,13 +8,16 @@ import {
   ParseUUIDPipe,
   Query,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { ConfigService } from '../config';
+import { CountryPhoneCodeTransformInterceptor } from '../common/interceptors/contacts-transform.interceptor';
 
 @Controller('wills/users')
+@UseInterceptors(CountryPhoneCodeTransformInterceptor)
 export class UsersController {
   private readonly environment: string;
 

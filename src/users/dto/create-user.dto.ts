@@ -61,7 +61,7 @@ export class CreateUserDto {
   @IsEnum(CountryPhoneCode, {
     message: 'Invalid country phone code',
   })
-  readonly countryCode?: CountryPhoneCode;
+  readonly countryPhoneCode?: CountryPhoneCode;
 
   @IsString()
   @IsOptional()

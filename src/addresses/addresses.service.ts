@@ -26,6 +26,12 @@ export class AddressesService {
         where: { userId },
       });
 
+      if (!addresses || addresses.length === 0) {
+        response.code = 404;
+        response.msg = "You don't have any registered address";
+        return response;
+      }
+
       response.code = 200;
       response.msg = 'Addresses retrieved successfully';
       response.response = addresses;
