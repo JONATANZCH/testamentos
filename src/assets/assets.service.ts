@@ -83,6 +83,16 @@ export class AssetsService {
         return response;
       }
 
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!userExists) {
+        response.code = 400;
+        response.msg = 'User does not exist';
+        return response;
+      }
+
       // Validar si la categoría existe
       const categoryExists = await this.prisma.assetCategory.findUnique({
         where: { id: createAssetDto.categoryId },

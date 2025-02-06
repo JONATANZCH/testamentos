@@ -291,6 +291,18 @@ export class TestamentsService {
         return response;
       }
 
+      if (createAssignmentDto.assetId) {
+        const assetExists = await this.prisma.asset.findUnique({
+          where: { id: createAssignmentDto.assetId },
+        });
+
+        if (!assetExists) {
+          response.code = 400;
+          response.msg = 'The provided assetId does not exist in the system';
+          return response;
+        }
+      }
+
       // Validate if the assignmentId exists, if it was provided
       if (createAssignmentDto.assignmentId) {
         // Validate in Contact table
@@ -317,7 +329,10 @@ export class TestamentsService {
       // Retrieve existing assignment percentages for the testament
       const existingAssignments =
         await this.prisma.testamentAssignment.findMany({
-          where: { testamentId },
+          where: {
+            testamentId,
+            assetId: createAssignmentDto.assetId,
+          },
           select: { percentage: true },
         });
 
@@ -327,13 +342,6 @@ export class TestamentsService {
           sum + assignment.percentage,
         0,
       );
-
-      // Validate that the percentage is greater than 0
-      if (createAssignmentDto.percentage <= 0) {
-        response.code = 400;
-        response.msg = 'Percentage must be greater than 0';
-        return response;
-      }
 
       // Verify that the percentage does not exceed 100%
       if (currentPercentageSum + createAssignmentDto.percentage > 100) {
