@@ -172,21 +172,11 @@ export class UsersService {
         return response;
       }
 
+      // Validate that email is not being updated
       if (updateUserDto.email) {
-        const existingUser = await this.prisma.user.findFirst({
-          where: {
-            email: updateUserDto.email,
-            NOT: { id },
-          },
-        });
-
-        console.log('Existing user for email check:', existingUser);
-
-        if (existingUser) {
-          response.code = 409;
-          response.msg = `A user with email ${updateUserDto.email} already exists`;
-          return response;
-        }
+        response.code = 409;
+        response.msg = 'Email cannot be updated directly';
+        return response;
       }
 
       const user = await this.prisma.user.update({

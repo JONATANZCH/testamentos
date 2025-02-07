@@ -11,7 +11,8 @@ import { Transform } from 'class-transformer';
 import { CountryCode } from '../../common/enums/country-code.enum';
 import { CountryPhoneCode } from '../../common/enums/country-phone-code.enum';
 import { RelationToUser } from '../../common/enums/relation-to-user.enum';
-import { mapCountryPhoneCode } from '../../common/utils/mapCountryPhoneCode';
+import { countryPhoneCodeMap } from '../../common/utils/mapCountryPhoneCode';
+import { BadRequestException } from '@nestjs/common';
 
 export class CreateContactDto {
   @IsNotEmpty()
@@ -38,7 +39,15 @@ export class CreateContactDto {
   relationToUser?: RelationToUser;
 
   @IsOptional()
-  @Transform(({ value }) => mapCountryPhoneCode(value))
+  @Transform(({ value }) => {
+    if (!value) return undefined;
+    const mapped = countryPhoneCodeMap[value];
+    if (!mapped) {
+      // Si no existe ese código, lanza excepción 400
+      throw new BadRequestException(`Invalid country phone code: ${value}`);
+    }
+    return mapped;
+  })
   @IsEnum(CountryPhoneCode, {
     message: 'countryPhoneCode must be a valid country phone code',
   })
