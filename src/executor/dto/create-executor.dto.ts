@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateExecutorDto {
   @IsNotEmpty()
@@ -11,5 +17,9 @@ export class CreateExecutorDto {
 
   @IsOptional()
   @IsString()
-  type?: string; // Contact, legalAdvisor
+  @IsIn(['family', 'friend', 'professional', 'lawyer', 'accountant', 'other'], {
+    message:
+      'type must be family, friend, professional, lawyer, accountant, other',
+  })
+  type?: string;
 }

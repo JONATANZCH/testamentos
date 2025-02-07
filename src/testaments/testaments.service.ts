@@ -12,7 +12,7 @@ import { GeneralResponseDto, PaginationDto } from '../common';
 export class TestamentsService {
   private prisma: any = null;
   // Validate valid state if provided
-  private validStatuses = ['ACTIVE', 'INACTIVE', 'DELETED', 'EXPIRED'];
+  private validStatuses = ['ACTIVE', 'INACTIVE'];
 
   constructor(private readonly prismaProvider: PrismaProvider) {}
 
