@@ -18,7 +18,7 @@ export class UsersService {
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
       if (!this.prisma) {
-        console.log('Pastpost Error-> db-connection-failed');
+        console.log('Wills Error-> nxui8');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
@@ -44,6 +44,13 @@ export class UsersService {
         }),
         this.prisma.user.count(),
       ]);
+
+      if (total === 0) {
+        response.code = 204;
+        response.msg = 'No users found';
+        response.response = {};
+        return response;
+      }
 
       if (users.countryCode) {
         users.countryCode = reverseCountryPhoneCodeMap[users.countryCode];
@@ -128,15 +135,15 @@ export class UsersService {
 
       const user = await this.prisma.user.findUnique({ where: { id } });
 
-      if (user.countryPhoneCode) {
-        user.countryPhoneCode =
-          reverseCountryPhoneCodeMap[user.countryPhoneCode];
-      }
-
       if (!user) {
         response.code = 404;
         response.msg = `User with id ${id} not found`;
         return response;
+      }
+
+      if (user.countryPhoneCode) {
+        user.countryPhoneCode =
+          reverseCountryPhoneCodeMap[user.countryPhoneCode];
       }
 
       response.code = 200;
@@ -159,7 +166,7 @@ export class UsersService {
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
       if (!this.prisma) {
-        console.log('Pastpost Error-> decbj4 db-connection-failed');
+        console.log('Pastpost Error-> decbj4');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
@@ -209,7 +216,7 @@ export class UsersService {
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
       if (!this.prisma) {
-        console.log('Pastpost Error-> db-connection-failed');
+        console.log('Pastpost Error-> xbhs9');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         return response;
@@ -218,10 +225,11 @@ export class UsersService {
       const user = await this.prisma.user.delete({
         where: { id },
       });
+      console.log('User deleted:', user);
 
-      response.code = 200;
+      response.code = 204;
       response.msg = 'User permanently deleted successfully';
-      response.response = user;
+      response.response = null;
       return response;
     } catch (error) {
       if (error.code === 'P2025') {

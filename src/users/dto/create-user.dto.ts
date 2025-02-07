@@ -61,7 +61,7 @@ export class CreateUserDto {
   @IsOptional()
   readonly phoneNumber?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @Transform(({ value }) => {
     if (!value) return undefined;
     const mapped = countryPhoneCodeMap[value];
