@@ -57,13 +57,16 @@ export class UsersController {
     console.log('Get user by id request (login endpoint)');
     const requestContext = req['requestContext'] || {};
     const authorizer = requestContext.authorizer;
-    if (!authorizer || !authorizer.claims || !authorizer.claims.username) {
+    const claims =
+      (authorizer && authorizer.claims) ||
+      (authorizer && authorizer.jwt && authorizer.jwt.claims);
+    if (!claims || !claims.username) {
       const response = new GeneralResponseDto();
       response.code = 401;
       response.msg = 'Unauthorized: Missing username in token';
       return response;
     }
-    const email = authorizer.claims.username;
+    const email = claims.username;
     return await this.usersService.findUser(email);
   }
 
