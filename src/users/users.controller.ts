@@ -9,6 +9,7 @@ import {
   Query,
   Put,
   UseInterceptors,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto';
@@ -50,10 +51,20 @@ export class UsersController {
 
   @Get('/:id')
   async getUserById(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') dummy: string,
+    @Req() req: Request,
   ): Promise<GeneralResponseDto> {
-    console.log('Get user by id request');
-    return await this.usersService.findById(id);
+    console.log('Get user by id request (login endpoint)');
+    const requestContext = req['requestContext'] || {};
+    const authorizer = requestContext.authorizer;
+    if (!authorizer || !authorizer.claims || !authorizer.claims.username) {
+      const response = new GeneralResponseDto();
+      response.code = 401;
+      response.msg = 'Unauthorized: Missing username in token';
+      return response;
+    }
+    const email = authorizer.claims.username;
+    return await this.usersService.findUser(email);
   }
 
   @Put('/:id')

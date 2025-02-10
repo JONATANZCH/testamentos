@@ -121,7 +121,7 @@ export class UsersService {
     }
   }
 
-  async findById(id: string): Promise<GeneralResponseDto> {
+  async findUser(email: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
@@ -133,11 +133,11 @@ export class UsersService {
         return response;
       }
 
-      const user = await this.prisma.user.findUnique({ where: { id } });
+      const user = await this.prisma.user.findUnique({ where: { email } });
 
       if (!user) {
         response.code = 404;
-        response.msg = `User with id ${id} not found`;
+        response.msg = `User with email ${email} not found`;
         return response;
       }
 
@@ -151,7 +151,7 @@ export class UsersService {
       response.response = user;
       return response;
     } catch (error) {
-      console.log('Error fetching user by id:', error);
+      console.log('Error fetching user by email:', error);
       response.code = 500;
       response.msg = 'An unexpected error occurred while fetching the user';
       return response;
