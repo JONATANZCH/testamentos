@@ -16,6 +16,7 @@ import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { ConfigService } from '../config';
 import { CountryPhoneCodeTransformInterceptor } from '../common/interceptors/contacts-transform.interceptor';
+import * as jwt from 'jsonwebtoken';
 
 @Controller('wills/users')
 @UseInterceptors(CountryPhoneCodeTransformInterceptor)
@@ -55,15 +56,35 @@ export class UsersController {
     @Req() req: Request,
   ): Promise<GeneralResponseDto> {
     console.log('Get user by id request (login endpoint)');
-    const authorizerData = req['requestContext']?.authorizer;
+
+    // Intentar obtener authorizerData del requestContext...
+    let authorizerData = req['requestContext']?.authorizer;
+
+    // Si no se encontró, extraer el token del header Authorization
     if (!authorizerData) {
-      const response = new GeneralResponseDto();
-      response.code = 401;
-      response.msg = 'Unauthorized: No authorizer data found';
-      response.response = null;
-      return response;
+      const authHeader =
+        req.headers['authorization'] || req.headers['Authorization'];
+      if (!authHeader) {
+        const response = new GeneralResponseDto();
+        response.code = 401;
+        response.msg = 'Unauthorized: Missing Authorization header';
+        response.response = null;
+        return response;
+      }
+      const token = authHeader.replace(/^Bearer\s+/i, '');
+      try {
+        // jwt is already imported at the top
+        authorizerData = { claims: jwt.decode(token) };
+      } catch {
+        const response = new GeneralResponseDto();
+        response.code = 401;
+        response.msg = 'Unauthorized: Invalid token';
+        response.response = null;
+        return response;
+      }
     }
 
+    // Extraer las claims del authorizerData
     const claims =
       authorizerData.claims ||
       (authorizerData.jwt && authorizerData.jwt.claims);
