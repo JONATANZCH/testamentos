@@ -10,17 +10,14 @@ import {
   Put,
   UseInterceptors,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { ConfigService } from '../config';
 import { CountryPhoneCodeTransformInterceptor } from '../common/interceptors/contacts-transform.interceptor';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
 
 @Controller('wills/users')
-@UseGuards(PermissionsGuard)
 @UseInterceptors(CountryPhoneCodeTransformInterceptor)
 export class UsersController {
   private readonly environment: string;
@@ -58,12 +55,28 @@ export class UsersController {
     @Req() req: Request,
   ): Promise<GeneralResponseDto> {
     console.log('Get user by id request (login endpoint)');
+    const authorizerData = req['requestContext']?.authorizer;
+    if (!authorizerData) {
+      const response = new GeneralResponseDto();
+      response.code = 401;
+      response.msg = 'Unauthorized: No authorizer data found';
+      response.response = null;
+      return response;
+    }
 
-    const permission: any = (req as any).permission;
-    console.log('Permission =>', permission);
+    const claims =
+      authorizerData.claims ||
+      (authorizerData.jwt && authorizerData.jwt.claims);
+    if (!claims || !claims.username) {
+      const response = new GeneralResponseDto();
+      response.code = 401;
+      response.msg = 'Unauthorized: Missing username in token';
+      response.response = null;
+      return response;
+    }
 
-    const email = permission.username;
-    return this.usersService.findUser(email);
+    const email = claims.username;
+    return await this.usersService.findUser(email);
   }
 
   @Put('/:id')
