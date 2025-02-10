@@ -55,6 +55,10 @@ export class UsersController {
     @Req() req: Request,
   ): Promise<GeneralResponseDto> {
     console.log('Get user by id request (login endpoint)');
+    console.log(
+      'Authorizer:',
+      JSON.stringify(req['requestContext'].authorizer, null, 2),
+    );
     const requestContext = req['requestContext'] || {};
     const authorizer = requestContext.authorizer;
     const claims =
@@ -64,6 +68,7 @@ export class UsersController {
       const response = new GeneralResponseDto();
       response.code = 401;
       response.msg = 'Unauthorized: Missing username in token';
+      response.response = null;
       return response;
     }
     const email = claims.username;
