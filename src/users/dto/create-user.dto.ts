@@ -39,7 +39,10 @@ export class CreateUserDto {
   @IsOptional()
   readonly governmentId?: string;
 
-  @IsDateString()
+  @IsDateString(
+    {},
+    { message: 'birthDate must be a valid ISO-8601 date string' },
+  )
   @IsOptional()
   readonly birthDate?: string;
 

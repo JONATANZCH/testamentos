@@ -1,13 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import { CreateContactDto, UpdateContactDto } from './dto';
 import { GeneralResponseDto } from '../common';
 import { reverseCountryPhoneCodeMap } from '../common/utils/reverseCountryPhoneCodeMap';
+import { processException } from '../common/utils/exception.helper';
 
 @Injectable()
 export class ContactsService {
   private prisma: any = null;
   private _prismaprovider: PrismaProvider;
+  private readonly environment: string;
 
   constructor(private prismaprovider: PrismaProvider) {
     this._prismaprovider = prismaprovider;
@@ -25,7 +27,7 @@ export class ContactsService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
       // Convert page and limit to integers
       const pageNumber = parseInt(String(page), 10);
@@ -34,7 +36,7 @@ export class ContactsService {
       if (isNaN(pageNumber) || isNaN(limitNumber)) {
         response.code = 400;
         response.msg = 'Page and limit must be valid numbers';
-        return response;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
       const offset = (pageNumber - 1) * limitNumber;
@@ -51,7 +53,8 @@ export class ContactsService {
       if (total === 0) {
         response.code = 404;
         response.msg = "You don't have any registered contacts yet";
-        return response;
+        response.response = {};
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       if (contacts.countryPhoneCode) {
@@ -70,10 +73,7 @@ export class ContactsService {
       };
       return response;
     } catch (error) {
-      console.error('Error fetching contacts:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while fetching contacts';
-      return response;
+      processException(error);
     }
   }
 
@@ -85,7 +85,7 @@ export class ContactsService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       const contact = await this.prisma.contact.findFirst({
@@ -95,7 +95,7 @@ export class ContactsService {
       if (!contact) {
         response.code = 404;
         response.msg = 'Contact not found';
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       response.code = 200;
@@ -103,10 +103,7 @@ export class ContactsService {
       response.response = contact;
       return response;
     } catch (error) {
-      console.error('Error fetching contact by id:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while fetching the contact';
-      return response;
+      processException(error);
     }
   }
 
@@ -121,7 +118,14 @@ export class ContactsService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        response.code = 404;
+        response.msg = `User not found`;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       const { legalEntityId, ...contactData } = createContactDto;
@@ -133,7 +137,7 @@ export class ContactsService {
         if (!legalEntityExists) {
           response.code = 400;
           response.msg = 'The provided legalEntityId does not exist';
-          return response;
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
         }
       }
 
@@ -155,10 +159,7 @@ export class ContactsService {
       response.response = contact;
       return response;
     } catch (error) {
-      console.error('Error creating contact:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while creating the contact';
-      return response;
+      processException(error);
     }
   }
 

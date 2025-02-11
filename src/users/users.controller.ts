@@ -10,10 +10,13 @@ import {
   Put,
   UseInterceptors,
   Req,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto';
-import { GeneralResponseDto, PaginationDto } from '../common';
+import { PaginationDto } from '../common';
+import { GeneralResponseDto } from '../common/response.dto';
 import { ConfigService } from '../config';
 import { CountryPhoneCodeTransformInterceptor } from '../common/interceptors/contacts-transform.interceptor';
 
@@ -58,22 +61,28 @@ export class UsersController {
 
     const authorizerData = req['requestContext']?.authorizer;
     if (!authorizerData) {
-      const response = new GeneralResponseDto();
-      response.code = 401;
-      response.msg = 'Unauthorized: Missing authorizer data in requestContext';
-      response.response = null;
-      return response;
+      throw new HttpException(
+        new GeneralResponseDto({
+          code: 401,
+          msg: 'Unauthorized: Missing authorizer data in requestContext',
+          response: null,
+        }),
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const claims =
       authorizerData.claims ||
       (authorizerData.jwt && authorizerData.jwt.claims);
     if (!claims || !claims.username) {
-      const response = new GeneralResponseDto();
-      response.code = 401;
-      response.msg = 'Unauthorized: Missing username in token';
-      response.response = null;
-      return response;
+      throw new HttpException(
+        new GeneralResponseDto({
+          code: 401,
+          msg: 'Unauthorized: Missing username in token',
+          response: null,
+        }),
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const email = claims.username;

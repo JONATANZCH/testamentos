@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { CreateAddressDto, UpdateAddressDto } from './dto';
 import { GeneralResponseDto } from 'src/common';
 import { PrismaProvider } from 'src/providers';
 import { Address } from './entities';
+import { processException } from '../common/utils/exception.helper';
 
 @Injectable()
 export class AddressesService {
@@ -20,8 +21,18 @@ export class AddressesService {
         console.log('Testament Error-> cw"$d db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!userExists) {
+        response.code = 404;
+        response.msg = 'User not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
       const addresses = await this.prisma.address.findMany({
         where: { userId },
       });
@@ -29,7 +40,7 @@ export class AddressesService {
       if (!addresses || addresses.length === 0) {
         response.code = 404;
         response.msg = "You don't have any registered address";
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       response.code = 200;
@@ -37,10 +48,7 @@ export class AddressesService {
       response.response = addresses;
       return response;
     } catch (error) {
-      console.error('Error fetching addresses:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while fetching addresses';
-      return response;
+      processException(error);
     }
   }
 
@@ -52,7 +60,7 @@ export class AddressesService {
         console.log('Testament Error->cec"d db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
       const address = await this.prisma.address.findFirst({
         where: { id: addressId },
@@ -61,7 +69,7 @@ export class AddressesService {
       if (!address) {
         response.code = 404;
         response.msg = 'Address not found';
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       response.code = 200;
@@ -69,10 +77,7 @@ export class AddressesService {
       response.response = address;
       return response;
     } catch (error) {
-      console.error('Error fetching address by ID:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while fetching the address';
-      return response;
+      processException(error);
     }
   }
 
@@ -87,7 +92,7 @@ export class AddressesService {
         console.log('Testament Error->wcc[] db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       const userExists = await this.prisma.user.findUnique({
@@ -97,7 +102,7 @@ export class AddressesService {
       if (!userExists) {
         response.code = 404;
         response.msg = 'User not found';
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       const address: Address = await this.prisma.address.create({
@@ -109,10 +114,7 @@ export class AddressesService {
       response.response = address;
       return response;
     } catch (error) {
-      console.error('Error creating address:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while creating the address';
-      return response;
+      processException(error);
     }
   }
 
@@ -127,8 +129,18 @@ export class AddressesService {
         console.log('Testament Error->dw$sa db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
+      const addressExists = await this.prisma.address.findFirst({
+        where: { id: addressId },
+      });
+
+      if (!addressExists) {
+        response.code = 404;
+        response.msg = 'Address not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
       const address: Address = await this.prisma.address.update({
         where: { id: addressId },
         data: updateAddressDto,
@@ -139,15 +151,7 @@ export class AddressesService {
       response.response = address;
       return response;
     } catch (error) {
-      console.error('Error updating address:', error);
-      if (error.code === 'P2025') {
-        response.code = 404;
-        response.msg = 'Address not found';
-        return response;
-      }
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while updating the address';
-      return response;
+      processException(error);
     }
   }
 
@@ -159,7 +163,16 @@ export class AddressesService {
         console.log('Testament Error->dwdw& db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      const addressExists = await this.prisma.address.findFirst({
+        where: { id: addressId },
+      });
+
+      if (!addressExists) {
+        response.code = 404;
+        response.msg = 'Address not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
       const address: Address = await this.prisma.address.delete({
         where: { id: addressId },
@@ -169,15 +182,7 @@ export class AddressesService {
       response.msg = `Address ${address} deleted successfully`;
       return response;
     } catch (error) {
-      console.error('Error deleting address:', error);
-      if (error.code === 'P2025') {
-        response.code = 404;
-        response.msg = 'Address not found';
-        return response;
-      }
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while deleting the address';
-      return response;
+      processException(error);
     }
   }
 }

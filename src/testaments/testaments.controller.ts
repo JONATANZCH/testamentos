@@ -8,6 +8,8 @@ import {
   Put,
   Query,
   ParseUUIDPipe,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { TestamentsService } from './testaments.service';
 import {
@@ -115,7 +117,7 @@ export class TestamentsController {
             assetId: assignmentDto.assetId,
             assignmentType: assignmentDto.assignmentType,
             assignmentId: assignmentDto.assignmentId,
-            msg: result.msg,
+            msg: result.msg || 'Error creating assignment',
           });
         }
       } catch (error) {
@@ -128,6 +130,19 @@ export class TestamentsController {
           msg: error.message || 'Unexpected error occurred',
         });
       }
+    }
+
+    if (successfulResults.length === 0) {
+      const response = new GeneralResponseDto({
+        code: 422,
+        msg: 'None of the assignments could be created',
+        response: {
+          received: assignments.length,
+          success: { count: 0, detail: [] },
+          failed: { count: errorResults.length, detail: errorResults },
+        },
+      });
+      throw new HttpException(response, HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     // Construct the response payload

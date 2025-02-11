@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import { GeneralResponseDto } from '../common';
+import { processException } from '../common/utils/exception.helper';
 
 @Injectable()
 export class LegalEntitiesService {
@@ -19,7 +20,7 @@ export class LegalEntitiesService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       // Convert page and limit to integers
@@ -42,6 +43,13 @@ export class LegalEntitiesService {
         this.prisma.legalEntity.count(),
       ]);
 
+      if (total === 0 || entities.length === 0) {
+        response.code = 404;
+        response.msg = 'No legal entities found';
+        response.response = {};
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
       response.code = 200;
       response.msg = 'Legal entities retrieved successfully';
       response.response = {
@@ -53,11 +61,7 @@ export class LegalEntitiesService {
       };
       return response;
     } catch (error) {
-      console.error('Error fetching legal entities:', error);
-      response.code = 500;
-      response.msg =
-        'An unexpected error occurred while fetching legal entities';
-      return response;
+      processException(error);
     }
   }
 
@@ -69,7 +73,7 @@ export class LegalEntitiesService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       const entity = await this.prisma.legalEntity.findUnique({
@@ -79,7 +83,7 @@ export class LegalEntitiesService {
       if (!entity) {
         response.code = 404;
         response.msg = 'Legal entity not found';
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       response.code = 200;
@@ -87,11 +91,7 @@ export class LegalEntitiesService {
       response.response = entity;
       return response;
     } catch (error) {
-      console.error('Error fetching legal entity by id:', error);
-      response.code = 500;
-      response.msg =
-        'An unexpected error occurred while fetching the legal entity';
-      return response;
+      processException(error);
     }
   }
 }

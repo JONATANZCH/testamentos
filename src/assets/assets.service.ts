@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { CreateAssetDto, UpdateAssetDto } from './dto';
 import { GeneralResponseDto } from 'src/common';
 import { PrismaProvider } from '../providers';
-// import { Asset } from './entities';
+import { processException } from '../common/utils/exception.helper';
 
 @Injectable()
 export class AssetsService {
@@ -21,19 +21,31 @@ export class AssetsService {
         console.log('Tstament Error-> dxaj7 db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!userExists) {
+        response.code = 400;
+        response.msg = 'User does not exist';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
       const assets = await this.prisma.asset.findMany({ where: { userId } });
+      if (assets.length === 0) {
+        response.code = 404;
+        response.msg = 'No assets found';
+        response.response = {};
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
 
       response.code = 200;
       response.msg = 'Assets retrieved successfully';
       response.response = assets;
       return response;
     } catch (error) {
-      console.error('Error fetching assets:', error);
-      response.code = 500;
-      response.msg = 'An error occurred while fetching assets';
-      return response;
+      processException(error);
     }
   }
 
@@ -45,16 +57,16 @@ export class AssetsService {
         console.log('Testament Error-> 2nj7 db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
       const asset = await this.prisma.asset.findFirst({
         where: { id: assetId },
       });
 
-      if (!asset) {
+      if (!asset || asset === null) {
         response.code = 404;
         response.msg = 'Asset not found';
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       response.code = 200;
@@ -62,10 +74,7 @@ export class AssetsService {
       response.response = asset;
       return response;
     } catch (error) {
-      console.error('Error fetching asset:', error);
-      response.code = 500;
-      response.msg = 'An error occurred while fetching the asset';
-      return response;
+      processException(error);
     }
   }
 
@@ -80,7 +89,7 @@ export class AssetsService {
         console.log('Testament Error-> cenc7 db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       const userExists = await this.prisma.user.findUnique({
@@ -90,7 +99,7 @@ export class AssetsService {
       if (!userExists) {
         response.code = 400;
         response.msg = 'User does not exist';
-        return response;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
       // Validar si la categoría existe
@@ -98,11 +107,11 @@ export class AssetsService {
         where: { id: createAssetDto.categoryId },
       });
 
-      if (!categoryExists) {
+      if (!categoryExists || categoryExists === null) {
         response.code = 400;
         response.msg =
           'Invalid asset category. The specified category does not exist.';
-        return response;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
       // Crear el activo si la categoría es válida
@@ -115,10 +124,7 @@ export class AssetsService {
       response.response = asset;
       return response;
     } catch (error) {
-      console.error('Error creating asset:', error);
-      response.code = 500;
-      response.msg = 'An error occurred while creating the asset';
-      return response;
+      processException(error);
     }
   }
 
@@ -133,8 +139,30 @@ export class AssetsService {
         console.log('Testament Error-> ccb# db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
+
+      if (updateAssetDto.categoryId) {
+        const categoryExists = await this.prisma.assetCategory.findUnique({
+          where: { id: updateAssetDto.categoryId },
+        });
+        if (!categoryExists) {
+          response.code = 400;
+          response.msg =
+            'Invalid asset category. The specified category does not exist.';
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      const existingAsset = await this.prisma.asset.findUnique({
+        where: { id: assetId },
+      });
+      if (!existingAsset) {
+        response.code = 404;
+        response.msg = 'Asset not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
       const asset = await this.prisma.asset.update({
         where: { id: assetId },
         data: updateAssetDto,
@@ -145,10 +173,7 @@ export class AssetsService {
       response.response = asset;
       return response;
     } catch (error) {
-      console.error('Error updating asset:', error);
-      response.code = 500;
-      response.msg = 'An error occurred while updating the asset';
-      return response;
+      processException(error);
     }
   }
 
@@ -162,16 +187,21 @@ export class AssetsService {
         response.msg = 'Could not connect to the database';
         return response;
       }
+      const existingAsset = await this.prisma.asset.findUnique({
+        where: { id: assetId },
+      });
+      if (!existingAsset) {
+        response.code = 404;
+        response.msg = 'Asset not found';
+        return response;
+      }
       await this.prisma.asset.delete({ where: { id: assetId } });
 
       response.code = 200;
       response.msg = 'Asset deleted successfully';
       return response;
     } catch (error) {
-      console.error('Error deleting asset:', error);
-      response.code = 500;
-      response.msg = 'An error occurred while deleting the asset';
-      return response;
+      processException(error);
     }
   }
 }

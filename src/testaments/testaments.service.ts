@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import {
   CreateTestamentDto,
@@ -7,6 +7,7 @@ import {
   UpdateAssignmentDto,
 } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
+import { processException } from '../common/utils/exception.helper';
 
 @Injectable()
 export class TestamentsService {
@@ -27,7 +28,7 @@ export class TestamentsService {
     if (status && !this.validStatuses.includes(status)) {
       response.code = 400;
       response.msg = 'Invalid testament status provided';
-      return response;
+      throw new HttpException(response, HttpStatus.BAD_REQUEST);
     }
 
     try {
@@ -36,7 +37,7 @@ export class TestamentsService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
       // Convert page and limit to integers
       const pageNumber = parseInt(String(page), 10);
@@ -45,7 +46,7 @@ export class TestamentsService {
       if (isNaN(pageNumber) || isNaN(limitNumber)) {
         response.code = 400;
         response.msg = 'Page and limit must be valid numbers';
-        return response;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
       const offset = (pageNumber - 1) * limitNumber;
@@ -68,7 +69,8 @@ export class TestamentsService {
       if (total === 0) {
         response.code = 404;
         response.msg = `No testaments found for the provided ${status ? `status "${status}"` : ''}`;
-        return response;
+        response.response = {};
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       response.code = 200;
@@ -82,10 +84,7 @@ export class TestamentsService {
       };
       return response;
     } catch (error) {
-      console.error('Error fetching testaments:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while fetching testaments';
-      return response;
+      processException(error);
     }
   }
 
@@ -97,7 +96,7 @@ export class TestamentsService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
       const testament = await this.prisma.testamentHeader.findFirst({
         where: { id: testamentId },
@@ -107,7 +106,7 @@ export class TestamentsService {
       if (!testament) {
         response.code = 404;
         response.msg = 'Testament not found';
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       if (
@@ -122,11 +121,7 @@ export class TestamentsService {
       response.response = testament;
       return response;
     } catch (error) {
-      console.error('Error fetching testament:', error);
-      response.code = 500;
-      response.msg =
-        'An unexpected error occurred while fetching the testament';
-      return response;
+      processException(error);
     }
   }
 
@@ -141,7 +136,17 @@ export class TestamentsService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!userExists) {
+        response.code = 404;
+        response.msg = 'User not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       // Create new Version
@@ -166,11 +171,7 @@ export class TestamentsService {
       response.response = newTestament;
       return response;
     } catch (error) {
-      console.error('Error creating testament:', error);
-      response.code = 500;
-      response.msg =
-        'An unexpected error occurred while creating the testament';
-      return response;
+      processException(error);
     }
   }
 
@@ -185,7 +186,17 @@ export class TestamentsService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const testamentExists = await this.prisma.testamentHeader.findUnique({
+        where: { id: testamentId },
+      });
+
+      if (!testamentExists) {
+        response.code = 404;
+        response.msg = 'Testament not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       // Verificar si el status es 'ACTIVE'
@@ -199,7 +210,7 @@ export class TestamentsService {
         if (!currentTestament) {
           response.code = 404;
           response.msg = 'Testament not found';
-          return response;
+          throw new HttpException(response, HttpStatus.NOT_FOUND);
         }
 
         // Actualizar todos los testamentos de este usuario a 'INACTIVE'
@@ -223,24 +234,7 @@ export class TestamentsService {
       response.response = testament;
       return response;
     } catch (error) {
-      // Catch known Prisma bugs (e.g. foreign key constraints)
-      if (error.code === 'P2003') {
-        response.code = 400;
-        response.msg = `Invalid data: Foreign key constraint failed on field "${error.meta?.field_name}".`;
-      } else if (error.code === 'P2025') {
-        // Prism error when record does not exist
-        response.code = 404;
-        response.msg =
-          'Testament not found: The provided testamentId does not exist.';
-      } else {
-        // Other unforeseen errors
-        console.error('Unexpected error updating testament:', error);
-        response.code = 500;
-        response.msg =
-          'An unexpected error occurred while updating the testament.';
-      }
-
-      return response;
+      processException(error);
     }
   }
 
@@ -252,19 +246,25 @@ export class TestamentsService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
+      const testamentExist = await this.prisma.testamentHeader.findUnique({
+        where: { id: testamentId },
+      });
+
+      if (!testamentExist) {
+        response.code = 404;
+        response.msg = 'Testament not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
       await this.prisma.testamentHeader.delete({ where: { id: testamentId } });
 
       response.code = 200;
       response.msg = 'Testament deleted successfully';
       return response;
     } catch (error) {
-      console.error('Error deleting testament:', error);
-      response.code = 500;
-      response.msg =
-        'An unexpected error occurred while deleting the testament';
-      return response;
+      processException(error);
     }
   }
 
@@ -279,7 +279,7 @@ export class TestamentsService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
       // Validate that the testament exists for the given userId
       const testament = await this.prisma.testamentHeader.findUnique({
@@ -289,7 +289,7 @@ export class TestamentsService {
       if (!testament) {
         response.code = 404;
         response.msg = 'Testament not found';
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       if (createAssignmentDto.assetId) {
@@ -361,11 +361,7 @@ export class TestamentsService {
       response.response = assignment;
       return response;
     } catch (error) {
-      console.error('Error creating assignment:', error);
-      response.code = 500;
-      response.msg =
-        'An unexpected error occurred while creating the assignment';
-      return response;
+      processException(error);
     }
   }
 

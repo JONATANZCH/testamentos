@@ -1,13 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto } from '../common';
 import { reverseCountryPhoneCodeMap } from '../common/utils/reverseCountryPhoneCodeMap';
+import { processException } from '../common/utils/exception.helper';
 
 @Injectable()
 export class UsersService {
   private prisma: any = null;
   private _prismaprovider: PrismaProvider;
+  private readonly environment: string;
 
   constructor(private prismaprovider: PrismaProvider) {
     this._prismaprovider = prismaprovider;
@@ -21,7 +23,7 @@ export class UsersService {
         console.log('Wills Error-> nxui8');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       // Convert page and limit to integers
@@ -31,7 +33,7 @@ export class UsersService {
       if (isNaN(pageNumber) || isNaN(limitNumber)) {
         response.code = 400;
         response.msg = 'Page and limit must be valid numbers';
-        return response;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
       const offset = (pageNumber - 1) * limitNumber;
@@ -46,10 +48,10 @@ export class UsersService {
       ]);
 
       if (total === 0) {
-        response.code = 204;
+        response.code = 404;
         response.msg = 'No users found';
         response.response = {};
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       if (users.countryCode) {
@@ -67,10 +69,7 @@ export class UsersService {
       };
       return response;
     } catch (error) {
-      console.error('Error fetching users:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while fetching users';
-      return response;
+      processException(error);
     }
   }
 
@@ -83,7 +82,7 @@ export class UsersService {
         response.code = 500;
         response.msg =
           'Could not connect to DB, no prisma client created error getting secret';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       const existingUser = await this.prisma.user.findUnique({
@@ -93,7 +92,18 @@ export class UsersService {
       if (existingUser) {
         response.code = 409;
         response.msg = 'A user with this email already exists';
-        return response;
+        throw new HttpException(response, HttpStatus.CONFLICT);
+      }
+
+      if (createUserDto.birthDate) {
+        const isoRegex =
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|([+-]\d{2}:\d{2}))$/;
+        if (!isoRegex.test(createUserDto.birthDate)) {
+          response.code = 400;
+          response.msg =
+            'Invalid birthDate format. Expected ISO-8601 DateTime.';
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
       }
 
       const user = await this.prisma.user.create({ data: createUserDto });
@@ -108,16 +118,7 @@ export class UsersService {
       response.response = user;
       return response;
     } catch (error) {
-      console.log('Error creating user:', error);
-      if (error.code === 'P2002' && error.meta?.target === 'User_email_key') {
-        response.code = 409;
-        response.msg = 'A user with this email already exists';
-        return response;
-      }
-
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while creating the user';
-      return response;
+      processException(error);
     }
   }
 
@@ -130,7 +131,7 @@ export class UsersService {
         response.code = 500;
         response.msg =
           'Could not connect to DB, no prisma client created error getting secret';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       const user = await this.prisma.user.findUnique({ where: { email } });
@@ -138,7 +139,7 @@ export class UsersService {
       if (!user) {
         response.code = 404;
         response.msg = `User with email ${email} not found`;
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       if (user.countryPhoneCode) {
@@ -151,10 +152,7 @@ export class UsersService {
       response.response = user;
       return response;
     } catch (error) {
-      console.log('Error fetching user by email:', error);
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while fetching the user';
-      return response;
+      processException(error);
     }
   }
 
@@ -169,14 +167,32 @@ export class UsersService {
         console.log('Pastpost Error-> decbj4');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const existingUser = await this.prisma.user.findUnique({ where: { id } });
+      if (!existingUser) {
+        response.code = 404;
+        response.msg = `User with id ${id} not found`;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       // Validate that email is not being updated
       if (updateUserDto.email) {
         response.code = 409;
         response.msg = 'Email cannot be updated directly';
-        return response;
+        throw new HttpException(response, HttpStatus.CONFLICT);
+      }
+
+      if (updateUserDto.birthDate) {
+        const isoRegex =
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|([+-]\d{2}:\d{2}))$/;
+        if (!isoRegex.test(updateUserDto.birthDate)) {
+          response.code = 400;
+          response.msg =
+            'Invalid birthDate format. Expected ISO-8601 DateTime.';
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
       }
 
       const user = await this.prisma.user.update({
@@ -189,15 +205,7 @@ export class UsersService {
       response.response = user;
       return response;
     } catch (error) {
-      console.log('Error updating user:', error);
-      if (error.code === 'P2025') {
-        response.code = 404;
-        response.msg = `User with id ${id} not found`;
-        return response;
-      }
-      response.code = 500;
-      response.msg = 'An unexpected error occurred while updating the user';
-      return response;
+      processException(error);
     }
   }
 
@@ -209,7 +217,7 @@ export class UsersService {
         console.log('Pastpost Error-> xbhs9');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       const user = await this.prisma.user.delete({
@@ -228,11 +236,7 @@ export class UsersService {
         return response;
       }
 
-      console.error('Unexpected error deleting user permanently:', error);
-      response.code = 500;
-      response.msg =
-        'An unexpected error occurred while deleting the user permanently';
-      return response;
+      processException(error);
     }
   }
 }

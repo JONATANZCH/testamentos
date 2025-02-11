@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import { CreateExecutorDto, UpdateExecutorDto } from './dto';
 import { GeneralResponseDto } from '../common';
+import { processException } from '../common/utils/exception.helper';
 
 @Injectable()
 export class ExecutorService {
@@ -21,7 +22,7 @@ export class ExecutorService {
         response.code = 500;
         response.msg =
           'Could not connect to DB, no prisma client created error getting secret';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       //Validate testamentHeaderId exists
@@ -32,7 +33,7 @@ export class ExecutorService {
       if (!testamentHeader) {
         response.code = 400;
         response.msg = `Testament not found`;
-        return response;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
       // Validate contactId exists
@@ -43,7 +44,7 @@ export class ExecutorService {
       if (!contact) {
         response.code = 400;
         response.msg = `Contact not found`;
-        return response;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
       const executor = await this.prisma.executor.create({
@@ -55,18 +56,23 @@ export class ExecutorService {
       response.response = executor;
       return response;
     } catch (error) {
-      console.error('Error creating executor:', error);
-      response.code = 500;
-      response.msg = 'An error occurred while creating the executor';
-      return response;
+      processException(error);
     }
   }
 
   async getExecutorById(execId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
-    this.prisma = await this.prismaProvider.getPrismaClient();
 
     try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Pastpost Error-> cj78');
+        response.code = 500;
+        response.msg =
+          'Could not connect to DB, no prisma client created error getting secret';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
       const executor = await this.prisma.executor.findUnique({
         where: { id: execId },
       });
@@ -74,7 +80,7 @@ export class ExecutorService {
       if (!executor) {
         response.code = 404;
         response.msg = `Executor not exists`;
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       response.code = 200;
@@ -82,10 +88,7 @@ export class ExecutorService {
       response.response = executor;
       return response;
     } catch (error) {
-      console.error('Error retrieving executor:', error);
-      response.code = 500;
-      response.msg = 'An error occurred while retrieving the executor';
-      return response;
+      processException(error);
     }
   }
 
@@ -94,9 +97,46 @@ export class ExecutorService {
     updateExecutorDto: UpdateExecutorDto,
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
-    this.prisma = await this.prismaProvider.getPrismaClient();
-
     try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Pastpost Error-> cj78');
+        response.code = 500;
+        response.msg =
+          'Could not connect to DB, no prisma client created error getting secret';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      const executorExist = await this.prisma.executor.findUnique({
+        where: { id: execId },
+      });
+
+      if (!executorExist) {
+        response.code = 404;
+        response.msg = `Executor not found`;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      //Validate testamentHeaderId exists
+      const testamentHeader = await this.prisma.testamentHeader.findUnique({
+        where: { id: updateExecutorDto.testamentHeaderId },
+      });
+
+      if (!testamentHeader) {
+        response.code = 400;
+        response.msg = `Testament not found`;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+      // Validate contactId exists
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: updateExecutorDto.contactId },
+      });
+
+      if (!contact) {
+        response.code = 400;
+        response.msg = `Contact not found`;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
       const executor = await this.prisma.executor.update({
         where: { id: execId },
         data: updateExecutorDto,
@@ -107,18 +147,31 @@ export class ExecutorService {
       response.response = executor;
       return response;
     } catch (error) {
-      console.error('Error updating executor:', error);
-      response.code = 500;
-      response.msg = 'An error occurred while updating the executor';
-      return response;
+      processException(error);
     }
   }
 
   async deleteExecutor(execId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
-    this.prisma = await this.prismaProvider.getPrismaClient();
 
     try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Pastpost Error-> cj78');
+        response.code = 500;
+        response.msg =
+          'Could not connect to DB, no prisma client created error getting secret';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      const executorExist = await this.prisma.executor.findUnique({
+        where: { id: execId },
+      });
+
+      if (!executorExist) {
+        response.code = 404;
+        response.msg = `Executor not found`;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
       const executor = await this.prisma.executor.delete({
         where: { id: execId },
       });
