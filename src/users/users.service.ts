@@ -122,9 +122,26 @@ export class UsersService {
     }
   }
 
-  async findUser(email: string): Promise<GeneralResponseDto> {
+  async findUser(req: Request): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
+      const authorizerData = req['authorizerData'];
+      if (!authorizerData) {
+        console.log('authorizerData not found in request', req);
+        response.code = 401;
+        response.msg = 'No authorizer data found';
+        throw new HttpException(response, HttpStatus.UNAUTHORIZED);
+      }
+
+      const claims = authorizerData.claims || authorizerData?.jwt?.claims;
+      const email = claims?.username;
+      if (!email) {
+        console.log('No username found in token claims', req);
+        response.code = 401;
+        response.msg = 'No username found in token claims';
+        throw new HttpException(response, HttpStatus.UNAUTHORIZED);
+      }
+
       this.prisma = await this._prismaprovider.getPrismaClient();
       if (!this.prisma) {
         console.log('Pastpost Error-> xw7q');
@@ -135,7 +152,6 @@ export class UsersService {
       }
 
       const user = await this.prisma.user.findUnique({ where: { email } });
-
       if (!user) {
         response.code = 404;
         response.msg = `User with email ${email} not found`;

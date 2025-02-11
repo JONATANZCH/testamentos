@@ -10,8 +10,7 @@ import {
   Put,
   UseInterceptors,
   Req,
-  HttpException,
-  HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto';
@@ -19,6 +18,7 @@ import { PaginationDto } from '../common';
 import { GeneralResponseDto } from '../common/response.dto';
 import { ConfigService } from '../config';
 import { CountryPhoneCodeTransformInterceptor } from '../common/interceptors/contacts-transform.interceptor';
+import { AuthorizerGuard } from '../common/utils/jwt-claims-validate.helper';
 
 @Controller('wills/users')
 @UseInterceptors(CountryPhoneCodeTransformInterceptor)
@@ -53,41 +53,14 @@ export class UsersController {
   }
 
   @Get('/:id')
+  @UseGuards(AuthorizerGuard)
   async getUserById(
-    @Param('id') dummy: string,
+    @Param('id') _dummy: string,
     @Req() req: Request,
   ): Promise<GeneralResponseDto> {
-    console.log('Get user by id request (login endpoint)');
-    console.log('Request in controller:', req);
-    const authorizerData = req['requestContext']?.authorizer;
-    if (!authorizerData) {
-      console.log('Authorizer data not found in requestContext');
-      console.log('RequestContext:', req['requestContext']);
-      const r = new GeneralResponseDto({
-        code: 401,
-        msg: 'Unauthorized: Missing authorizer data in requestContext',
-        response: null,
-      });
-      console.log('Response:', r);
-      throw new HttpException(r, HttpStatus.UNAUTHORIZED);
-    }
-
-    const claims =
-      authorizerData.claims ||
-      (authorizerData.jwt && authorizerData.jwt.claims);
-    if (!claims || !claims.username) {
-      throw new HttpException(
-        new GeneralResponseDto({
-          code: 401,
-          msg: 'Unauthorized: Missing username in token',
-          response: null,
-        }),
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
-    const email = claims.username;
-    return await this.usersService.findUser(email);
+    console.log('Get user by id request received');
+    console.log('Request: ', req['authorizerData']);
+    return this.usersService.findUser(req);
   }
 
   @Put('/:id')
