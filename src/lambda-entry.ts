@@ -63,14 +63,10 @@ export const handler = async (event, context) => {
   }
 
   console.log('Processed event:', event);
-  try {
-    const jwttoken = event.requestContext.authorizer?.jwt;
-    console.log(JSON.stringify(jwttoken));
-    console.log('JWT token:', jwttoken);
-  } catch (error) {
-    console.log(error);
-    console.log('fallo al leer el jwt');
+  if (event.requestContext) {
+    console.log('Request context:', event.requestContext);
+    console.log('Authorizer:', event.requestContext.authorizer);
+    console.log('JWT token:', event.requestContext.authorizer.jwt);
   }
-
   return cachedServer(event, context);
 };
