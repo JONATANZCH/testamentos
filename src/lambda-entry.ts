@@ -65,8 +65,8 @@ export const handler = async (event, context) => {
   console.log('Processed event:', event);
   if (event.requestContext) {
     console.log('Request context:', event.requestContext);
-    console.log('Authorizer:', event.requestContext.authorizer);
-    console.log('JWT token:', event.requestContext.authorizer.jwt);
+    console.log('Authorizer:', event.requestContext?.authorizer);
+    console.log('JWT token:', event.requestContext?.authorizer?.jwt);
   }
   return cachedServer(event, context);
 };
