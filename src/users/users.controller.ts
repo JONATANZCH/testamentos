@@ -54,7 +54,7 @@ export class UsersController {
 
   @Get('/:id')
   async getUserById(
-    @Param('id', ParseUUIDPipe) _dummy: string,
+    @Param('id') _dummy: string,
     @Req() req: Request,
   ): Promise<GeneralResponseDto> {
     console.log('--- Controller: GET /wills/users/:id');
