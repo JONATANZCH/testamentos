@@ -122,39 +122,25 @@ export class UsersService {
     }
   }
 
-  async findUser(req: Request): Promise<GeneralResponseDto> {
+  async findUser(email: string): Promise<GeneralResponseDto> {
+    console.log('--- Service: findUserByEmail');
+    console.log('Email =>', email);
+
     const response = new GeneralResponseDto();
     try {
-      const authorizerData = req['authorizerData'];
-      if (!authorizerData) {
-        console.log('authorizerData not found in request', req);
-        response.code = 401;
-        response.msg = 'No authorizer data found';
-        throw new HttpException(response, HttpStatus.UNAUTHORIZED);
-      }
-
-      const claims = authorizerData.claims || authorizerData?.jwt?.claims;
-      const email = claims?.username;
-      if (!email) {
-        console.log('No username found in token claims', req);
-        response.code = 401;
-        response.msg = 'No username found in token claims';
-        throw new HttpException(response, HttpStatus.UNAUTHORIZED);
-      }
-
-      this.prisma = await this._prismaprovider.getPrismaClient();
-      if (!this.prisma) {
-        console.log('Pastpost Error-> xw7q');
+      const prisma = await this.prismaprovider.getPrismaClient();
+      if (!prisma) {
+        console.log('Pastpost Error-> xw7q - No prisma instance');
         response.code = 500;
-        response.msg =
-          'Could not connect to DB, no prisma client created error getting secret';
+        response.msg = 'Could not connect to DB';
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      const user = await this.prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findUnique({ where: { email } });
       if (!user) {
         response.code = 404;
         response.msg = `User with email ${email} not found`;
+        console.log(response.msg);
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
@@ -166,6 +152,7 @@ export class UsersService {
       response.code = 200;
       response.msg = 'User retrieved successfully';
       response.response = user;
+      console.log('Returning user =>', user);
       return response;
     } catch (error) {
       processException(error);

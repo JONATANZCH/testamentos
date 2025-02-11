@@ -10,7 +10,8 @@ import {
   Put,
   UseInterceptors,
   Req,
-  UseGuards,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto';
@@ -18,7 +19,6 @@ import { PaginationDto } from '../common';
 import { GeneralResponseDto } from '../common/response.dto';
 import { ConfigService } from '../config';
 import { CountryPhoneCodeTransformInterceptor } from '../common/interceptors/contacts-transform.interceptor';
-import { AuthorizerGuard } from '../common/utils/jwt-claims-validate.helper';
 
 @Controller('wills/users')
 @UseInterceptors(CountryPhoneCodeTransformInterceptor)
@@ -53,14 +53,43 @@ export class UsersController {
   }
 
   @Get('/:id')
-  @UseGuards(AuthorizerGuard)
   async getUserById(
-    @Param('id') _dummy: string,
+    @Param('id', ParseUUIDPipe) _dummy: string,
     @Req() req: Request,
   ): Promise<GeneralResponseDto> {
-    console.log('Get user by id request received');
-    console.log('Request: ', req['authorizerData']);
-    return this.usersService.findUser(req);
+    console.log('--- Controller: GET /wills/users/:id');
+    console.log('Full request object:', req);
+
+    const authorizerData = req['requestContext']?.authorizer;
+    console.log('Controller - authorizerData:', authorizerData);
+
+    if (!authorizerData) {
+      console.log('No authorizer data found in requestContext');
+      const response = new GeneralResponseDto({
+        code: 401,
+        msg: 'No authorizer data found',
+        response: null,
+      });
+      throw new HttpException(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    // 2. Extraer claims
+    const claims = authorizerData.claims || authorizerData?.jwt?.claims;
+    console.log('Controller - claims:', claims);
+
+    const email = claims?.username;
+    if (!email) {
+      console.log('No username found in token claims');
+      const response = new GeneralResponseDto({
+        code: 401,
+        msg: 'No username found in token claims',
+        response: null,
+      });
+      throw new HttpException(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    // 3. Llamar al servicio
+    return this.usersService.findUser(email);
   }
 
   @Put('/:id')
