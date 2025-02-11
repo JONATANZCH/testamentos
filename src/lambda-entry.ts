@@ -23,6 +23,8 @@ export const handler = async (event, context) => {
       origin: '*', // Permitir cualquier origen (ajusta según necesidad)
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
+      exposedHeaders: ['Authorization'],
+      credentials: true, // Habilita credenciales (aunque Cognito usa tokens en Headers)
     });
 
     await nestApp.init();
