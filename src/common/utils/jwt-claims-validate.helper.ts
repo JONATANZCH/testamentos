@@ -7,6 +7,12 @@ export class AuthorizerGuard implements CanActivate {
     // 1. Get the request object from the context
     const request: Request = context.switchToHttp().getRequest();
 
+    // Si el método es 'OPTIONS', ignorar validación
+    if (request.method === 'OPTIONS') {
+      console.log('Skipping guard for OPTIONS');
+      return true;
+    }
+
     // 2. exctract the authorizer data from the request context
     console.log('buscando authorizer in requestContext:', request);
     const authorizerData = request['requestContext']?.authorizer;
