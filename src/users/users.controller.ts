@@ -61,14 +61,15 @@ export class UsersController {
 
     const authorizerData = req['requestContext']?.authorizer;
     if (!authorizerData) {
-      throw new HttpException(
-        new GeneralResponseDto({
-          code: 401,
-          msg: 'Unauthorized: Missing authorizer data in requestContext',
-          response: null,
-        }),
-        HttpStatus.UNAUTHORIZED,
-      );
+      console.log('Authorizer data not found in requestContext');
+      console.log('RequestContext:', req['requestContext']);
+      const r = new GeneralResponseDto({
+        code: 401,
+        msg: 'Unauthorized: Missing authorizer data in requestContext',
+        response: null,
+      });
+      console.log('Response:', r);
+      throw new HttpException(r, HttpStatus.UNAUTHORIZED);
     }
 
     const claims =
