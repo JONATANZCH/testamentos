@@ -58,7 +58,7 @@ export class UsersController {
     @Req() req: Request,
   ): Promise<GeneralResponseDto> {
     console.log('Get user by id request (login endpoint)');
-
+    console.log('Request in controller:', req);
     const authorizerData = req['requestContext']?.authorizer;
     if (!authorizerData) {
       console.log('Authorizer data not found in requestContext');

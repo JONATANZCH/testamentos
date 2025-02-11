@@ -64,7 +64,7 @@ export const handler = async (event, context) => {
 
   console.log('Processed event:', event);
   try {
-    const jwttoken = event.requestContext.authorizer.jwt;
+    const jwttoken = event.requestContext.authorizer?.jwt;
     console.log(JSON.stringify(jwttoken));
     console.log('JWT token:', jwttoken);
   } catch (error) {
