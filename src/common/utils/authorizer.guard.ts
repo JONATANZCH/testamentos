@@ -28,7 +28,7 @@ export class AuthorizerGuard implements CanActivate {
     const authorizerData = event?.requestContext?.authorizer;
     console.log('Guard - authorizerData from event:', authorizerData);
 
-    // 3. Si no hay data, lanzamos excepción (o devuelves false)
+    // 3. Si no hay data, lanzamos excepción
     if (!authorizerData) {
       console.log(
         'No authorizer data found => no claims in requestContext.authorizer',
@@ -37,7 +37,6 @@ export class AuthorizerGuard implements CanActivate {
         'Unauthorized: no authorizer data',
         HttpStatus.UNAUTHORIZED,
       );
-      // O podrías usar: return false; (lo que produce un 403 por defecto)
     }
 
     // 4. Verificar que contenga claims y username
@@ -50,7 +49,7 @@ export class AuthorizerGuard implements CanActivate {
       );
     }
 
-    // 5. Inyectar en el request si quieres usarlo en el controlador/servicio
+    // 5. Inyectar en el request
     request['authorizerData'] = authorizerData;
 
     // 6. Retornar true => pasa al controlador

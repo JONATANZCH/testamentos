@@ -185,7 +185,7 @@ export class AssetsService {
         console.log('Testament Error-> dwd!2 db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
       const existingAsset = await this.prisma.asset.findUnique({
         where: { id: assetId },
@@ -193,12 +193,97 @@ export class AssetsService {
       if (!existingAsset) {
         response.code = 404;
         response.msg = 'Asset not found';
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
       await this.prisma.asset.delete({ where: { id: assetId } });
 
       response.code = 200;
       response.msg = 'Asset deleted successfully';
+      return response;
+    } catch (error) {
+      processException(error);
+    }
+  }
+
+  async getAssetsByCategory(categoryId: string): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Testament Error-> 2nj7 db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      const category = await this.prisma.assetCategory.findUnique({
+        where: { id: categoryId },
+      });
+      if (!category) {
+        response.code = 400;
+        response.msg = 'Category does not exist';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
+      response.code = 200;
+      response.msg = 'Assets retrieved successfully';
+      response.response = category;
+      return response;
+    } catch (error) {
+      processException(error);
+    }
+  }
+
+  async getAllCategories(
+    page: number,
+    limit: number,
+  ): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Wills Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      // Convertir page y limit a números enteros
+      const pageNumber = parseInt(String(page), 10);
+      const limitNumber = parseInt(String(limit), 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber)) {
+        response.code = 400;
+        response.msg = 'Page and limit must be valid numbers';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
+      const offset = (pageNumber - 1) * limitNumber;
+
+      const [categories, total] = await Promise.all([
+        this.prisma.assetCategory.findMany({
+          skip: offset,
+          take: limitNumber,
+          orderBy: { name: 'asc' },
+        }),
+        this.prisma.assetCategory.count(),
+      ]);
+
+      if (total === 0) {
+        response.code = 404;
+        response.msg = 'No categories found';
+        response.response = {};
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      response.code = 200;
+      response.msg = 'Categories retrieved successfully';
+      response.response = {
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(total / limitNumber),
+        categories,
+      };
       return response;
     } catch (error) {
       processException(error);

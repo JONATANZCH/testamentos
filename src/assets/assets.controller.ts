@@ -7,10 +7,11 @@ import {
   Delete,
   ParseUUIDPipe,
   Put,
+  Query,
 } from '@nestjs/common';
 import { AssetsService } from './assets.service';
 import { CreateAssetDto, UpdateAssetDto } from './dto';
-import { GeneralResponseDto } from 'src/common';
+import { GeneralResponseDto, PaginationDto } from '../common';
 import { ConfigService } from 'src/config';
 
 @Controller('wills')
@@ -67,5 +68,22 @@ export class AssetsController {
   ): Promise<GeneralResponseDto> {
     console.log('Delete asset request received');
     return this.assetsService.deleteAsset(assetId);
+  }
+
+  @Get('/category/:categoryId/assets')
+  async getAssetsByCategory(
+    @Param('categoryId', ParseUUIDPipe) categoryId: string,
+  ): Promise<GeneralResponseDto> {
+    console.log('Get assets by category request received');
+    return this.assetsService.getAssetsByCategory(categoryId);
+  }
+
+  @Get('/assets/categories')
+  async getAllCategories(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<GeneralResponseDto> {
+    console.log('Get all categories request received');
+    const { page, limit } = paginationDto;
+    return this.assetsService.getAllCategories(page, limit);
   }
 }

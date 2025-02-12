@@ -18,7 +18,7 @@ import { PaginationDto } from '../common';
 import { GeneralResponseDto } from '../common/response.dto';
 import { ConfigService } from '../config';
 import { CountryPhoneCodeTransformInterceptor } from '../common/interceptors/contacts-transform.interceptor';
-import { AuthorizerGuard } from '../common/utils/jwt-claims-validate.helper';
+import { AuthorizerGuard } from '../common/utils/authorizer.guard';
 
 @Controller('wills/users')
 @UseInterceptors(CountryPhoneCodeTransformInterceptor)
@@ -55,7 +55,6 @@ export class UsersController {
   @Get('/:id')
   @UseGuards(AuthorizerGuard)
   async getUserById(@Param('id') _dummy: string, @Req() req: Request) {
-    console.log('--- Controller: GET /wills/users/:id');
     const authorizerData = req['authorizerData'];
     const claims = authorizerData.claims || authorizerData?.jwt?.claims;
     const email = claims.username;

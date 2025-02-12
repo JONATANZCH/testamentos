@@ -54,8 +54,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.1
       testgetprismaclient:
-        specifier: 1.1.14
-        version: 1.1.14(prisma@6.3.1(typescript@5.7.3))
+        specifier: 1.1.15
+        version: 1.1.15(prisma@6.3.1(typescript@5.7.3))
     devDependencies:
       '@nestjs/cli':
         specifier: ^10.4.9
@@ -2947,8 +2947,8 @@ packages:
     resolution: {integrity: sha1-BKhphmHYBepvopO2y55jrARO8V4=}
     engines: {node: '>=8'}
 
-  testgetprismaclient@1.1.14:
-    resolution: {integrity: sha1-2P1cK7N54XmL6Qb+RkJ8nZUoLvw=}
+  testgetprismaclient@1.1.15:
+    resolution: {integrity: sha1-7k0CHYBOt2Wkn8sodnqTHm/7iJA=}
 
   text-table@0.2.0:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
@@ -6830,7 +6830,7 @@ snapshots:
       glob: 7.2.3
       minimatch: 3.1.2
 
-  testgetprismaclient@1.1.14(prisma@6.3.1(typescript@5.7.3)):
+  testgetprismaclient@1.1.15(prisma@6.3.1(typescript@5.7.3)):
     dependencies:
       '@prisma/client': 6.2.1(prisma@6.3.1(typescript@5.7.3))
     transitivePeerDependencies:
