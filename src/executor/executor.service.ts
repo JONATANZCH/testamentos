@@ -92,6 +92,52 @@ export class ExecutorService {
     }
   }
 
+  async getUserExecutors(userId: string): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Pastpost Error-> cj78');
+        response.code = 500;
+        response.msg =
+          'Could not connect to DB, no prisma client created error getting secret';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const userExists = await this.prisma.user.findFirst({
+        where: { id: userId },
+      });
+
+      if (!userExists) {
+        response.code = 404;
+        response.msg = 'User not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      const executors = await this.prisma.executor.findMany({
+        where: {
+          testamentHeader: {
+            userId: userId,
+          },
+        },
+      });
+
+      if (!executors || executors.length === 0) {
+        response.code = 204;
+        response.msg = `You don't have any executors`;
+        throw new HttpException(response, HttpStatus.NO_CONTENT);
+      }
+
+      response.code = 200;
+      response.msg = 'Executors retrieved successfully';
+      response.response = executors;
+      return response;
+    } catch (error) {
+      processException(error);
+    }
+  }
+
   async updateExecutor(
     execId: string,
     updateExecutorDto: UpdateExecutorDto,

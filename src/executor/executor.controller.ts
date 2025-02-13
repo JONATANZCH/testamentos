@@ -13,7 +13,7 @@ import { CreateExecutorDto, UpdateExecutorDto } from './dto';
 import { ConfigService } from '../config';
 import { GeneralResponseDto } from '../common';
 
-@Controller('wills/executors')
+@Controller('wills')
 export class ExecutorController {
   private readonly environment: string;
 
@@ -21,27 +21,34 @@ export class ExecutorController {
     private readonly executorService: ExecutorService,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.getNodeEnv() + '/wills/executors';
+    this.environment = this.configService.getNodeEnv() + '/wills';
     Reflect.defineMetadata('path', this.environment, ExecutorController);
     console.log('Version - 20250123 11:00am');
     console.log('Environment running -> ' + this.environment);
   }
 
-  @Post()
+  @Post('/executors')
   async createExecutor(
     @Body() createExecutorDto: CreateExecutorDto,
   ): Promise<GeneralResponseDto> {
     return this.executorService.createExecutor(createExecutorDto);
   }
 
-  @Get('/:execId')
+  @Get('/executors/:execId')
   async getExecutorById(
     @Param('execId', ParseUUIDPipe) execId: string,
   ): Promise<GeneralResponseDto> {
     return this.executorService.getExecutorById(execId);
   }
 
-  @Put('/:execId')
+  @Get('/:userId/executors')
+  async getUserExecutors(
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<GeneralResponseDto> {
+    return this.executorService.getUserExecutors(userId);
+  }
+
+  @Put('/executors/:execId')
   async updateExecutor(
     @Param('execId', ParseUUIDPipe) execId: string,
     @Body() updateExecutorDto: UpdateExecutorDto,
@@ -49,7 +56,7 @@ export class ExecutorController {
     return this.executorService.updateExecutor(execId, updateExecutorDto);
   }
 
-  @Delete('/:execId')
+  @Delete('/executors/:execId')
   async deleteExecutor(
     @Param('execId', ParseUUIDPipe) execId: string,
   ): Promise<GeneralResponseDto> {
