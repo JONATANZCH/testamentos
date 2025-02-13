@@ -78,4 +78,11 @@ export class UsersController {
     console.log('Soft delete user request received');
     return this.usersService.deleteUserPermanently(id);
   }
+
+  @Get('/:id/completness')
+  async getUserProgress(
+    @Param('id', ParseUUIDPipe) userId: string,
+  ): Promise<GeneralResponseDto> {
+    return await this.usersService.getUserProgress(userId);
+  }
 }

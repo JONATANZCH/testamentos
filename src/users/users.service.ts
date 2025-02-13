@@ -242,4 +242,126 @@ export class UsersService {
       processException(error);
     }
   }
+
+  async getUserProgress(userId: string): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+
+    try {
+      this.prisma = await this._prismaprovider.getPrismaClient();
+      if (!this.prisma) {
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      // 1) Fetch the user
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          addresses: true,
+          assets: true,
+          testamentHeaders: {
+            include: {
+              // We'll include assignments and executors
+              // so we don't have to do separate count queries
+              TestamentAssignment: true,
+              Executor: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        response.code = 404;
+        response.msg = `User with id ${userId} not found`;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      /**
+       * STEP 1: PROFILE COMPLETION
+       * According to the rules, we have 11 fields,
+       * Each field is worth 100 / 11 ≈ 9.09%.
+       * If all are present => 100%, else partial sum.
+       */
+      let profileFieldsCompleted = 0;
+      const totalProfileFields = 11;
+
+      // We'll just do a helper function to check presence
+      const isFilled = (val: any): boolean =>
+        val !== null && val !== undefined && val !== '';
+
+      if (isFilled(user.name)) profileFieldsCompleted++;
+      if (isFilled(user.fatherLastName)) profileFieldsCompleted++;
+      if (isFilled(user.motherLastName)) profileFieldsCompleted++;
+      if (isFilled(user.gender)) profileFieldsCompleted++;
+      if (isFilled(user.birthDate)) profileFieldsCompleted++;
+      if (isFilled(user.governmentId)) profileFieldsCompleted++;
+      if (isFilled(user.phoneNumber)) profileFieldsCompleted++;
+      if (isFilled(user.maritalstatus)) profileFieldsCompleted++;
+      if (user.addresses && user.addresses.length > 0) profileFieldsCompleted++;
+      // hasChildren can be true or false, so we only check if it's not null
+      if (user.hasChildren !== null && user.hasChildren !== undefined) {
+        profileFieldsCompleted++;
+      }
+      // hasPets can be true or false, so we only check if it's not null
+      if (user.hasPets !== null && user.hasPets !== undefined) {
+        profileFieldsCompleted++;
+      }
+
+      const profileCompletion =
+        (profileFieldsCompleted / totalProfileFields) * 100;
+
+      /**
+       * ------------------------------------------------------
+       * STEP 2: ASSETS
+       * ------------------------------------------------------
+       * If user has at least 1 asset => +50%
+       * If user has at least 1 testamentHeader => +50%
+       */
+      let assetsCompletion = 0;
+      const userAssetsCount = user.assets?.length || 0;
+      const userTestamentsCount = user.testamentHeaders?.length || 0;
+
+      if (userAssetsCount > 0) {
+        assetsCompletion += 50;
+      }
+      if (userTestamentsCount > 0) {
+        assetsCompletion += 50;
+      }
+
+      // STEP 3: ASSIGNMENTS If user has 1 or more assignments => 100% We'll gather all assignments from all testamentHeaders.
+      let assignmentsCompletion = 0;
+      const allAssignmentsCount = user.testamentHeaders.flatMap(
+        (t) => t.TestamentAssignment,
+      ).length; // collect all assignments
+      if (allAssignmentsCount > 0) {
+        assignmentsCompletion = 100;
+      }
+
+      // STEP 4: EXECUTORS - If user has 1 or more executors => 100%
+      let executorsCompletion = 0;
+      const allExecutorsCount = user.testamentHeaders.flatMap(
+        (t) => t.Executor,
+      ).length;
+      if (allExecutorsCount > 0) {
+        executorsCompletion = 100;
+      }
+
+      // Build the result object
+      const progressData = {
+        profile: `${profileCompletion.toFixed(1)}%`,
+        assets: `${assetsCompletion}%`,
+        assignments: `${assignmentsCompletion}%`,
+        executors: `${executorsCompletion}%`,
+      };
+
+      // Return as part of a GeneralResponseDto
+      response.code = 200;
+      response.msg = 'User progress retrieved successfully';
+      response.response = progressData;
+      return response;
+    } catch (error) {
+      processException(error);
+    }
+  }
 }

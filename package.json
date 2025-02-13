@@ -35,7 +35,7 @@
     "joi": "^17.13.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "testgetprismaclient": "1.1.17"
+    "testgetprismaclient": "1.1.18"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
