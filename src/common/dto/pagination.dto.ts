@@ -13,4 +13,7 @@ export class PaginationDto {
   @IsInt()
   @Min(1)
   readonly limit: number = 10;
+
+  @IsOptional()
+  readonly type?: string;
 }

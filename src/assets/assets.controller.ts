@@ -83,7 +83,7 @@ export class AssetsController {
     @Query() paginationDto: PaginationDto,
   ): Promise<GeneralResponseDto> {
     console.log('Get all categories request received');
-    const { page, limit } = paginationDto;
-    return this.assetsService.getAllCategories(page, limit);
+    const { page, limit, type } = paginationDto;
+    return this.assetsService.getAllCategories(page, limit, type);
   }
 }
