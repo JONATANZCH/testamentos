@@ -316,16 +316,17 @@ export class UsersService {
        * STEP 2: ASSETS
        * ------------------------------------------------------
        * If user has at least 1 asset => +50%
-       * If user has at least 1 testamentHeader => +50%
+       * If user has at least 1 testamentHeader => +50% where status is ACTIVE
        */
       let assetsCompletion = 0;
       const userAssetsCount = user.assets?.length || 0;
-      const userTestamentsCount = user.testamentHeaders?.length || 0;
+      const userActiveTestamentsCount =
+        user.testamentHeaders?.filter((t) => t.status === 'ACTIVE').length || 0;
 
       if (userAssetsCount > 0) {
         assetsCompletion += 50;
       }
-      if (userTestamentsCount > 0) {
+      if (userActiveTestamentsCount > 0) {
         assetsCompletion += 50;
       }
 
