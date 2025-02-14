@@ -302,6 +302,14 @@ export class TestamentsService {
           response.msg = 'The provided assetId does not exist in the system';
           return response;
         }
+
+        // Validar que el asset pertenezca al mismo usuario que el testamento
+        if (assetExists.userId !== testament.userId) {
+          response.code = 400;
+          response.msg =
+            'The provided assetId does not belong to the same user as the testament';
+          return response;
+        }
       }
 
       // Validate if the assignmentId exists, if it was provided
