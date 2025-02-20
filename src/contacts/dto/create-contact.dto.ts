@@ -13,6 +13,7 @@ import { CountryPhoneCode } from '../../common/enums/country-phone-code.enum';
 import { RelationToUser } from '../../common/enums/relation-to-user.enum';
 import { countryPhoneCodeMap } from '../../common/utils/mapCountryPhoneCode';
 import { BadRequestException } from '@nestjs/common';
+import { Gender } from '../../common/enums/gender.enum';
 
 export class CreateContactDto {
   @IsNotEmpty()
@@ -58,6 +59,13 @@ export class CreateContactDto {
     message: 'country must be a valid country code',
   })
   country?: CountryCode;
+
+  @IsString()
+  @IsOptional()
+  @IsEnum(Gender, {
+    message: 'Gender not valid',
+  })
+  readonly gender?: Gender;
 
   @IsOptional()
   @IsString()

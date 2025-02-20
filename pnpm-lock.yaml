@@ -57,8 +57,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.1
       testgetprismaclient:
-        specifier: 1.1.19
-        version: 1.1.19(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)
+        specifier: 1.2.1
+        version: 1.2.1(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)
     devDependencies:
       '@nestjs/cli':
         specifier: ^10.4.9
@@ -689,7 +689,7 @@ packages:
     hasBin: true
 
   '@pkgjs/parseargs@0.11.0':
-    resolution: {integrity: sha1-p36nQvqyV3UUVDTrHSMoz1ATrDM=}
+    resolution: {integrity: sha1-p36nQvqyV3UUVDTrHSMoz1ATrDM=, tarball: https://pkgs.dev.azure.com/pastpostmx/Pastpost/_packaging/pastpostNpm/npm/registry/@pkgjs/parseargs/-/parseargs-0.11.0.tgz}
     engines: {node: '>=14'}
 
   '@pkgr/core@0.1.1':
@@ -698,6 +698,18 @@ packages:
 
   '@prisma/client@6.3.1':
     resolution: {integrity: sha1-TksFsn9FQepUGmAcV6itoQtSaEg=}
+    engines: {node: '>=18.18'}
+    peerDependencies:
+      prisma: '*'
+      typescript: '>=5.1.0'
+    peerDependenciesMeta:
+      prisma:
+        optional: true
+      typescript:
+        optional: true
+
+  '@prisma/client@6.4.1':
+    resolution: {integrity: sha1-JmZ5bIYucesqbznjCxkiNok+B9M=}
     engines: {node: '>=18.18'}
     peerDependencies:
       prisma: '*'
@@ -1859,7 +1871,7 @@ packages:
     resolution: {integrity: sha1-FQStJSMVjKpA20onh8sBQRmU6k8=}
 
   fsevents@2.3.3:
-    resolution: {integrity: sha1-ysZAd4XQNnWipeGlMFxpezR9kNY=}
+    resolution: {integrity: sha1-ysZAd4XQNnWipeGlMFxpezR9kNY=, tarball: https://pkgs.dev.azure.com/pastpostmx/Pastpost/_packaging/pastpostNpm/npm/registry/fsevents/-/fsevents-2.3.3.tgz}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
@@ -2949,8 +2961,8 @@ packages:
     resolution: {integrity: sha1-BKhphmHYBepvopO2y55jrARO8V4=}
     engines: {node: '>=8'}
 
-  testgetprismaclient@1.1.19:
-    resolution: {integrity: sha1-JsufH82tZDOP0h7uSNHB6owvtpo=}
+  testgetprismaclient@1.2.1:
+    resolution: {integrity: sha1-KQhjK5/UHT/f6Nu3ZWCEp0SBSCg=}
 
   text-table@0.2.0:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
@@ -4183,6 +4195,11 @@ snapshots:
   '@pkgr/core@0.1.1': {}
 
   '@prisma/client@6.3.1(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)':
+    optionalDependencies:
+      prisma: 6.3.1(typescript@5.7.3)
+      typescript: 5.7.3
+
+  '@prisma/client@6.4.1(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)':
     optionalDependencies:
       prisma: 6.3.1(typescript@5.7.3)
       typescript: 5.7.3
@@ -6840,9 +6857,9 @@ snapshots:
       glob: 7.2.3
       minimatch: 3.1.2
 
-  testgetprismaclient@1.1.19(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3):
+  testgetprismaclient@1.2.1(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3):
     dependencies:
-      '@prisma/client': 6.3.1(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)
+      '@prisma/client': 6.4.1(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)
     transitivePeerDependencies:
       - prisma
       - typescript
