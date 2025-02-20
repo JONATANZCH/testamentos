@@ -83,6 +83,10 @@ export class CreateContactDto {
   @IsUUID()
   legalEntityId?: string;
 
+  @IsString()
+  @IsOptional()
+  readonly governmentId?: string;
+
   @IsOptional()
   @IsBoolean()
   trustedContact?: boolean;
