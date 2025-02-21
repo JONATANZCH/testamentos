@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsBoolean,
   IsNotEmpty,
+  IsDateString,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { CountryCode } from '../../common/enums/country-code.enum';
@@ -70,6 +71,13 @@ export class CreateContactDto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
+
+  @IsDateString(
+    {},
+    { message: 'birthDate must be a valid ISO-8601 date string' },
+  )
+  @IsOptional()
+  readonly birthDate?: string;
 
   @IsOptional()
   @IsEmail()
