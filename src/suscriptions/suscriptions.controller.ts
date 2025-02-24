@@ -1,8 +1,15 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Query,
+} from '@nestjs/common';
 import { SuscriptionsService } from './suscriptions.service';
 import { ConfigService } from '../config';
-import { GeneralResponseDto } from '../common';
-import { GetCreditQueryDto } from '../common/dto/credit.dto';
+import { GeneralResponseDto, PaginationDto } from '../common';
 
 @Controller('suscriptions')
 export class SuscriptionsController {
@@ -18,15 +25,32 @@ export class SuscriptionsController {
     console.log('Environment running -> ' + this.environment);
   }
 
+  @Get('/catalog/subscriptions')
+  async getSubscriptions(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<GeneralResponseDto> {
+    const { page, limit, country } = paginationDto;
+    if (!country) {
+      throw new HttpException(
+        { code: 400, msg: 'country parameter is required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    console.log('[catalog/subscriptions] Getting all subscriptions');
+    return this.suscriptionsService.getSubscriptions(page, limit, country);
+  }
+
   @Get('/:userId/subscriptions')
   async getUserSubscriptions(
+    @Query() paginationDto: PaginationDto,
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<GeneralResponseDto> {
     console.log(`[getSubscriptions] userId=${userId}`);
-    return this.suscriptionsService.getUserSubscriptions(userId);
+    const { page, limit } = paginationDto;
+    return this.suscriptionsService.getUserSubscriptions(userId, page, limit);
   }
 
-  @Get('/:paymentId')
+  @Get('/subscription/:paymentId')
   async getSuscriptionById(
     @Param('paymentId', ParseUUIDPipe) paymentId: string,
   ): Promise<GeneralResponseDto> {
@@ -34,26 +58,18 @@ export class SuscriptionsController {
     return this.suscriptionsService.getSuscriptionById(paymentId);
   }
 
-  @Get('/credit/:creditId')
-  async getCreditById(
-    @Param('creditId') creditId: string,
-    @Query() query: GetCreditQueryDto,
-  ): Promise<GeneralResponseDto> {
-    console.log(
-      `[getCreditById] creditId=${creditId} query=${JSON.stringify(query)}`,
-    );
-    return this.suscriptionsService.getCreditById(creditId, query.type);
-  }
-
-  @Get('/catalog/subscriptions')
-  async getAllSubscriptions(): Promise<GeneralResponseDto> {
-    console.log('[catalog/subscriptions] Getting all subscriptions');
-    return this.suscriptionsService.getAllSubscriptions();
-  }
-
   @Get('/catalog/addons')
-  async getAllAddOns(): Promise<GeneralResponseDto> {
+  async getAllAddOns(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<GeneralResponseDto> {
+    const { page, limit, country } = paginationDto;
+    if (!country) {
+      throw new HttpException(
+        { code: 400, msg: 'country parameter is required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     console.log('[catalog/addons] Getting all add-ons');
-    return this.suscriptionsService.getAllAddOns();
+    return this.suscriptionsService.getAllAddOns(page, limit, country);
   }
 }

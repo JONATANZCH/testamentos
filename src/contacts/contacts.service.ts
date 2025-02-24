@@ -141,6 +141,17 @@ export class ContactsService {
         }
       }
 
+      if (createContactDto.birthDate) {
+        const isoRegex =
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|([+-]\d{2}:\d{2}))$/;
+        if (!isoRegex.test(createContactDto.birthDate)) {
+          response.code = 400;
+          response.msg =
+            'Invalid birthDate format. Expected ISO-8601 DateTime.';
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
+      }
+
       const contact = await this.prisma.contact.create({
         data: {
           userId,

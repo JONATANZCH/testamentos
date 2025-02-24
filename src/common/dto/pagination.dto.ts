@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { CountryCode } from '../enums/country-code.enum';
 
 export class PaginationDto {
   @IsOptional()
@@ -16,4 +17,8 @@ export class PaginationDto {
 
   @IsOptional()
   readonly type?: string;
+
+  @IsOptional()
+  @IsEnum(CountryCode)
+  readonly country?: string;
 }
