@@ -282,40 +282,76 @@ export class SuscriptionsService {
   async processPayment(paymentId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
+      console.log(
+        `[processPayment] Iniciando procesamiento para paymentId=${paymentId}`,
+      );
+
       this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('[processPayment] Prisma client is null');
+        response.code = 500;
+        response.msg = 'Could not connect to the database (prisma is null)';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      console.log(
+        `[processPayment] Cliente Prisma obtenido para paymentId=${paymentId}`,
+      );
+
       const payment = await this.prisma.payment.findUnique({
         where: { id: paymentId },
       });
       if (!payment) {
+        console.error(
+          `[processPayment] Payment no encontrado para paymentId=${paymentId}`,
+        );
         throw new HttpException(
           { code: 404, msg: 'Payment not found' },
           HttpStatus.NOT_FOUND,
         );
       }
+      console.log(
+        `[processPayment] Payment encontrado: status=${payment.status}`,
+      );
+
       if (payment.status !== 'QueueSuscription') {
+        console.error(
+          `[processPayment] Payment con paymentId=${paymentId} no se encuentra en estado 'QueueSuscription'. Estado actual: ${payment.status}`,
+        );
         throw new HttpException(
           { code: 400, msg: 'Payment not queued for processing' },
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      // Procesar cada ítem en el campo itemspaid
+      console.log(
+        `[processPayment] Procesando ${payment.itemspaid.length} ítem(es) en paymentId=${paymentId}`,
+      );
       for (const item of payment.itemspaid) {
+        console.log(
+          `[processPayment] Procesando ítem: ${JSON.stringify(item)}`,
+        );
         if (!item.servicetype) {
+          console.error(
+            `[processPayment] Ítem sin servicetype en paymentId=${paymentId}`,
+          );
           throw new HttpException(
             { code: 400, msg: 'Service type not specified in payment item' },
             HttpStatus.BAD_REQUEST,
           );
         }
+
         if (item.servicetype === 'subscription') {
+          console.log(
+            `[processPayment] Provisionando suscripción para paymentId=${paymentId}`,
+          );
           await this.prisma.usersSuscriptions.create({
             data: {
               userId: payment.userId,
-              suscriptionType: item.id, // 'item.id' corresponde al ID del catálogo?
+              suscriptionType: item.id, // item.id es el ID del catálogo de suscripciones?
               paymentDate: payment.paymentDate,
               expireDate: new Date(
                 Date.now() + 30 * 24 * 60 * 60 * 1000,
-              ).toISOString(), // Ejemplo: 30 días de suscripción
+              ).toISOString(),
               paymentGateway: payment.methodpayment,
               paymentAmount: payment.amount,
               currency: payment.currency,
@@ -323,6 +359,9 @@ export class SuscriptionsService {
             },
           });
         } else if (item.servicetype === 'addon') {
+          console.log(
+            `[processPayment] Provisionando addon para paymentId=${paymentId}`,
+          );
           await this.prisma.usersAddOns.create({
             data: {
               userId: payment.userId,
@@ -330,7 +369,7 @@ export class SuscriptionsService {
               paymentDate: payment.paymentDate,
               expireDate: new Date(
                 new Date().setFullYear(new Date().getFullYear() + 1),
-              ).toISOString(), // Ejemplo: 1 año
+              ).toISOString(),
               paymentGateway: payment.methodpayment,
               paymentAmount: payment.amount,
               currency: payment.currency,
@@ -338,6 +377,9 @@ export class SuscriptionsService {
             },
           });
         } else if (item.servicetype === 'partner') {
+          console.log(
+            `[processPayment] Provisionando producto partner para paymentId=${paymentId}`,
+          );
           await this.prisma.usersPartnerProduct.create({
             data: {
               userId: payment.userId,
@@ -346,7 +388,7 @@ export class SuscriptionsService {
               paymentDate: payment.paymentDate,
               expireDate: new Date(
                 Date.now() + 90 * 24 * 60 * 60 * 1000,
-              ).toISOString(), // Ejemplo: 90 días
+              ).toISOString(),
               paymentGateway: payment.methodpayment,
               paymentAmount: payment.amount,
               currency: payment.currency,
@@ -354,22 +396,40 @@ export class SuscriptionsService {
             },
           });
         } else {
+          console.error(
+            `[processPayment] servicetype no soportado (${item.servicetype}) en paymentId=${paymentId}`,
+          );
           throw new HttpException(
             { code: 400, msg: 'Unsupported service type' },
             HttpStatus.BAD_REQUEST,
           );
         }
+        console.log(
+          `[processPayment] Ítem procesado exitosamente para paymentId=${paymentId}`,
+        );
       }
 
+      // Actualizar el estado del pago a "Processed"
       await this.prisma.payment.update({
         where: { id: paymentId },
         data: { status: 'Processed' },
       });
+      console.log(
+        `[processPayment] Estado actualizado a 'Processed' para paymentId=${paymentId}`,
+      );
+
       response.code = 200;
       response.msg = 'Payment processed successfully';
       response.response = payment;
+      console.log(
+        `[processPayment] Proceso completado para paymentId=${paymentId}`,
+      );
       return response;
     } catch (error) {
+      console.error(
+        `[processPayment] Error en procesamiento para paymentId=${paymentId}:`,
+        error,
+      );
       if (error instanceof HttpException) throw error;
       throw new HttpException(
         { code: 500, msg: 'Internal error processing payment' },

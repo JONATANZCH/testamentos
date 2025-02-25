@@ -78,6 +78,9 @@ export class SuscriptionsController {
   async processPayment(
     @Param('paymentId', ParseUUIDPipe) paymentId: string,
   ): Promise<GeneralResponseDto> {
+    console.log(
+      `[processPayment] Recibido request para paymentId=${paymentId}`,
+    );
     return this.suscriptionsService.processPayment(paymentId);
   }
 }
