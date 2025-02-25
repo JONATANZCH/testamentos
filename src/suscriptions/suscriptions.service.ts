@@ -278,4 +278,103 @@ export class SuscriptionsService {
       processException(error);
     }
   }
+
+  async processPayment(paymentId: string): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      const payment = await this.prisma.payment.findUnique({
+        where: { id: paymentId },
+      });
+      if (!payment) {
+        throw new HttpException(
+          { code: 404, msg: 'Payment not found' },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      if (payment.status !== 'QueueSuscription') {
+        throw new HttpException(
+          { code: 400, msg: 'Payment not queued for processing' },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Procesar cada ítem en el campo itemspaid
+      for (const item of payment.itemspaid) {
+        if (!item.servicetype) {
+          throw new HttpException(
+            { code: 400, msg: 'Service type not specified in payment item' },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        if (item.servicetype === 'subscription') {
+          await this.prisma.usersSuscriptions.create({
+            data: {
+              userId: payment.userId,
+              suscriptionType: item.id, // 'item.id' corresponde al ID del catálogo?
+              paymentDate: payment.paymentDate,
+              expireDate: new Date(
+                Date.now() + 30 * 24 * 60 * 60 * 1000,
+              ).toISOString(), // Ejemplo: 30 días de suscripción
+              paymentGateway: payment.methodpayment,
+              paymentAmount: payment.amount,
+              currency: payment.currency,
+              paymentId: payment.id,
+            },
+          });
+        } else if (item.servicetype === 'addon') {
+          await this.prisma.usersAddOns.create({
+            data: {
+              userId: payment.userId,
+              addOnType: item.id,
+              paymentDate: payment.paymentDate,
+              expireDate: new Date(
+                new Date().setFullYear(new Date().getFullYear() + 1),
+              ).toISOString(), // Ejemplo: 1 año
+              paymentGateway: payment.methodpayment,
+              paymentAmount: payment.amount,
+              currency: payment.currency,
+              paymentId: payment.id,
+            },
+          });
+        } else if (item.servicetype === 'partner') {
+          await this.prisma.usersPartnerProduct.create({
+            data: {
+              userId: payment.userId,
+              partnerProductId: item.id,
+              serviceType: 'partner',
+              paymentDate: payment.paymentDate,
+              expireDate: new Date(
+                Date.now() + 90 * 24 * 60 * 60 * 1000,
+              ).toISOString(), // Ejemplo: 90 días
+              paymentGateway: payment.methodpayment,
+              paymentAmount: payment.amount,
+              currency: payment.currency,
+              paymentId: payment.id,
+            },
+          });
+        } else {
+          throw new HttpException(
+            { code: 400, msg: 'Unsupported service type' },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
+      await this.prisma.payment.update({
+        where: { id: paymentId },
+        data: { status: 'Processed' },
+      });
+      response.code = 200;
+      response.msg = 'Payment processed successfully';
+      response.response = payment;
+      return response;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(
+        { code: 500, msg: 'Internal error processing payment' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

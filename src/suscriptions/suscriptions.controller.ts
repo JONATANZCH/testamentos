@@ -5,13 +5,14 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Post,
   Query,
 } from '@nestjs/common';
 import { SuscriptionsService } from './suscriptions.service';
 import { ConfigService } from '../config';
 import { GeneralResponseDto, PaginationDto } from '../common';
 
-@Controller('suscriptions')
+@Controller()
 export class SuscriptionsController {
   private readonly environment: string;
 
@@ -71,5 +72,12 @@ export class SuscriptionsController {
     }
     console.log('[catalog/addons] Getting all add-ons');
     return this.suscriptionsService.getAllAddOns(page, limit, country);
+  }
+
+  @Post('/processPayment/:paymentId')
+  async processPayment(
+    @Param('paymentId', ParseUUIDPipe) paymentId: string,
+  ): Promise<GeneralResponseDto> {
+    return this.suscriptionsService.processPayment(paymentId);
   }
 }
