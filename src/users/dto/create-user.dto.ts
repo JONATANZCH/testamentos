@@ -5,6 +5,7 @@ import {
   IsString,
   IsDateString,
   IsEnum,
+  IsBoolean,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { Gender } from '../../common/enums/gender.enum';
@@ -85,4 +86,12 @@ export class CreateUserDto {
     message: 'Invalid marital status',
   })
   readonly maritalstatus?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  hasChildren?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hasPets?: boolean;
 }
