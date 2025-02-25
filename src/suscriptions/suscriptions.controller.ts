@@ -83,6 +83,6 @@ export class SuscriptionsController {
     console.log(
       `[processPayment] Recibido request para paymentId=${paymentId}, body=${JSON.stringify(body)}`,
     );
-    return this.suscriptionsService.processPaymentData(paymentId, body);
+    return this.suscriptionsService.processPaymentData(paymentId, body.payment);
   }
 }
