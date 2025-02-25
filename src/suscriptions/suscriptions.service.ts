@@ -279,7 +279,10 @@ export class SuscriptionsService {
     }
   }
 
-  async processPayment(paymentId: string): Promise<GeneralResponseDto> {
+  async processPaymentData(
+    paymentId: string,
+    payment: any,
+  ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       console.log(
@@ -297,36 +300,20 @@ export class SuscriptionsService {
         `[processPayment] Cliente Prisma obtenido para paymentId=${paymentId}`,
       );
 
-      const payment = await this.prisma.payment.findUnique({
-        where: { id: paymentId },
-      });
-      if (!payment) {
-        console.error(
-          `[processPayment] Payment no encontrado para paymentId=${paymentId}`,
+      const { userId, itemspaid, methodpayment, currency, amount } = payment;
+      if (!userId || !itemspaid) {
+        this.logger.error(
+          '[processPaymentData] Missing userId or itemspaid in payment',
         );
         throw new HttpException(
-          { code: 404, msg: 'Payment not found' },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-      console.log(
-        `[processPayment] Payment encontrado: status=${payment.status}`,
-      );
-
-      if (payment.status !== 'QueueSuscription') {
-        console.error(
-          `[processPayment] Payment con paymentId=${paymentId} no se encuentra en estado 'QueueSuscription'. Estado actual: ${payment.status}`,
-        );
-        throw new HttpException(
-          { code: 400, msg: 'Payment not queued for processing' },
+          { code: 400, msg: 'Invalid payment data' },
           HttpStatus.BAD_REQUEST,
         );
       }
-
       console.log(
         `[processPayment] Procesando ${payment.itemspaid.length} ítem(es) en paymentId=${paymentId}`,
       );
-      for (const item of payment.itemspaid) {
+      for (const item of itemspaid) {
         console.log(
           `[processPayment] Procesando ítem: ${JSON.stringify(item)}`,
         );
@@ -340,69 +327,72 @@ export class SuscriptionsService {
           );
         }
 
-        if (item.servicetype === 'subscription') {
-          console.log(
-            `[processPayment] Provisionando suscripción para paymentId=${paymentId}`,
-          );
-          await this.prisma.usersSuscriptions.create({
-            data: {
-              userId: payment.userId,
-              suscriptionType: item.id, // item.id es el ID del catálogo de suscripciones?
-              paymentDate: payment.paymentDate,
-              expireDate: new Date(
-                Date.now() + 30 * 24 * 60 * 60 * 1000,
-              ).toISOString(),
-              paymentGateway: payment.methodpayment,
-              paymentAmount: payment.amount,
-              currency: payment.currency,
-              paymentId: payment.id,
-            },
-          });
-        } else if (item.servicetype === 'addon') {
-          console.log(
-            `[processPayment] Provisionando addon para paymentId=${paymentId}`,
-          );
-          await this.prisma.usersAddOns.create({
-            data: {
-              userId: payment.userId,
-              addOnType: item.id,
-              paymentDate: payment.paymentDate,
-              expireDate: new Date(
-                new Date().setFullYear(new Date().getFullYear() + 1),
-              ).toISOString(),
-              paymentGateway: payment.methodpayment,
-              paymentAmount: payment.amount,
-              currency: payment.currency,
-              paymentId: payment.id,
-            },
-          });
-        } else if (item.servicetype === 'partner') {
-          console.log(
-            `[processPayment] Provisionando producto partner para paymentId=${paymentId}`,
-          );
-          await this.prisma.usersPartnerProduct.create({
-            data: {
-              userId: payment.userId,
-              partnerProductId: item.id,
-              serviceType: 'partner',
-              paymentDate: payment.paymentDate,
-              expireDate: new Date(
-                Date.now() + 90 * 24 * 60 * 60 * 1000,
-              ).toISOString(),
-              paymentGateway: payment.methodpayment,
-              paymentAmount: payment.amount,
-              currency: payment.currency,
-              paymentId: payment.id,
-            },
-          });
-        } else {
-          console.error(
-            `[processPayment] servicetype no soportado (${item.servicetype}) en paymentId=${paymentId}`,
-          );
-          throw new HttpException(
-            { code: 400, msg: 'Unsupported service type' },
-            HttpStatus.BAD_REQUEST,
-          );
+        switch (item.servicetype) {
+          case 'subscription':
+            this.logger.log(
+              `[processPaymentData] Creando suscripción para userId=${userId}`,
+            );
+            await this.prisma.usersSuscriptions.create({
+              data: {
+                userId: userId,
+                suscriptionType: item.id, // item.id es el ID del catálogo de suscripciones
+                paymentDate: payment.paymentDate || new Date(),
+                expireDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Ejemplo: 30 días
+                paymentGateway: methodpayment,
+                paymentAmount: amount,
+                currency: currency,
+                paymentId: payment.id,
+              },
+            });
+            break;
+
+          case 'addon':
+            this.logger.log(
+              `[processPaymentData] Creando addon para userId=${userId}`,
+            );
+            await this.prisma.usersAddOns.create({
+              data: {
+                userId: userId,
+                addOnType: item.id,
+                paymentDate: payment.paymentDate || new Date(),
+                expireDate: new Date(
+                  new Date().setFullYear(new Date().getFullYear() + 1),
+                ), // 1 año
+                paymentGateway: methodpayment,
+                paymentAmount: amount,
+                currency: currency,
+                paymentId: payment.id,
+              },
+            });
+            break;
+
+          case 'partner':
+            this.logger.log(
+              `[processPaymentData] Creando partner product para userId=${userId}`,
+            );
+            await this.prisma.usersPartnerProduct.create({
+              data: {
+                userId: userId,
+                partnerProductId: item.id,
+                serviceType: 'partner',
+                paymentDate: payment.paymentDate || new Date(),
+                expireDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 días
+                paymentGateway: methodpayment,
+                paymentAmount: amount,
+                currency: currency,
+                paymentId: payment.id,
+              },
+            });
+            break;
+
+          default:
+            this.logger.error(
+              `[processPaymentData] servicetype no soportado (${item.servicetype}) en paymentId=${paymentId}`,
+            );
+            throw new HttpException(
+              { code: 400, msg: 'Unsupported service type' },
+              HttpStatus.BAD_REQUEST,
+            );
         }
         console.log(
           `[processPayment] Ítem procesado exitosamente para paymentId=${paymentId}`,

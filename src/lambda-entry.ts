@@ -38,13 +38,36 @@ export const handler = async (event, context) => {
 
   if (event.Records) {
     console.log('Request comes from SQS queue');
+    let body: any;
     try {
-      event = JSON.parse(event.Records[0].body);
+      body = JSON.parse(event.Records[0].body);
     } catch (error) {
       console.log('Error parsing SQS body');
       console.log('Error:', error);
-      event = event.Records[0];
+      body = event.Records[0].body;
     }
+
+    const paymentId = body.paymentId || 'unknown-id';
+    event = {
+      version: '2.0',
+      routeKey: `POST /payments/processPayment/${paymentId}`,
+      rawPath: `/payments/processPayment/${paymentId}`,
+      rawQueryString: '',
+      headers: {
+        'content-type': 'application/json',
+      },
+      requestContext: {
+        http: {
+          method: 'POST',
+          path: `/payments/processPayment/${paymentId}`,
+        },
+      },
+      pathParameters: {
+        paymentId: paymentId,
+      },
+      body: JSON.stringify(body),
+      isBase64Encoded: false,
+    };
   } else {
     console.log('Request comes from API Gateway');
 

@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpException,
@@ -77,10 +78,11 @@ export class SuscriptionsController {
   @Post('/processPayment/:paymentId')
   async processPayment(
     @Param('paymentId', ParseUUIDPipe) paymentId: string,
+    @Body() body: any,
   ): Promise<GeneralResponseDto> {
     console.log(
-      `[processPayment] Recibido request para paymentId=${paymentId}`,
+      `[processPayment] Recibido request para paymentId=${paymentId}, body=${JSON.stringify(body)}`,
     );
-    return this.suscriptionsService.processPayment(paymentId);
+    return this.suscriptionsService.processPaymentData(paymentId, body);
   }
 }
