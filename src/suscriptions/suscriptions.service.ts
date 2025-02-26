@@ -10,10 +10,11 @@ export class SuscriptionsService {
 
   constructor(private readonly prismaProvider: PrismaProvider) {}
 
-  async getSubscriptions(
+  async getServices(
     page: number,
     limit: number,
     country: string,
+    type?: string,
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
@@ -35,44 +36,52 @@ export class SuscriptionsService {
       }
 
       const offset = (pageNumber - 1) * limitNumber;
-      console.log('[getSubscriptions] Querying suscriptionsCatalogue...');
+      console.log('[getServices] Querying services...');
 
-      const [subs, total] = await Promise.all([
-        this.prisma.suscriptionsCatalogue.findMany({
-          where: { country },
+      const whereClause: any = { country };
+      if (type) {
+        whereClause.type = type;
+      }
+
+      const [services, total] = await Promise.all([
+        this.prisma.services.findMany({
+          where: whereClause,
           skip: offset,
           take: limitNumber,
         }),
-        this.prisma.suscriptionsCatalogue.count({
-          where: { country },
+        this.prisma.services.count({
+          where: whereClause,
         }),
       ]);
-      console.log(`[getSubscriptions] Query returned ${subs.length} records`);
+      console.log(`[getServices] Query returned ${services.length} records`);
 
-      if (total === 0 || !subs) {
-        console.log('[getSubscriptions] No subscriptions found');
+      if (total === 0 || !services) {
+        console.log('[getServices] No subscriptions found');
         response.code = 404;
         response.msg = 'No subscriptions found for the specified country';
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       // Para cada suscripción, obtenemos los precios asociados del catálogo de suscripciones
-      const subscriptionsWithPrices = await Promise.all(
-        subs.map(async (sub) => {
+      const servicesWithPrices = await Promise.all(
+        services.map(async (svc) => {
           const prices = await this.prisma.priceList.findMany({
             where: {
-              catalogId: sub.suscriptionType,
-              catalogType: 'suscriptions',
+              serviceId: svc.id,
+              serviceType: svc.serviceType,
               country,
             },
             select: {
+              id: true,
               priceId: true,
               currency: true,
               price: true,
+              serviceId: true,
+              serviceType: true,
             },
           });
           return {
-            ...sub,
+            ...svc,
             pricelist: prices,
           };
         }),
@@ -85,12 +94,11 @@ export class SuscriptionsService {
         page: pageNumber,
         limit: limitNumber,
         totalPages: Math.ceil(total / limitNumber),
-        subscriptions: subscriptionsWithPrices,
+        subscriptions: servicesWithPrices,
       };
       console.log('[getSubscriptions] Successfully retrieved subscriptions');
       return response;
     } catch (error) {
-      this.logger.error('[getAllSubscriptions] Error occurred', error);
       processException(error);
     }
   }
@@ -196,89 +204,6 @@ export class SuscriptionsService {
     }
   }
 
-  async getAllAddOns(
-    page: number,
-    limit: number,
-    country: string,
-  ): Promise<GeneralResponseDto> {
-    const response = new GeneralResponseDto();
-    try {
-      this.prisma = await this.prismaProvider.getPrismaClient();
-      if (!this.prisma) {
-        console.log('[getAllAddOns] Prisma client is null');
-        response.code = 500;
-        response.msg = 'Could not connect to the database (prisma is null)';
-        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
-      }
-      console.log('[getAllAddOns] Prisma client obtained successfully');
-
-      const pageNumber = parseInt(String(page), 10);
-      const limitNumber = parseInt(String(limit), 10);
-      if (isNaN(pageNumber) || isNaN(limitNumber)) {
-        response.code = 400;
-        response.msg = 'Page and limit must be valid numbers';
-        throw new HttpException(response, HttpStatus.BAD_REQUEST);
-      }
-
-      const offset = (pageNumber - 1) * limitNumber;
-      console.log('[getAllAddOns] Querying addOnsCatalogue...');
-      const [addOns, total] = await Promise.all([
-        this.prisma.addOnsCatalogue.findMany({
-          where: { country },
-          skip: offset,
-          take: limitNumber,
-        }),
-        this.prisma.addOnsCatalogue.count({
-          where: { country },
-        }),
-      ]);
-      console.log(`[getAllAddOns] Query returned ${addOns.length} records`);
-
-      if (total === 0 || !addOns) {
-        console.log('[getAllAddOns] No add-ons found');
-        response.code = 404;
-        response.msg = 'No add-ons found for the specified country';
-        throw new HttpException(response, HttpStatus.NOT_FOUND);
-      }
-
-      const addOnsWithPrices = await Promise.all(
-        addOns.map(async (addOn) => {
-          const prices = await this.prisma.priceList.findMany({
-            where: {
-              catalogId: addOn.addOnType,
-              catalogType: 'addOns',
-              country,
-            },
-            select: {
-              priceId: true,
-              currency: true,
-              price: true,
-            },
-          });
-          return {
-            ...addOn,
-            pricelist: prices,
-          };
-        }),
-      );
-
-      response.code = 200;
-      response.msg = 'Add-ons retrieved successfully';
-      response.response = {
-        total,
-        page: pageNumber,
-        limit: limitNumber,
-        totalPages: Math.ceil(total / limitNumber),
-        addOns: addOnsWithPrices,
-      };
-      console.log('[getAllAddOns] Successfully retrieved add-ons');
-      return response;
-    } catch (error) {
-      this.logger.error('[getAllAddOns] Error occurred', error);
-      processException(error);
-    }
-  }
-
   async processPaymentData(
     paymentId: string,
     payment: any,
@@ -296,9 +221,6 @@ export class SuscriptionsService {
         response.msg = 'Could not connect to the database (prisma is null)';
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
-      console.log(
-        `[processPayment] Cliente Prisma obtenido para paymentId=${paymentId}`,
-      );
 
       const { userId, itemspaid, methodpayment, currency, amount } = payment;
       if (!userId || !itemspaid) {
@@ -310,13 +232,15 @@ export class SuscriptionsService {
           HttpStatus.BAD_REQUEST,
         );
       }
+
       console.log(
-        `[processPayment] Procesando ${payment.itemspaid.length} ítem(es) en paymentId=${paymentId}`,
+        `[processPayment] Procesando ${itemspaid.length} ítem(es) en paymentId=${paymentId}`,
       );
+
+      // 1. Validar que el monto cubra el costo total de todos los ítems
+      let totalExpected = 0;
+
       for (const item of itemspaid) {
-        console.log(
-          `[processPayment] Procesando ítem: ${JSON.stringify(item)}`,
-        );
         if (!item.servicetype) {
           console.error(
             `[processPayment] Ítem sin servicetype en paymentId=${paymentId}`,
@@ -327,6 +251,60 @@ export class SuscriptionsService {
           );
         }
 
+        // Buscar el precio del ítem en PriceList
+        const priceRecord = await this.prisma.priceList.findFirst({
+          where: {
+            serviceId: item.id,
+            serviceType: item.servicetype,
+          },
+        });
+
+        if (!priceRecord) {
+          await this.prisma.servicesError.create({
+            data: {
+              paymentId,
+              userId,
+              message: `No price found in PriceList for serviceId=${item.id}, serviceType=${item.servicetype}`,
+              detail: item, // Guardamos el ítem como JSON
+            },
+          });
+          throw new HttpException(
+            {
+              code: 404,
+              msg: `Price not found for serviceId=${item.id}, serviceType=${item.servicetype}`,
+            },
+            HttpStatus.NOT_FOUND,
+          );
+        }
+
+        totalExpected += priceRecord.price;
+      }
+
+      console.log(
+        `[processPayment] totalExpected=${totalExpected}, paymentAmount=${amount}`,
+      );
+
+      // 2. Verificar si el pago cubre el total
+      if (amount < totalExpected) {
+        await this.prisma.servicesError.create({
+          data: {
+            paymentId,
+            userId,
+            message: `Payment amount ${amount} is insufficient (required=${totalExpected})`,
+            detail: { itemspaid, totalExpected },
+          },
+        });
+        throw new HttpException(
+          {
+            code: 400,
+            msg: `Insufficient payment. Required=${totalExpected}, got=${amount}`,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // 3. Si el monto es suficiente, crear las suscripciones/add-ons
+      for (const item of itemspaid) {
         switch (item.servicetype) {
           case 'subscription':
             this.logger.log(
@@ -335,7 +313,7 @@ export class SuscriptionsService {
             await this.prisma.usersSuscriptions.create({
               data: {
                 userId: userId,
-                suscriptionType: item.id, // item.id es el ID del catálogo de suscripciones
+                suscriptionType: item.id,
                 paymentDate: payment.paymentDate || new Date(),
                 expireDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Ejemplo: 30 días
                 paymentGateway: methodpayment,
@@ -399,14 +377,14 @@ export class SuscriptionsService {
         );
       }
 
-      // Actualizar el estado del pago a "Processed"
-      await this.prisma.payment.update({
-        where: { id: paymentId },
-        data: { status: 'Processed' },
-      });
-      console.log(
-        `[processPayment] Estado actualizado a 'Processed' para paymentId=${paymentId}`,
-      );
+      // 4. Actualizar el estado del pago a "Processed"
+      // await this.prisma.payment.update({
+      //   where: { id: paymentId },
+      //   data: { status: 'Processed' },
+      // });
+      // console.log(
+      //   `[processPayment] Estado actualizado a 'Processed' para paymentId=${paymentId}`,
+      // );
 
       response.code = 200;
       response.msg = 'Payment processed successfully';

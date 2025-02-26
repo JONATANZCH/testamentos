@@ -27,19 +27,19 @@ export class SuscriptionsController {
     console.log('Environment running -> ' + this.environment);
   }
 
-  @Get('/catalog/subscriptions')
+  @Get('/catalog/services')
   async getSubscriptions(
     @Query() paginationDto: PaginationDto,
   ): Promise<GeneralResponseDto> {
-    const { page, limit, country } = paginationDto;
+    const { page, limit, country, type } = paginationDto;
     if (!country) {
       throw new HttpException(
         { code: 400, msg: 'country parameter is required' },
         HttpStatus.BAD_REQUEST,
       );
     }
-    console.log('[catalog/subscriptions] Getting all subscriptions');
-    return this.suscriptionsService.getSubscriptions(page, limit, country);
+    console.log('[catalog/services] Getting all services');
+    return this.suscriptionsService.getServices(page, limit, country, type);
   }
 
   @Get('/:userId/subscriptions')
@@ -58,21 +58,6 @@ export class SuscriptionsController {
   ): Promise<GeneralResponseDto> {
     console.log(`[getSuscriptionById] paymentId=${paymentId}`);
     return this.suscriptionsService.getSuscriptionById(paymentId);
-  }
-
-  @Get('/catalog/addons')
-  async getAllAddOns(
-    @Query() paginationDto: PaginationDto,
-  ): Promise<GeneralResponseDto> {
-    const { page, limit, country } = paginationDto;
-    if (!country) {
-      throw new HttpException(
-        { code: 400, msg: 'country parameter is required' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    console.log('[catalog/addons] Getting all add-ons');
-    return this.suscriptionsService.getAllAddOns(page, limit, country);
   }
 
   @Post('/processPayment/:paymentId')

@@ -57,8 +57,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.1
       testgetprismaclient:
-        specifier: 1.2.5
-        version: 1.2.5(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)
+        specifier: 1.2.8
+        version: 1.2.8(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)
     devDependencies:
       '@nestjs/cli':
         specifier: ^10.4.9
@@ -1871,7 +1871,7 @@ packages:
     resolution: {integrity: sha1-FQStJSMVjKpA20onh8sBQRmU6k8=}
 
   fsevents@2.3.3:
-    resolution: {integrity: sha1-ysZAd4XQNnWipeGlMFxpezR9kNY=, tarball: https://pkgs.dev.azure.com/pastpostmx/Pastpost/_packaging/pastpostNpm/npm/registry/fsevents/-/fsevents-2.3.3.tgz}
+    resolution: {integrity: sha1-ysZAd4XQNnWipeGlMFxpezR9kNY=}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
@@ -2961,8 +2961,8 @@ packages:
     resolution: {integrity: sha1-BKhphmHYBepvopO2y55jrARO8V4=}
     engines: {node: '>=8'}
 
-  testgetprismaclient@1.2.5:
-    resolution: {integrity: sha1-P9CBxf4/cEP2x99H4AyFf0Z6fCI=}
+  testgetprismaclient@1.2.8:
+    resolution: {integrity: sha1-7NfTrdYiqBGQPFyj9eCpUVVJOJA=}
 
   text-table@0.2.0:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
@@ -6857,7 +6857,7 @@ snapshots:
       glob: 7.2.3
       minimatch: 3.1.2
 
-  testgetprismaclient@1.2.5(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3):
+  testgetprismaclient@1.2.8(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3):
     dependencies:
       '@prisma/client': 6.4.1(prisma@6.3.1(typescript@5.7.3))(typescript@5.7.3)
     transitivePeerDependencies:
