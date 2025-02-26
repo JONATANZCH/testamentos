@@ -68,16 +68,13 @@ export class SuscriptionsService {
           const prices = await this.prisma.priceList.findMany({
             where: {
               serviceId: svc.id,
-              serviceType: svc.serviceType,
               country,
             },
             select: {
               id: true,
-              priceId: true,
               currency: true,
               price: true,
               serviceId: true,
-              serviceType: true,
             },
           });
           return {
@@ -255,7 +252,6 @@ export class SuscriptionsService {
         const priceRecord = await this.prisma.priceList.findFirst({
           where: {
             serviceId: item.id,
-            serviceType: item.servicetype,
           },
         });
 
@@ -314,11 +310,9 @@ export class SuscriptionsService {
               data: {
                 userId: userId,
                 suscriptionType: item.id,
-                paymentDate: payment.paymentDate || new Date(),
-                expireDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Ejemplo: 30 días
-                paymentGateway: methodpayment,
-                paymentAmount: amount,
-                currency: currency,
+                expireDate: new Date(
+                  new Date().setFullYear(new Date().getFullYear() + 1),
+                ), // 1 año
                 paymentId: payment.id,
               },
             });
@@ -332,13 +326,9 @@ export class SuscriptionsService {
               data: {
                 userId: userId,
                 addOnType: item.id,
-                paymentDate: payment.paymentDate || new Date(),
                 expireDate: new Date(
                   new Date().setFullYear(new Date().getFullYear() + 1),
                 ), // 1 año
-                paymentGateway: methodpayment,
-                paymentAmount: amount,
-                currency: currency,
                 paymentId: payment.id,
               },
             });
