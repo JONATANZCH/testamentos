@@ -5,6 +5,7 @@ import { PrismaProvider } from '../providers';
 import { processException } from '../common/utils/exception.helper';
 import { ConfigService } from '../config';
 import { SqsService } from '../config/sqs-validate.service';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -117,7 +118,6 @@ export class TestamentPdfService {
       let htmlBase = await fs.readFile(templatePath, 'utf8');
 
       // 5) Reemplazar placeholders
-      //    (Puedes poner más campos si necesitas)
       htmlBase = htmlBase.replace(/#\{\{user_name\}\}#/g, user.name);
       htmlBase = htmlBase.replace(/#\{\{user_email\}\}#/g, user.email);
       htmlBase = htmlBase.replace(
@@ -134,14 +134,35 @@ export class TestamentPdfService {
       );
       htmlBase = htmlBase.replace(/#\{\{process_id\}\}#/g, pdfProcessId);
 
-      // (Podrías guardarlo en disco, en S3, o en la misma DB)
-      // Por simplicidad, lo guardamos en la DB en la columna `htmlData`.
       await this.pdfProcessRepository.updateHtmlData(pdfProcessId, htmlBase);
 
-      // Cambiamos estatus a HtmlOk
       await this.pdfProcessRepository.updateStatus(pdfProcessId, 'HtmlOk');
 
-      // 6) Enviamos a la SQS que hace la conversión HTML->PDF
+      const bucketName = process.env.BUCKET_WILL;
+      const htmlKey = pdfProcessId + '.html';
+      const s3Client = new S3Client({});
+
+      const s3Params = {
+        Bucket: bucketName,
+        Key: htmlKey,
+        Body: htmlBase,
+        ContentType: 'text/html',
+      };
+      await s3Client.send(new PutObjectCommand(s3Params));
+      console.log('File HTML uploaded successfully to S3:', htmlKey);
+
+      const queProcessPdf = process.env.QUEUE_GENERATE_PDF;
+      const payload = {
+        html: {
+          bucket: process.env.BUCKET_WILL,
+          key: pdfProcessId + '.html',
+        },
+        pdf: {
+          bucket: process.env.BUCKET_WILL,
+          key: pdfProcessId + '.pdf',
+        },
+      };
+      await this.sqsService.sendMessage(queProcessPdf, payload);
 
       response.code = 200;
       response.msg =

@@ -26,7 +26,9 @@
         "AWS_SECRET_ACCESS_KEY": "48Q9qrMLOOTI79ImLIn9Y1m55dIEmjsIRGPx7HUB",
         "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEEEaCXVzLWVhc3QtMiJGMEQCIE0pZLXiDHRGdzGJDpwUzAV3lPbM4MqTypkuQabeb51ZAiBG8Jaxw3Opt5GET4cc9zPnCA24dtf3dO9rEGEK0levHSrvAQh6EAAaDDQ0MDc0NDI1MjUwOCIMZieEyWsLdArN06UCKswBuMB8Obl4QvdkhLA/E8sSIt9y6EiHAU4E813q65/fk2uvrPsvKSZI41C/MXwgDl5JTDr5j0WnbNSXD+y9cV8fBFBepmJD4Yyr0ApeC6BgWsjpbue7fjsGtepryn1ZHe9cyPb75ANYH3Bw0HW9IMQCRM7xz0qYB+NhTJmanB7mi7VxbwUYduIHeDH2z0pGDq38TZR7j26VPcwLCj0wvl0TTrGQevTtdymKD1ae3JWcnW/HyUcn1ZO0y+QF1BzfEFWCmCNGV26REVwpypocMP+sgr4GOpkB5c+JseoVya415zcvJuhpk1tb54L9r+chol3YsB4uPpBj4FHl6fewk5kyBVFH7hkHsNYHhOsAbmg/+uyT3R7HfovKrnwQLsOYb4e1i+IOBzi29nVYxLjNGLHZSqqCynl68Us2DAGR0JkE1wFBa7Vq4i5z0pkDoJ1I2G+ET4dNLJlQllrEaIHrq20y8Nyihpv4KcU4OlU4xjOT",
         "AWS_REGION": "us-east-2",
-        "QUEUE_PROCESS_PDF": "https://sqs.us-east-2.amazonaws.com/440744252508/pdf-process.fifo"
+        "QUEUE_PROCESS_PDF": "https://sqs.us-east-2.amazonaws.com/440744252508/pdf-process.fifo",
+        "BUCKET_WILL": "dev-testaments",
+        "QUEUE_GENERATE_PDF": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_security_0.fifo",
       }
     }
   ]
