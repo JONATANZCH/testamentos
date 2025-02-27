@@ -5,7 +5,7 @@
       "type": "node",
       "request": "launch",
       "name": "Debug Nest Framework",
-      "runtimeExecutable": "pnpm",
+      "runtimeExecutable": "/Users/jonatanzch/Library/pnpm/pnpm",
       "runtimeArgs": [
         "run",
         "start:debug",
@@ -22,10 +22,11 @@
         "PORT": "3000",
         "AWSREGION": "us-east-2",
         "AWS_SECRET_ID": "dev/testamentos/mysql",
-        "AWS_ACCESS_KEY_ID": "ASIAWNHTHSROOCFUPNSO",
-        "AWS_SECRET_ACCESS_KEY": "LtesnANdJmisdnT8IASGxus0fhDdmmyuQr/PYQYM",
-        "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEDUaCXVzLWVhc3QtMiJHMEUCIQC9kV8D5cvTeG5tNSyO4tLQ5xiz1vMBn/V+UwSP9BXpdAIgT6azmegb0HfIwMHWEWgFb+AuLeWVbzA5OTpUtA3LElMq7wEIbhAAGgw0NDA3NDQyNTI1MDgiDP2wr0jpjS2D6htecyrMAfMrFClrjyHpUwp2b8DsEiFGCB8aqSAI8VUGwjHoPQmhM19PUeKp8Rni3IAR9F3f1tEvXb7MVI/RK91W+l9n0ejLMZdvHOz2ZyzylOrOPB6oABTChnrWUV7akLdOtx9of8e+K4Am/W2Mg21URLk4nHkRM58iGjXFPlZe7gHR1mSf2JN1ZmBIzMTucAVfeThiSi8N+CPnxeF2MaHjDoKfI9PUycLvBlBEX1wvHK1OkksraG0efTW2mTolVhNkEgOS5NzOEkhvHH/mnMCa6DCf2/+9BjqYAVDHyQeCG5CyoKaJrjjrLTMEN7FqisPLAT4sd+WOo0kuB1D3PR8el40VXY6bKVjmixChUuomhL/mLs0Vy1yBppnv8HVxcYxiOCzj0YhcyrwaAtg3b5lHZVPyps5SsRqscODQlNp3qeDs44GqZmCKIZaZX6vamZkD3eWYRzf1h/6gRze8+NHqazhWcqE2rJOtk3n5k9VWHnFZ",
-        "AWS_REGION": "us-east-2"
+        "AWS_ACCESS_KEY_ID": "ASIAWNHTHSRODB42JBSF",
+        "AWS_SECRET_ACCESS_KEY": "48Q9qrMLOOTI79ImLIn9Y1m55dIEmjsIRGPx7HUB",
+        "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEEEaCXVzLWVhc3QtMiJGMEQCIE0pZLXiDHRGdzGJDpwUzAV3lPbM4MqTypkuQabeb51ZAiBG8Jaxw3Opt5GET4cc9zPnCA24dtf3dO9rEGEK0levHSrvAQh6EAAaDDQ0MDc0NDI1MjUwOCIMZieEyWsLdArN06UCKswBuMB8Obl4QvdkhLA/E8sSIt9y6EiHAU4E813q65/fk2uvrPsvKSZI41C/MXwgDl5JTDr5j0WnbNSXD+y9cV8fBFBepmJD4Yyr0ApeC6BgWsjpbue7fjsGtepryn1ZHe9cyPb75ANYH3Bw0HW9IMQCRM7xz0qYB+NhTJmanB7mi7VxbwUYduIHeDH2z0pGDq38TZR7j26VPcwLCj0wvl0TTrGQevTtdymKD1ae3JWcnW/HyUcn1ZO0y+QF1BzfEFWCmCNGV26REVwpypocMP+sgr4GOpkB5c+JseoVya415zcvJuhpk1tb54L9r+chol3YsB4uPpBj4FHl6fewk5kyBVFH7hkHsNYHhOsAbmg/+uyT3R7HfovKrnwQLsOYb4e1i+IOBzi29nVYxLjNGLHZSqqCynl68Us2DAGR0JkE1wFBa7Vq4i5z0pkDoJ1I2G+ET4dNLJlQllrEaIHrq20y8Nyihpv4KcU4OlU4xjOT",
+        "AWS_REGION": "us-east-2",
+        "QUEUE_PROCESS_PDF": "https://sqs.us-east-2.amazonaws.com/440744252508/pdf-process.fifo"
       }
     }
   ]

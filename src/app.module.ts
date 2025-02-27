@@ -11,6 +11,7 @@ import { LegalEntitiesModule } from './legal-entities/legal-entities.module';
 import { TestamentsModule } from './testaments/testaments.module';
 import { ExecutorModule } from './executor/executor.module';
 import { SuscriptionsModule } from './suscriptions/suscriptions.module';
+import { TestamentPdfModule } from './testament-pdf/testament-pdf.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SuscriptionsModule } from './suscriptions/suscriptions.module';
     TestamentsModule,
     ExecutorModule,
     SuscriptionsModule,
+    TestamentPdfModule,
   ],
   providers: [ConfigService, PrismaProvider],
   exports: [ConfigService],

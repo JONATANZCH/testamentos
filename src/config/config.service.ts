@@ -50,4 +50,12 @@ export class ConfigService {
   getPort(): number {
     return this.get('PORT');
   }
+
+  getAwsRegion(): string {
+    return this.get('AWSREGION');
+  }
+
+  getAwsSecretId(): string {
+    return this.get('AWS_SECRET_ID');
+  }
 }
