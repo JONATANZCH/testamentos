@@ -4,6 +4,7 @@ import { CreateContactDto, UpdateContactDto } from './dto';
 import { GeneralResponseDto } from '../common';
 import { reverseCountryPhoneCodeMap } from '../common/utils/reverseCountryPhoneCodeMap';
 import { processException } from '../common/utils/exception.helper';
+import { RelationToUser } from '../common/enums/relation-to-user.enum';
 
 @Injectable()
 export class ContactsService {
@@ -126,6 +127,25 @@ export class ContactsService {
         response.code = 404;
         response.msg = `User not found`;
         throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      if (createContactDto.relationToUser === RelationToUser.CHILD) {
+        if (!createContactDto.otherParentId) {
+          response.code = 400;
+          response.msg =
+            'El campo otherParentId es obligatorio para contactos de tipo child';
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
+        // Verificar que otherParentId corresponda a un contacto existente
+        const parentContact = await this.prisma.contact.findUnique({
+          where: { id: createContactDto.otherParentId },
+        });
+        if (!parentContact) {
+          response.code = 400;
+          response.msg =
+            'El otherParentId proporcionado no corresponde a un contacto existente';
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
       }
 
       const { legalEntityId, ...contactData } = createContactDto;

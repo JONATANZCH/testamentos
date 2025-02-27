@@ -7,6 +7,7 @@ import {
   IsBoolean,
   IsNotEmpty,
   IsDateString,
+  ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { CountryCode } from '../../common/enums/country-code.enum';
@@ -39,6 +40,14 @@ export class CreateContactDto {
       'Invalid relation to user. Must be one of: sibling, child, spouse, friend, parent, none, albacea',
   })
   relationToUser?: RelationToUser;
+
+  @ValidateIf((o) => o.relationToUser === RelationToUser.CHILD)
+  @IsNotEmpty({
+    message:
+      'El campo otherParentId es obligatorio cuando relationToUser es child',
+  })
+  @IsUUID('4', { message: 'El otherParentId debe ser un UUID válido' })
+  readonly otherParentId?: string;
 
   @IsOptional()
   @Transform(({ value }) => {
