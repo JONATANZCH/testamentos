@@ -262,8 +262,6 @@ export class UsersService {
           assets: true,
           testamentHeaders: {
             include: {
-              // We'll include assignments and executors
-              // so we don't have to do separate count queries
               TestamentAssignment: true,
               Executor: true,
             },
@@ -284,7 +282,7 @@ export class UsersService {
        * If all are present => 100%, else partial sum.
        */
       let profileFieldsCompleted = 0;
-      const totalProfileFields = 11;
+      const totalProfileFields = 10;
 
       // We'll just do a helper function to check presence
       const isFilled = (val: any): boolean =>
@@ -303,11 +301,6 @@ export class UsersService {
       if (user.hasChildren !== null && user.hasChildren !== undefined) {
         profileFieldsCompleted++;
       }
-      // hasPets can be true or false, so we only check if it's not null
-      if (user.hasPets !== null && user.hasPets !== undefined) {
-        profileFieldsCompleted++;
-      }
-
       const profileCompletion =
         (profileFieldsCompleted / totalProfileFields) * 100;
 
