@@ -219,7 +219,7 @@ export class SuscriptionsService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      const { userId, itemspaid, methodpayment, currency, amount } = payment;
+      const { userId, itemspaid, amount } = payment;
       if (!userId || !itemspaid) {
         this.logger.error(
           '[processPaymentData] Missing userId or itemspaid in payment',
@@ -304,7 +304,36 @@ export class SuscriptionsService {
       // 3. Si el monto es suficiente, crear las suscripciones/add-ons
       for (const item of itemspaid) {
         switch (item.servicetype) {
-          case 'subscription':
+          case 'subscription': {
+            // 1. Verificar si el usuario ya tiene una suscripción activa
+            const activeSubscription =
+              await this.prisma.usersSuscriptions.findFirst({
+                where: {
+                  userId: userId,
+                  status: 'Active',
+                },
+              });
+
+            if (activeSubscription) {
+              await this.prisma.servicesError.create({
+                data: {
+                  paymentId,
+                  userId,
+                  message: `User already has an active subscription (id=${activeSubscription.id}). Cannot add another subscription.`,
+                  detail: {
+                    item,
+                    existingSubscriptionId: activeSubscription.id,
+                  },
+                },
+              });
+
+              throw new HttpException(
+                { code: 400, msg: 'User already has an active subscription' },
+                HttpStatus.BAD_REQUEST,
+              );
+            }
+
+            // 2. Si no hay suscripción activa, se crea la nueva suscripción
             this.logger.log(
               `[processPaymentData] Creando suscripción para userId=${userId}`,
             );
@@ -312,15 +341,43 @@ export class SuscriptionsService {
               data: {
                 userId: userId,
                 suscriptionType: item.id,
+                status: 'Active',
                 expireDate: new Date(
                   new Date().setFullYear(new Date().getFullYear() + 1),
-                ), // 1 año
+                ),
                 paymentId: payment.id,
               },
             });
             break;
+          }
 
-          case 'addon':
+          case 'addon': {
+            // 1. Verificar si el usuario ya tiene un add-on activo
+            const activeAddon = await this.prisma.usersAddOns.findFirst({
+              where: {
+                userId: userId,
+                status: 'Active',
+                addOnType: item.id,
+              },
+            });
+
+            if (activeAddon) {
+              await this.prisma.servicesError.create({
+                data: {
+                  paymentId,
+                  userId,
+                  message: `User already has an active add-on (id=${activeAddon.id}). Cannot add another.`,
+                  detail: { item, existingAddOnId: activeAddon.id },
+                },
+              });
+
+              throw new HttpException(
+                { code: 400, msg: 'User already has an active add-on' },
+                HttpStatus.BAD_REQUEST,
+              );
+            }
+
+            // 2. Crear el add-on si no hay uno activo
             this.logger.log(
               `[processPaymentData] Creando addon para userId=${userId}`,
             );
@@ -328,41 +385,42 @@ export class SuscriptionsService {
               data: {
                 userId: userId,
                 addOnType: item.id,
+                status: 'Active',
                 expireDate: new Date(
                   new Date().setFullYear(new Date().getFullYear() + 1),
-                ), // 1 año
+                ),
                 paymentId: payment.id,
               },
             });
             break;
+          }
 
-          case 'partner':
+          case 'partner': {
             this.logger.log(
               `[processPaymentData] Creando partner product para userId=${userId}`,
             );
-            await this.prisma.usersPartnerProduct.create({
-              data: {
-                userId: userId,
-                partnerProductId: item.id,
-                serviceType: 'partner',
-                paymentDate: payment.paymentDate || new Date(),
-                expireDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 días
-                paymentGateway: methodpayment,
-                paymentAmount: amount,
-                currency: currency,
-                paymentId: payment.id,
-              },
-            });
+            console.log(
+              `[processPaymentData] No hay manejo de lógica para partner products`,
+            );
             break;
+          }
 
           default:
             this.logger.error(
               `[processPaymentData] servicetype no soportado (${item.servicetype}) en paymentId=${paymentId}`,
             );
+            await this.prisma.servicesError.create({
+              data: {
+                paymentId,
+                userId,
+                message: `Unsupported service type: ${item.servicetype}`,
+              },
+            });
             throw new HttpException(
               { code: 400, msg: 'Unsupported service type' },
               HttpStatus.BAD_REQUEST,
             );
+            break;
         }
         console.log(
           `[processPayment] Ítem procesado exitosamente para paymentId=${paymentId}`,
