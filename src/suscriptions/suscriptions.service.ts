@@ -272,8 +272,10 @@ export class SuscriptionsService {
             HttpStatus.NOT_FOUND,
           );
         }
+        const quantity = item.quantity;
+        const lineCost = priceRecord.price * quantity;
 
-        totalExpected += priceRecord.price;
+        totalExpected += lineCost;
       }
 
       console.log(
