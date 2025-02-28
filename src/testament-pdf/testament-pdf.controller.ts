@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Param,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Body, Param, Get } from '@nestjs/common';
 import { TestamentPdfService } from './testament-pdf.service';
 import { GeneralResponseDto } from '../common/response.dto';
 import { ConfigService } from '../config/config.service';
@@ -24,32 +17,17 @@ export class TestamentPdfController {
     console.log('Environment running -> ' + this.environment);
   }
 
-  @Post('/:userId/testaments/pdf')
+  @Get('/:userId/testaments/pdf')
   async requestPdfGeneration(
     @Param('userId') userId: string,
-    @Body() body: { version: number },
   ): Promise<GeneralResponseDto> {
-    if (!body.version) {
-      const resp = new GeneralResponseDto();
-      resp.code = 400;
-      resp.msg = 'Debe especificar la versión del testamento en el body.';
-      throw new HttpException(resp, HttpStatus.BAD_REQUEST);
-    }
-
-    return this.testamentPdfService.requestPdfProcess(userId, body.version);
+    return this.testamentPdfService.requestPdfProcess(userId);
   }
 
   @Post('/:userId/testaments/processpdf')
   async processPdfCallback(
     @Body() body: { pdfProcessId: string },
   ): Promise<GeneralResponseDto> {
-    const resp = new GeneralResponseDto();
-    if (!body.pdfProcessId) {
-      resp.code = 400;
-      resp.msg = 'Se requiere el id del proceso para continuar.';
-      throw new HttpException(resp, HttpStatus.BAD_REQUEST);
-    }
-
     return this.testamentPdfService.handlePdfProcess(body.pdfProcessId);
   }
 }

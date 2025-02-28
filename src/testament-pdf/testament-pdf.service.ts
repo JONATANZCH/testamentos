@@ -27,10 +27,7 @@ export class TestamentPdfService {
     this.sqsService = sqsservice;
   }
 
-  async requestPdfProcess(
-    userId: string,
-    version: number,
-  ): Promise<GeneralResponseDto> {
+  async requestPdfProcess(userId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
 
     try {
@@ -41,27 +38,23 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      // 1) Insert en la tabla pdfProcess
       const newProcess = await this.pdfProcessRepository.createPdfProcess({
         userId,
-        version,
-        status: 'Pending',
+        version: null,
+        status: 'PdfQueued',
         htmlData: null,
         metadata: {},
       });
 
-      // 2) Envía mensaje a SQS con el `id` (opcional: agrega un body JSON)
       const processId = newProcess.id;
       console.log(`Proceso de PDF creado con ID: ${processId}`);
 
-      // 3) Encolar el proceso
       await this.enqueuePdfProcess(processId, userId);
       console.log(`Encolado en SQS el proceso con ID: ${processId}`);
 
-      // Armamos la respuesta
       response.code = 200;
       response.msg =
-        'Solicitud de generación PDF registrada y encolada en SQS.';
+        'Your PDF generation request has been successfully received and is being processed.';
       response.response = {
         pdfProcessId: processId,
       };
@@ -74,6 +67,7 @@ export class TestamentPdfService {
   async handlePdfProcess(pdfProcessId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
+      // 1) Obtener instancia de Prisma
       this.prisma = await this.prismaprovider.getPrismaClient();
       if (!this.prisma) {
         response.code = 500;
@@ -81,7 +75,7 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      // 1) Buscar proceso
+      // 2) Buscar el proceso en la DB
       const processRecord =
         await this.pdfProcessRepository.getPdfProcessById(pdfProcessId);
       if (!processRecord) {
@@ -90,15 +84,18 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
-      // 2) Cambiar estatus a GeneratingHtml
+      // 3) Actualizar estatus a GeneratingHtml
       await this.pdfProcessRepository.updateStatus(
         pdfProcessId,
         'GeneratingHtml',
       );
 
-      // 3) Obtener datos del usuario (y/o testamento, etc.) para el reemplazo
+      // 4) Consultar datos del usuario
       const user = await this.prisma.user.findUnique({
         where: { id: processRecord.userId },
+        include: {
+          // Puedes incluir otras relaciones si lo necesitas, por ejemplo, testamentHeaders, addresses, etc.
+        },
       });
       if (!user) {
         response.code = 404;
@@ -106,42 +103,105 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
-      // (Aquí podrías obtener datos del testamento, join con otras tablas, etc.)
-      // Ejemplo: const testament = await this.prisma.testamentHeader.findFirst({ ... });
+      // Opcional: consulta de datos adicionales (por ejemplo, del testamento)
+      // const testament = await this.prisma.testamentHeader.findFirst({ where: { userId: user.id } });
 
-      // 4) Leer plantilla HTML base
+      // 5) Armar objeto con los datos para reemplazo
+      const data = {
+        user_name: user.name || '',
+        user_email: user.email || '',
+        user_full_name:
+          `${user.name} ${user.fatherLastName ?? ''} ${user.motherLastName ?? ''}`.trim(),
+        user_birthDate: user.birthDate
+          ? user.birthDate.toISOString().split('T')[0]
+          : '',
+        version: processRecord.version ? processRecord.version.toString() : '',
+        process_id: pdfProcessId,
+        // Otros datos que puedas necesitar para otras secciones:
+        folio_number: processRecord.metadata?.folio_number || '',
+        document_number: processRecord.metadata?.document_number || '',
+        date_and_time_SIGNATURE:
+          processRecord.metadata?.signature_datetime || '',
+        // Ejemplo para sección de albacea:
+        albacea_name: processRecord.metadata?.albacea_name || '',
+        albacea_fatherLastName:
+          processRecord.metadata?.albacea_fatherLastName || '',
+        albacea_motherLastName:
+          processRecord.metadata?.albacea_motherLastName || '',
+        albacea_substitute_name:
+          processRecord.metadata?.albacea_substitute_name || '',
+        albacea_subtitue_fatherLastName:
+          processRecord.metadata?.albacea_substitute_fatherLastName || '',
+        albacea_subtitue_motherLastName:
+          processRecord.metadata?.albacea_substitute_motherLastName || '',
+        // Puedes seguir agregando campos para cada sección...
+      };
+
+      // 6) Leer la plantilla HTML base
       const templatePath = path.join(
         __dirname,
         'templates',
-        'base-testament.html',
+        'CleanTestamentoHTMLTable.html',
       );
       let htmlBase = await fs.readFile(templatePath, 'utf8');
 
-      // 5) Reemplazar placeholders
-      htmlBase = htmlBase.replace(/#\{\{user_name\}\}#/g, user.name);
-      htmlBase = htmlBase.replace(/#\{\{user_email\}\}#/g, user.email);
+      // 7) Realizar los reemplazos de placeholders
+      htmlBase = htmlBase.replace(/#\{\{user_name\}\}#/g, data.user_name);
+      htmlBase = htmlBase.replace(/#\{\{user_email\}\}#/g, data.user_email);
       htmlBase = htmlBase.replace(
         /#\{\{user_full_name\}\}#/g,
-        `${user.name} ${user.fatherLastName ?? ''} ${user.motherLastName ?? ''}`,
+        data.user_full_name,
       );
       htmlBase = htmlBase.replace(
         /#\{\{user_birthDate\}\}#/g,
-        user.birthDate?.toISOString().split('T')[0] ?? '',
+        data.user_birthDate,
+      );
+      htmlBase = htmlBase.replace(/#\{\{version\}\}#/g, data.version);
+      htmlBase = htmlBase.replace(/#\{\{process_id\}\}#/g, data.process_id);
+      htmlBase = htmlBase.replace(/#\{\{folio_number\}\}#/g, data.folio_number);
+      htmlBase = htmlBase.replace(
+        /#\{\{document_number\}\}#/g,
+        data.document_number,
       );
       htmlBase = htmlBase.replace(
-        /#\{\{version\}\}#/g,
-        processRecord.version.toString(),
+        /#\{\{date_and_time_SIGNATURE\}\}#/g,
+        data.date_and_time_SIGNATURE,
       );
-      htmlBase = htmlBase.replace(/#\{\{process_id\}\}#/g, pdfProcessId);
+      htmlBase = htmlBase.replace(/#\{\{albacea_name\}\}#/g, data.albacea_name);
+      htmlBase = htmlBase.replace(
+        /#\{\{albacea_fatherLastName\}\}#/g,
+        data.albacea_fatherLastName,
+      );
+      htmlBase = htmlBase.replace(
+        /#\{\{albacea_motherLastName\}\}#/g,
+        data.albacea_motherLastName,
+      );
+      htmlBase = htmlBase.replace(
+        /#\{\{albacea_subtitue_name\}\}#/g,
+        data.albacea_substitute_name,
+      );
+      htmlBase = htmlBase.replace(
+        /#\{\{albacea_subtitue_fatherLastName\}\}#/g,
+        data.albacea_subtitue_fatherLastName,
+      );
+      htmlBase = htmlBase.replace(
+        /#\{\{albacea_subtitue_motherLastName\}\}#/g,
+        data.albacea_subtitue_motherLastName,
+      );
+      // Realiza aquí los reemplazos para los demás placeholders de cada sección...
 
+      if (!data.document_number) {
+        htmlBase = htmlBase.replace(
+          /<section id="section1">[\s\S]*?<\/section>/g,
+          '',
+        );
+      }
       await this.pdfProcessRepository.updateHtmlData(pdfProcessId, htmlBase);
-
       await this.pdfProcessRepository.updateStatus(pdfProcessId, 'HtmlOk');
 
       const bucketName = process.env.BUCKET_WILL;
       const htmlKey = pdfProcessId + '.html';
       const s3Client = new S3Client({});
-
       const s3Params = {
         Bucket: bucketName,
         Key: htmlKey,
@@ -151,26 +211,28 @@ export class TestamentPdfService {
       await s3Client.send(new PutObjectCommand(s3Params));
       console.log('File HTML uploaded successfully to S3:', htmlKey);
 
-      const queProcessPdf = process.env.QUEUE_GENERATE_PDF;
+      // 11) Encolar la generación de PDF en SQS
+      const queueUrl = process.env.QUEUE_GENERATE_PDF;
       const payload = {
         html: {
-          bucket: process.env.BUCKET_WILL,
-          key: pdfProcessId + '.html',
+          bucket: bucketName,
+          key: htmlKey,
         },
         pdf: {
-          bucket: process.env.BUCKET_WILL,
+          bucket: bucketName,
           key: pdfProcessId + '.pdf',
         },
       };
-      await this.sqsService.sendMessage(queProcessPdf, payload);
+      await this.sqsService.sendMessage(queueUrl, payload);
 
+      // 12) Responder
       response.code = 200;
       response.msg =
         'HTML generado correctamente y encolado para conversión PDF.';
       response.response = { pdfProcessId };
       return response;
     } catch (error) {
-      // Si hay error, marcamos como Failed
+      // En caso de error, marcar el proceso como Failed
       await this.pdfProcessRepository
         .updateStatus(pdfProcessId, 'Failed')
         .catch(() => null);

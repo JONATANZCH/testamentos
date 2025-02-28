@@ -15,11 +15,9 @@ export class PdfProcessRepository {
 
   constructor(private prismaprovider: PrismaProvider) {}
 
-  /**
-   * Crea un registro en la tabla PdfProcess.
-   */
   async createPdfProcess(data: CreatePdfProcessDto) {
     this.prisma = await this.prismaprovider.getPrismaClient();
+
     return this.prisma.pdfProcess.create({
       data: {
         userId: data.userId,
@@ -31,9 +29,6 @@ export class PdfProcessRepository {
     });
   }
 
-  /**
-   * Obtiene un registro pdfProcess por su ID.
-   */
   async getPdfProcessById(pdfProcessId: string) {
     this.prisma = await this.prismaprovider.getPrismaClient();
     return this.prisma.pdfProcess.findUnique({
@@ -43,9 +38,6 @@ export class PdfProcessRepository {
     });
   }
 
-  /**
-   * Actualiza el campo status de un proceso en pdfProcess.
-   */
   async updateStatus(pdfProcessId: string, newStatus: string) {
     this.prisma = await this.prismaprovider.getPrismaClient();
     return this.prisma.pdfProcess.update({
@@ -54,9 +46,6 @@ export class PdfProcessRepository {
     });
   }
 
-  /**
-   * Guarda el HTML generado en la columna htmlData
-   */
   async updateHtmlData(pdfProcessId: string, htmlData: string) {
     this.prisma = await this.prismaprovider.getPrismaClient();
     return this.prisma.pdfProcess.update({
