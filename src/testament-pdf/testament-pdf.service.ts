@@ -28,24 +28,33 @@ export class TestamentPdfService {
     this.sqsService = sqsservice;
   }
 
-  async requestPdfProcess(userId: string): Promise<GeneralResponseDto> {
+  async requestPdfProcess(
+    userId: string,
+    version: number,
+  ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
 
     try {
       this.prisma = await this.prismaprovider.getPrismaClient();
       if (!this.prisma) {
         response.code = 500;
-        response.msg = 'No se pudo obtener instancia de Prisma.';
+        response.msg = 'Failed to get Prisma instance.';
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      const latestProcess =
-        await this.pdfProcessRepository.getLatestProcessForUser(userId);
-      const newVersion = latestProcess ? latestProcess.version + 1 : 1;
+      const existsVersion = await this.pdfProcessRepository.validateVersion(
+        userId,
+        version,
+      );
+      if (!existsVersion) {
+        response.code = 400;
+        response.msg = `Version ${version} does not exist for user ${userId}.`;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
 
       const newProcess = await this.pdfProcessRepository.createPdfProcess({
         userId,
-        version: newVersion,
+        version,
         status: 'PdfQueued',
         htmlData: null,
         metadata: {},

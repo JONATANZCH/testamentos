@@ -1,9 +1,9 @@
-import { Controller, Post, Body, Param, Get } from '@nestjs/common';
+import { Controller, Post, Body, Param } from '@nestjs/common';
 import { TestamentPdfService } from './testament-pdf.service';
 import { GeneralResponseDto } from '../common/response.dto';
 import { ConfigService } from '../config/config.service';
 
-@Controller('wills/users')
+@Controller('testaments')
 export class TestamentPdfController {
   private readonly environment: string;
 
@@ -11,23 +11,26 @@ export class TestamentPdfController {
     private readonly testamentPdfService: TestamentPdfService,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.getNodeEnv() + '/wills/users';
+    this.environment = this.configService.getNodeEnv() + '/testaments';
     Reflect.defineMetadata('path', this.environment, TestamentPdfController);
     console.log('Version - 20250123 11:00am');
     console.log('Environment running -> ' + this.environment);
   }
 
-  @Get('/:userId/testaments/pdf')
+  @Post('/:userId/pdf')
   async requestPdfGeneration(
     @Param('userId') userId: string,
+    @Body('version') version: number,
   ): Promise<GeneralResponseDto> {
-    return this.testamentPdfService.requestPdfProcess(userId);
+    console.log(`[requestPdfGeneration] userId=${userId}, version=${version}`);
+    return this.testamentPdfService.requestPdfProcess(userId, version);
   }
 
-  @Post('/:userId/testaments/processpdf')
+  @Post('/:userId/processpdf')
   async processPdfCallback(
     @Body() body: { pdfProcessId: string },
   ): Promise<GeneralResponseDto> {
+    console.log(`[processPdfCallback] pdfProcessId=${body.pdfProcessId}`);
     return this.testamentPdfService.handlePdfProcess(body.pdfProcessId);
   }
 }

@@ -29,6 +29,14 @@ export class PdfProcessRepository {
     });
   }
 
+  async validateVersion(userId: string, version: number): Promise<boolean> {
+    this.prisma = await this.prismaprovider.getPrismaClient();
+    const record = await this.prisma.testamentHeader.findFirst({
+      where: { userId, version },
+    });
+    return !!record;
+  }
+
   async getLatestProcessForUser(userId: string) {
     this.prisma = await this.prismaprovider.getPrismaClient();
     return this.prisma.pdfProcess.findFirst({
