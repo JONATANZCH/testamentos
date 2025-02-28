@@ -39,9 +39,13 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
+      const latestProcess =
+        await this.pdfProcessRepository.getLatestProcessForUser(userId);
+      const newVersion = latestProcess ? latestProcess.version + 1 : 1;
+
       const newProcess = await this.pdfProcessRepository.createPdfProcess({
         userId,
-        version: 1,
+        version: newVersion,
         status: 'PdfQueued',
         htmlData: null,
         metadata: {},
@@ -103,7 +107,7 @@ export class TestamentPdfService {
           addresses: true,
           assets: {
             include: {
-              category: true, // include la categoría del asset
+              category: true,
             },
           },
           contacts: {
@@ -454,7 +458,7 @@ export class TestamentPdfService {
 
       // 12) Subir a S3
       const bucketName = process.env.BUCKET_WILL;
-      const htmlKey = pdfProcessId + '.html';
+      const htmlKey = `${processRecord.userId}_${processRecord.version}.html`;
       const s3Client = new S3Client({});
       await s3Client.send(
         new PutObjectCommand({

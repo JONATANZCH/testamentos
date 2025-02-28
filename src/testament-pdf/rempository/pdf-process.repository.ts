@@ -29,6 +29,14 @@ export class PdfProcessRepository {
     });
   }
 
+  async getLatestProcessForUser(userId: string) {
+    this.prisma = await this.prismaprovider.getPrismaClient();
+    return this.prisma.pdfProcess.findFirst({
+      where: { userId },
+      orderBy: { version: 'desc' },
+    });
+  }
+
   async getPdfProcessById(pdfProcessId: string) {
     this.prisma = await this.prismaprovider.getPrismaClient();
     return this.prisma.pdfProcess.findUnique({
