@@ -225,7 +225,7 @@
                 }
 
                 @bottom-left {
-                    content: "UUID: {{uui}}";
+                    content: "UUID: #{{uui}}#";
                     font-size: 10pt;
                     padding-left: 0.5cm;
                     padding-bottom: 1cm;
@@ -280,7 +280,7 @@
                         <!-- ============ SECTION 1 ============ -->
                         <section id="section1">
                             <div class="content">
-                                <p><strong>Registro del Documento:</strong>#{{document_number}}#</p>
+                                <p><strong>Registro del Documento: </strong>#{{document_number}}#</p>
                                 <p><strong>En la Ciudad de México a #{{date_and_time_SIGNATURE}}#</strong></p>
                                 <p>
                                     Yo, <strong>#{{name}}# #{{fatherLastName}}# #{{motherLastName}}#</strong>, de nacionalidad
@@ -346,7 +346,7 @@
                                 <p>
                                     Para la administración y ejecución de este testamento, nombro como <strong>Albacea
                                         General</strong> a <strong>#{{albacea_name}}# #{{albacea_fatherLastName}}#
-                                        {{albacea_motherLastName}}</strong>, con las facultades necesarias para
+                                        #{{albacea_motherLastName}}#</strong>, con las facultades necesarias para
                                     representar mis intereses y garantizar el cumplimiento de mi Última voluntad. En
                                     caso de que el Albacea no pueda o no quiera asumir el cargo, designo como sustituto
                                     a <strong>#{{albacea_subtitue_name}}# #{{albacea_subtitue_fatherLastName}}#
@@ -465,36 +465,20 @@
                                     menciono a continuación:
                                 </p>
                                 <ol>
-                                    <li>
-                                        <strong>#{{descripcion_bien_digital}}#</strong> será legado a
-                                        <strong>#{{parentesco_bien_digital}}#</strong>,
-                                        <strong>#{{nombre_beneficiario_digital}}#</strong>, con identificación
-                                        <strong>#{{tipo_identificacion_digital}}#
-                                            #{{numero_identificacion_digital}}#</strong>.
-                                    </li>
+                                    #{{digital_assets_loop}}#
                                 </ol>
                                 <p>
                                     De igual forma dispongo que los siguientes <strong>bienes digitales</strong> sean
                                     entregados a las personas que menciono a continuación:
                                 </p>
                                 <ol>
-                                    <li>
-                                        <strong>#{{descripcion_bien_digital2}}#</strong> será legado a
-                                        <strong>#{{parentesco_bien_digital2}}#</strong>,
-                                        <strong>#{{nombre_beneficiario_digital2}}#</strong>, con identificación
-                                        <strong>#{{tipo_identificacion_digital2}}#
-                                            #{{numero_identificacion_digital2}}#</strong>.
-                                    </li>
+                                    #{{digital_assets_loop_2}}#
                                 </ol>
                                 <p>
-                                    Para la entrega segura de estos bienes digitales, los accesos y claves
-                                    criptográficas se almacenarán bajo un protocolo de seguridad que garantice su acceso
-                                    exclusivo a los beneficiarios designados.
+                                    Para la entrega segura de estos bienes digitales...
                                 </p>
                                 <p>
-                                    En caso de que alguno de los beneficiarios designados no pudiera o no quisiera
-                                    recibir su legado, dicho bien o derecho será transferido al heredero universal
-                                    designado en este testamento.
+                                    En caso de que alguno de los beneficiarios...
                                 </p>
                             </div>
                         </section>

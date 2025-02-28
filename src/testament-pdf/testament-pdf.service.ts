@@ -6,6 +6,7 @@ import { processException } from '../common/utils/exception.helper';
 import { ConfigService } from '../config';
 import { SqsService } from '../config/sqs-validate.service';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { v4 as uuidv4 } from 'uuid';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -40,7 +41,7 @@ export class TestamentPdfService {
 
       const newProcess = await this.pdfProcessRepository.createPdfProcess({
         userId,
-        version: null,
+        version: 1,
         status: 'PdfQueued',
         htmlData: null,
         metadata: {},
@@ -66,78 +67,282 @@ export class TestamentPdfService {
 
   async handlePdfProcess(pdfProcessId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
+    console.log(
+      `[handlePdfProcess] Starting with pdfProcessId=${pdfProcessId}`,
+    );
+
     try {
-      // 1) Obtener instancia de Prisma
       this.prisma = await this.prismaprovider.getPrismaClient();
       if (!this.prisma) {
+        console.log(`[handlePdfProcess] Prisma is null`);
         response.code = 500;
-        response.msg = 'No se pudo obtener instancia de Prisma.';
+        response.msg = 'Failed to get Prisma instance.';
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      // 2) Buscar el proceso en la DB
       const processRecord =
         await this.pdfProcessRepository.getPdfProcessById(pdfProcessId);
       if (!processRecord) {
         response.code = 404;
-        response.msg = 'No se encontró el proceso con ID ' + pdfProcessId;
+        response.msg = `Process with ID not found ${pdfProcessId}`;
+        console.log(
+          `[handlePdfProcess] pdfProcess not found -> ${pdfProcessId}`,
+        );
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
+      console.log(`[handlePdfProcess] pdfProcessRecord=`, processRecord);
 
-      // 3) Actualizar estatus a GeneratingHtml
       await this.pdfProcessRepository.updateStatus(
         pdfProcessId,
         'GeneratingHtml',
       );
 
-      // 4) Consultar datos del usuario
       const user = await this.prisma.user.findUnique({
         where: { id: processRecord.userId },
         include: {
-          // Puedes incluir otras relaciones si lo necesitas, por ejemplo, testamentHeaders, addresses, etc.
+          addresses: true,
+          assets: {
+            include: {
+              category: true, // include la categoría del asset
+            },
+          },
+          contacts: {
+            include: {
+              legalEntity: true,
+            },
+          },
+          testamentHeaders: {
+            include: {
+              Executor: {
+                include: { contact: true },
+              },
+              TestamentAssignment: {
+                include: {
+                  asset: {
+                    include: {
+                      category: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          pets: true,
+          termsAndOffers: true,
         },
       });
+
       if (!user) {
         response.code = 404;
-        response.msg = `Usuario con id ${processRecord.userId} no encontrado`;
+        response.msg = `User whit id: ${processRecord.userId} not found`;
+        console.log(
+          `[handlePdfProcess] user not found -> userId=${processRecord.userId}`,
+        );
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
+      console.log(`[handlePdfProcess] user =>`, user);
 
-      // Opcional: consulta de datos adicionales (por ejemplo, del testamento)
-      // const testament = await this.prisma.testamentHeader.findFirst({ where: { userId: user.id } });
+      const documentNumber = uuidv4();
+      const dateSignature = new Date().toLocaleString('es-MX', {
+        timeZone: 'UTC',
+        dateStyle: 'long',
+        timeStyle: 'short',
+      });
 
-      // 5) Armar objeto con los datos para reemplazo
-      const data = {
-        user_name: user.name || '',
-        user_email: user.email || '',
-        user_full_name:
-          `${user.name} ${user.fatherLastName ?? ''} ${user.motherLastName ?? ''}`.trim(),
-        user_birthDate: user.birthDate
-          ? user.birthDate.toISOString().split('T')[0]
-          : '',
-        version: processRecord.version ? processRecord.version.toString() : '',
-        process_id: pdfProcessId,
-        // Otros datos que puedas necesitar para otras secciones:
-        folio_number: processRecord.metadata?.folio_number || '',
-        document_number: processRecord.metadata?.document_number || '',
-        date_and_time_SIGNATURE:
-          processRecord.metadata?.signature_datetime || '',
-        // Ejemplo para sección de albacea:
-        albacea_name: processRecord.metadata?.albacea_name || '',
-        albacea_fatherLastName:
-          processRecord.metadata?.albacea_fatherLastName || '',
-        albacea_motherLastName:
-          processRecord.metadata?.albacea_motherLastName || '',
-        albacea_substitute_name:
-          processRecord.metadata?.albacea_substitute_name || '',
-        albacea_subtitue_fatherLastName:
-          processRecord.metadata?.albacea_substitute_fatherLastName || '',
-        albacea_subtitue_motherLastName:
-          processRecord.metadata?.albacea_substitute_motherLastName || '',
-        // Puedes seguir agregando campos para cada sección...
+      // Calcula la edad
+      let ageString = '';
+      if (user.birthDate) {
+        const now = new Date();
+        const birth = new Date(user.birthDate);
+        let age = now.getFullYear() - birth.getFullYear();
+        const m = now.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+          age--;
+        }
+        ageString = age.toString();
+      }
+
+      let addressStr = '';
+      if (user.addresses && user.addresses.length > 0) {
+        const addr = user.addresses[0];
+        addressStr = [
+          addr.street,
+          addr.city,
+          addr.state,
+          addr.zipCode,
+          addr.country,
+        ]
+          .filter(Boolean)
+          .join(', ');
+      }
+
+      const placeholdersSec1 = {
+        document_number: documentNumber,
+        date_and_time_SIGNATURE: dateSignature,
+        name: user.name || '',
+        fatherLastName: user.fatherLastName || '',
+        motherLastName: user.motherLastName || '',
+        nationality: user.nationality || '',
+        martial_status: user.maritalstatus || '',
+        address: addressStr,
+        age: ageString,
+        job: 'PENDING',
+        id_type: 'PENDING',
+        id_number: 'PENDING',
+      };
+      console.log(`[handlePdfProcess] placeholdersSec1 =>`, placeholdersSec1);
+
+      const testamentHeader = user.testamentHeaders
+        ? user.testamentHeaders[user.testamentHeaders.length - 1]
+        : null;
+      if (testamentHeader) {
+        console.log(
+          `[handlePdfProcess] Found testamentHeader =>`,
+          testamentHeader,
+        );
+      } else {
+        console.log(`[handlePdfProcess] No testamentHeader found for user.`);
+      }
+
+      let albacea_name = '';
+      let albacea_fatherLastName = '';
+      let albacea_motherLastName = '';
+      let albacea_subtitue_name = '';
+      let albacea_subtitue_fatherLastName = '';
+      let albacea_subtitue_motherLastName = '';
+
+      if (testamentHeader && testamentHeader.Executor.length > 0) {
+        // Tomamos dos; primero principal, segundo sustituto
+        const [execOne, execTwo] = testamentHeader.Executor;
+
+        if (execOne) {
+          albacea_name = execOne.contact.name || '';
+          albacea_fatherLastName = execOne.contact.fatherLastName || '';
+          albacea_motherLastName = execOne.contact.motherLastName || '';
+        }
+        if (execTwo) {
+          albacea_subtitue_name = execTwo.contact.name || '';
+          albacea_subtitue_fatherLastName =
+            execTwo.contact.fatherLastName || '';
+          albacea_subtitue_motherLastName =
+            execTwo.contact.motherLastName || '';
+        }
+      }
+
+      const placeholdersSec3 = {
+        albacea_name,
+        albacea_fatherLastName,
+        albacea_motherLastName,
+        albacea_subtitue_name,
+        albacea_subtitue_fatherLastName,
+        albacea_subtitue_motherLastName,
       };
 
-      // 6) Leer la plantilla HTML base
+      let placeholdersSec4: Record<string, string> = {
+        relation_to_user: '',
+        beneficiarie_name: '',
+        beneficiarie_fatherLastName: '',
+        beneficiarie_motherLastName: '',
+        id_type_beneficiarie: '',
+        id_number_beneficiarie: '',
+        asset_percentage_beneficiarie: '',
+        asset_name_beneficiarie: '',
+      };
+
+      if (testamentHeader && testamentHeader.TestamentAssignment.length > 0) {
+        const assignment = testamentHeader.TestamentAssignment[0];
+        let beneficiaryName = '';
+        let beneficiaryFather = '';
+        let beneficiaryMother = '';
+        let relationToUser = '';
+        const assetPercent = assignment.percentage.toString();
+        const assetName = assignment.asset?.name || '';
+
+        // Distinguimos c->Contact, le->LegalEntity
+        if (assignment.assignmentType === 'c') {
+          const contactId = assignment.assignmentId;
+          const contact = user.contacts.find((c) => c.id === contactId);
+          if (contact) {
+            beneficiaryName = contact.name || '';
+            beneficiaryFather = contact.fatherLastName || '';
+            beneficiaryMother = contact.motherLastName || '';
+            relationToUser = contact.relationToUser || '';
+          }
+        } else if (assignment.assignmentType === 'le') {
+          const entityId = assignment.assignmentId;
+          const entity = await this.prisma.legalEntity.findUnique({
+            where: { id: entityId },
+          });
+
+          if (entity) {
+            beneficiaryName = entity.name || '';
+            beneficiaryFather = '';
+            beneficiaryMother = '';
+            relationToUser = 'Legal Entity';
+          } else {
+            beneficiaryName = 'Entity not found';
+            beneficiaryFather = '';
+            beneficiaryMother = '';
+            relationToUser = 'Legal Entity';
+          }
+        }
+
+        placeholdersSec4 = {
+          relation_to_user: relationToUser,
+          beneficiarie_name: beneficiaryName,
+          beneficiarie_fatherLastName: beneficiaryFather,
+          beneficiarie_motherLastName: beneficiaryMother,
+          id_type_beneficiarie: 'PENDING',
+          id_number_beneficiarie: 'PENDING',
+          asset_percentage_beneficiarie: assetPercent,
+          asset_name_beneficiarie: assetName,
+        };
+      }
+
+      const digitalAssignments = testamentHeader.TestamentAssignment.filter(
+        (assign) => {
+          return assign.asset?.category?.type === 'digital';
+        },
+      );
+
+      const placeholdersSec5Legados = {
+        asset_notes: '',
+        legay_name: '',
+        legay_fatherLastName: '',
+        legacy_motherLastName: '',
+        id_type_legacy: '',
+        id_number_legacy: '',
+      };
+
+      const placeholdersSec6Fideicomiso = {
+        parentesco_fideicomiso1: '',
+        nombre_heredero1_fideicomiso: '',
+        tipo_identificacion1_fideicomiso: '',
+        numero_identificacion1_fideicomiso: '',
+        porcentaje_heredero1_fideicomiso: '',
+        bien_heredero1_fideicomiso: '',
+
+        parentesco_fideicomiso2: '',
+        nombre_heredero2_fideicomiso: '',
+        tipo_identificacion2_fideicomiso: '',
+        numero_identificacion2_fideicomiso: '',
+        porcentaje_heredero2_fideicomiso: '',
+        bien_heredero2_fideicomiso: '',
+
+        parentesco_fideicomiso3: '',
+        nombre_heredero3_fideicomiso: '',
+        tipo_identificacion3_fideicomiso: '',
+        numero_identificacion3_fideicomiso: '',
+        porcentaje_heredero3_fideicomiso: '',
+        bien_heredero3_fideicomiso: '',
+
+        nombre_testador_fideicomiso: user.name || '',
+        nombre_fiduciario_fideicomiso: '',
+        beneficiarios_fideicomiso: '',
+        finalidad_fideicomiso: '',
+        duracion_fideicomiso: '',
+      };
+
       const templatePath = path.join(
         __dirname,
         'templates',
@@ -145,94 +350,137 @@ export class TestamentPdfService {
       );
       let htmlBase = await fs.readFile(templatePath, 'utf8');
 
-      // 7) Realizar los reemplazos de placeholders
-      htmlBase = htmlBase.replace(/#\{\{user_name\}\}#/g, data.user_name);
-      htmlBase = htmlBase.replace(/#\{\{user_email\}\}#/g, data.user_email);
-      htmlBase = htmlBase.replace(
-        /#\{\{user_full_name\}\}#/g,
-        data.user_full_name,
-      );
-      htmlBase = htmlBase.replace(
-        /#\{\{user_birthDate\}\}#/g,
-        data.user_birthDate,
-      );
-      htmlBase = htmlBase.replace(/#\{\{version\}\}#/g, data.version);
-      htmlBase = htmlBase.replace(/#\{\{process_id\}\}#/g, data.process_id);
-      htmlBase = htmlBase.replace(/#\{\{folio_number\}\}#/g, data.folio_number);
-      htmlBase = htmlBase.replace(
-        /#\{\{document_number\}\}#/g,
-        data.document_number,
-      );
-      htmlBase = htmlBase.replace(
-        /#\{\{date_and_time_SIGNATURE\}\}#/g,
-        data.date_and_time_SIGNATURE,
-      );
-      htmlBase = htmlBase.replace(/#\{\{albacea_name\}\}#/g, data.albacea_name);
-      htmlBase = htmlBase.replace(
-        /#\{\{albacea_fatherLastName\}\}#/g,
-        data.albacea_fatherLastName,
-      );
-      htmlBase = htmlBase.replace(
-        /#\{\{albacea_motherLastName\}\}#/g,
-        data.albacea_motherLastName,
-      );
-      htmlBase = htmlBase.replace(
-        /#\{\{albacea_subtitue_name\}\}#/g,
-        data.albacea_substitute_name,
-      );
-      htmlBase = htmlBase.replace(
-        /#\{\{albacea_subtitue_fatherLastName\}\}#/g,
-        data.albacea_subtitue_fatherLastName,
-      );
-      htmlBase = htmlBase.replace(
-        /#\{\{albacea_subtitue_motherLastName\}\}#/g,
-        data.albacea_subtitue_motherLastName,
-      );
-      // Realiza aquí los reemplazos para los demás placeholders de cada sección...
-
-      if (!data.document_number) {
-        htmlBase = htmlBase.replace(
-          /<section id="section1">[\s\S]*?<\/section>/g,
-          '',
-        );
+      for (const [key, value] of Object.entries(placeholdersSec1)) {
+        const regex = new RegExp(`#\\{\\{${key}\\}\\}#`, 'g');
+        htmlBase = htmlBase.replace(regex, value);
       }
+
+      for (const [key, value] of Object.entries(placeholdersSec3)) {
+        const regex = new RegExp(`#\\{\\{${key}\\}\\}#`, 'g');
+        htmlBase = htmlBase.replace(regex, value);
+      }
+
+      for (const [key, value] of Object.entries(placeholdersSec4)) {
+        const regex = new RegExp(`#\\{\\{${key}\\}\\}#`, 'g');
+        htmlBase = htmlBase.replace(regex, value);
+      }
+
+      for (const [key, value] of Object.entries(placeholdersSec5Legados)) {
+        const regex = new RegExp(`#\\{\\{${key}\\}\\}#`, 'g');
+        htmlBase = htmlBase.replace(regex, value);
+      }
+
+      for (const [key, value] of Object.entries(placeholdersSec6Fideicomiso)) {
+        const regex = new RegExp(`#\\{\\{${key}\\}\\}#`, 'g');
+        htmlBase = htmlBase.replace(regex, value);
+      }
+
+      let digitalAssetsHtml_1 = '';
+      let digitalAssetsHtml_2 = '';
+
+      for (let i = 0; i < digitalAssignments.length; i++) {
+        const assign = digitalAssignments[i];
+
+        const assetName = assign.asset?.name;
+
+        let beneficiaryName = '';
+        let beneficiaryFather = '';
+        let beneficiaryMother = '';
+        let relation = '';
+        let govId = 'PENDING';
+
+        if (assign.assignmentType === 'c') {
+          const contactId = assign.assignmentId;
+          const contact = user.contacts.find((c) => c.id === contactId);
+          if (contact) {
+            beneficiaryName = contact.name ?? '';
+            beneficiaryFather = contact.fatherLastName ?? '';
+            beneficiaryMother = contact.motherLastName ?? '';
+            relation = contact.relationToUser ?? '';
+            if (contact.governmentId) govId = contact.governmentId;
+          }
+        } else if (assign.assignmentType === 'le') {
+          const entityId = assign.assignmentId;
+          const entity = await this.prisma.legalEntity.findUnique({
+            where: { id: entityId },
+          });
+          if (entity) {
+            beneficiaryName = entity.name;
+            relation = 'Legal Entity';
+          }
+        }
+
+        const fullName = [beneficiaryName, beneficiaryFather, beneficiaryMother]
+          .filter(Boolean)
+          .join(' ');
+
+        const itemHtml = `
+          <li>
+            <strong>${assetName}</strong> será legado a
+            <strong>${relation}</strong>, <strong>${fullName}</strong>,
+            con identificación <strong>ID ${govId}</strong>.
+          </li>
+        `;
+
+        if (i % 2 === 0) {
+          digitalAssetsHtml_1 += itemHtml;
+        } else {
+          digitalAssetsHtml_2 += itemHtml;
+        }
+      }
+
+      htmlBase = htmlBase.replace(
+        '#{{digital_assets_loop}}#',
+        digitalAssetsHtml_1 || '',
+      );
+      htmlBase = htmlBase.replace(
+        '#{{digital_assets_loop_2}}#',
+        digitalAssetsHtml_2 || '',
+      );
+
+      console.log(
+        `[handlePdfProcess] Final HTML after replacements (first 500 chars):\n`,
+        htmlBase.slice(0, 500),
+      );
+
+      // 10) Guardar en DB
       await this.pdfProcessRepository.updateHtmlData(pdfProcessId, htmlBase);
+      console.log(
+        `[handlePdfProcess] HTML stored in DB (pdfProcess.htmlData).`,
+      );
+
+      // 11) Cambiar estatus a HtmlOk
       await this.pdfProcessRepository.updateStatus(pdfProcessId, 'HtmlOk');
 
+      // 12) Subir a S3
       const bucketName = process.env.BUCKET_WILL;
       const htmlKey = pdfProcessId + '.html';
       const s3Client = new S3Client({});
-      const s3Params = {
-        Bucket: bucketName,
-        Key: htmlKey,
-        Body: htmlBase,
-        ContentType: 'text/html',
-      };
-      await s3Client.send(new PutObjectCommand(s3Params));
-      console.log('File HTML uploaded successfully to S3:', htmlKey);
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: bucketName,
+          Key: htmlKey,
+          Body: htmlBase,
+          ContentType: 'text/html',
+        }),
+      );
+      console.log(`[handlePdfProcess] File HTML uploaded to S3: ${htmlKey}`);
 
-      // 11) Encolar la generación de PDF en SQS
+      // 13) Enviar a SQS
       const queueUrl = process.env.QUEUE_GENERATE_PDF;
       const payload = {
-        html: {
-          bucket: bucketName,
-          key: htmlKey,
-        },
-        pdf: {
-          bucket: bucketName,
-          key: pdfProcessId + '.pdf',
-        },
+        html: { bucket: bucketName, key: htmlKey },
+        pdf: { bucket: bucketName, key: pdfProcessId + '.pdf' },
       };
       await this.sqsService.sendMessage(queueUrl, payload);
+      console.log(`[handlePdfProcess] Sent message to SQS =>`, payload);
 
-      // 12) Responder
       response.code = 200;
-      response.msg =
-        'HTML generado correctamente y encolado para conversión PDF.';
+      response.msg = 'Sección 1 generada y encolada para conversión PDF.';
       response.response = { pdfProcessId };
       return response;
     } catch (error) {
-      // En caso de error, marcar el proceso como Failed
+      console.error(`[handlePdfProcess] Unexpected error =>`, error);
       await this.pdfProcessRepository
         .updateStatus(pdfProcessId, 'Failed')
         .catch(() => null);
@@ -240,12 +488,15 @@ export class TestamentPdfService {
     }
   }
 
-  private async enqueuePdfProcess(processId: any, userId: any): Promise<void> {
-    const path =
-      `/${this.environment}/wills/users/` + userId + `/testaments/processpdf`;
+  private async enqueuePdfProcess(
+    processId: string,
+    userId: string,
+  ): Promise<void> {
+    const pathReq = `/${this.environment}/wills/users/${userId}/testaments/processpdf`;
+
     const sqsBody = {
       version: '2.0',
-      rawPath: path,
+      rawPath: pathReq,
       rawQueryString: '',
       headers: {
         accept: '*/*',
@@ -261,7 +512,7 @@ export class TestamentPdfService {
       requestContext: {
         http: {
           method: 'POST',
-          path: path,
+          path: pathReq,
           protocol: 'HTTP/1.1',
           sourceIp: '',
           userAgent: 'NestJS/testament-pdf',
@@ -274,11 +525,10 @@ export class TestamentPdfService {
       body: JSON.stringify({ pdfProcessId: processId }),
     };
 
-    console.log(`[enqueuePdfProcess] SQS message: ${JSON.stringify(sqsBody)}`);
     const queueUrl = process.env.QUEUE_PROCESS_PDF;
     await this.sqsService.sendMessage(queueUrl, sqsBody);
     console.log(
-      `[enqueuePdfProcess] Message enqueued for pdfProcessId=${processId}`,
+      `[enqueuePdfProcess] SQS message enqueued for pdfProcessId=${processId}`,
     );
   }
 }

@@ -46,12 +46,12 @@ stages:
         dev:
           memorysize: 128
           timeout: 480
-          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment),AWS_SECRET_ID=$(AWS_SECRET_ID)}'
+          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment),AWS_SECRET_ID=$(AWS_SECRET_ID),QUEUE_PROCESS_PDF=$(QUEUE_PROCESS_PDF),BUCKET_WILL=$(BUCKET_WILL),QUEUE_GENERATE_PDF=$(QUEUE_GENERATE_PDF)}'
         qa:
           memorysize: 256
           timeout: 480
-          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment),AWS_SECRET_ID=$(AWS_SECRET_ID)}'
+          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment),AWS_SECRET_ID=$(AWS_SECRET_ID),QUEUE_PROCESS_PDF=$(QUEUE_PROCESS_PDF),BUCKET_WILL=$(BUCKET_WILL),QUEUE_GENERATE_PDF=$(QUEUE_GENERATE_PDF)}'
         prod:
           memorysize: 512
           timeout: 480
-          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment),AWS_SECRET_ID=$(AWS_SECRET_ID)}'
+          envvar: '{AWSREGION=$(AWSREGION),environment=$(environment),AWS_SECRET_ID=$(AWS_SECRET_ID),QUEUE_PROCESS_PDF=$(QUEUE_PROCESS_PDF),BUCKET_WILL=$(BUCKET_WILL),QUEUE_GENERATE_PDF=$(QUEUE_GENERATE_PDF)}'
