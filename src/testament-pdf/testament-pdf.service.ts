@@ -125,6 +125,7 @@ export class TestamentPdfService {
             },
           },
           testamentHeaders: {
+            where: { version: processRecord.version },
             include: {
               Executor: {
                 include: { contact: true },
@@ -505,7 +506,7 @@ export class TestamentPdfService {
     processId: string,
     userId: string,
   ): Promise<void> {
-    const pathReq = `/${this.environment}/wills/users/${userId}/testaments/processpdf`;
+    const pathReq = `/${this.environment}/wills/${userId}/processpdf`;
 
     const sqsBody = {
       version: '2.0',

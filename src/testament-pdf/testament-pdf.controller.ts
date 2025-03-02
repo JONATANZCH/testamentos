@@ -3,7 +3,7 @@ import { TestamentPdfService } from './testament-pdf.service';
 import { GeneralResponseDto } from '../common/response.dto';
 import { ConfigService } from '../config/config.service';
 
-@Controller('testaments')
+@Controller('wills')
 export class TestamentPdfController {
   private readonly environment: string;
 
@@ -11,7 +11,7 @@ export class TestamentPdfController {
     private readonly testamentPdfService: TestamentPdfService,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.getNodeEnv() + '/testaments';
+    this.environment = this.configService.getNodeEnv() + '/wills';
     Reflect.defineMetadata('path', this.environment, TestamentPdfController);
     console.log('Version - 20250123 11:00am');
     console.log('Environment running -> ' + this.environment);
