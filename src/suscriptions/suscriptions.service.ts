@@ -444,15 +444,7 @@ export class SuscriptionsService {
       );
       return response;
     } catch (error) {
-      console.error(
-        `[processPayment] Error en procesamiento para paymentId=${paymentId}:`,
-        error,
-      );
-      if (error instanceof HttpException) throw error;
-      throw new HttpException(
-        { code: 500, msg: 'Internal error processing payment' },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      processException(error);
     }
   }
 }
