@@ -332,21 +332,11 @@ export class UsersService {
         assignmentsCompletion = 100;
       }
 
-      // STEP 4: EXECUTORS - If user has 1 or more executors => 100%
-      let executorsCompletion = 0;
-      const allExecutorsCount = user.testamentHeaders.flatMap(
-        (t) => t.Executor,
-      ).length;
-      if (allExecutorsCount > 0) {
-        executorsCompletion = 100;
-      }
-
       // Build the result object
       const progressData = {
         profile: `${profileCompletion.toFixed(1)}%`,
         assets: `${assetsCompletion}%`,
         assignments: `${assignmentsCompletion}%`,
-        executors: `${executorsCompletion}%`,
       };
 
       // Return as part of a GeneralResponseDto

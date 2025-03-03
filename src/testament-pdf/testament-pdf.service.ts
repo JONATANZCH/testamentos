@@ -25,6 +25,7 @@ export class TestamentPdfService {
     readonly sqsservice: SqsService,
   ) {
     this.environment = this.configService.getNodeEnv();
+    this.getQueueProcessPdf = this.configService.getQueueProcessPdf();
     this.sqsService = sqsservice;
   }
 
@@ -539,7 +540,12 @@ export class TestamentPdfService {
       body: JSON.stringify({ pdfProcessId: processId }),
     };
 
-    const queueUrl = process.env.QUEUE_PROCESS_PDF;
+    const queueUrl = this.getQueueProcessPdf;
+    console.log(
+      '[enqueuePdfProcess] Enqueuing message to SQS =>',
+      sqsBody,
+      queueUrl,
+    );
     await this.sqsService.sendMessage(queueUrl, sqsBody);
     console.log(
       `[enqueuePdfProcess] SQS message enqueued for pdfProcessId=${processId}`,

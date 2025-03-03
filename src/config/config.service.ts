@@ -16,6 +16,7 @@ export class ConfigService {
       PORT: Joi.number(),
       AWSREGION: Joi.string().required(),
       AWS_SECRET_ID: Joi.string().required(),
+      QUEUE_PROCESS_PDF: Joi.string().required(),
     });
 
     const { error, value } = schema.validate(envVariables, {
@@ -57,5 +58,9 @@ export class ConfigService {
 
   getAwsSecretId(): string {
     return this.get('AWS_SECRET_ID');
+  }
+
+  getQueueProcessPdf(): string {
+    return this.get('QUEUE_PROCESS_PDF');
   }
 }
