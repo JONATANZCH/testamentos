@@ -221,12 +221,8 @@ export class SuscriptionsService {
 
       const { userId, itemspaid, amount } = payment;
       if (!userId || !itemspaid) {
-        this.logger.error(
+        console.log(
           '[processPaymentData] Missing userId or itemspaid in payment',
-        );
-        throw new HttpException(
-          { code: 400, msg: 'Invalid payment data' },
-          HttpStatus.BAD_REQUEST,
         );
       }
 
