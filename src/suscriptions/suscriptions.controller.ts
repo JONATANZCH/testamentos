@@ -13,7 +13,7 @@ import { SuscriptionsService } from './suscriptions.service';
 import { ConfigService } from '../config';
 import { GeneralResponseDto, PaginationDto } from '../common';
 
-@Controller()
+@Controller('wills/payments')
 export class SuscriptionsController {
   private readonly environment: string;
 
@@ -21,7 +21,7 @@ export class SuscriptionsController {
     private readonly suscriptionsService: SuscriptionsService,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.getNodeEnv() + '/payments';
+    this.environment = this.configService.getNodeEnv() + '/wills/payments';
     Reflect.defineMetadata('path', this.environment, SuscriptionsController);
     console.log('Version - 20250123 11:00am');
     console.log('Environment running -> ' + this.environment);
