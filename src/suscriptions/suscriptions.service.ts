@@ -38,10 +38,11 @@ export class SuscriptionsService {
       const offset = (pageNumber - 1) * limitNumber;
       console.log('[getServices] Querying services...');
 
-      const whereClause: any = { country };
-      if (type) {
-        whereClause.type = type;
-      }
+      const whereClause = {
+        country,
+        ...(type &&
+          type.trim() && { type: { equals: type, mode: 'insensitive' } }),
+      };
 
       const [services, total] = await Promise.all([
         this.prisma.services.findMany({
@@ -133,7 +134,7 @@ export class SuscriptionsService {
           where: { userId },
           skip: offset,
           take: limitNumber,
-          orderBy: { paymentDate: 'desc' },
+          orderBy: { suscriptionDate: 'desc' },
         }),
         this.prisma.usersSuscriptions.count({
           where: { userId },
