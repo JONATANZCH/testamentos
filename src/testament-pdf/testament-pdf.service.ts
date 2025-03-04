@@ -483,9 +483,10 @@ export class TestamentPdfService {
 
       // 13) Enviar a SQS
       const queueUrl = process.env.QUEUE_GENERATE_PDF;
+      const pdfKey = `${processRecord.userId}_${processRecord.version}.pdf`;
       const payload = {
         html: { bucket: bucketName, key: htmlKey },
-        pdf: { bucket: bucketName, key: pdfProcessId + '.pdf' },
+        pdf: { bucket: bucketName, key: pdfKey },
       };
       await this.sqsService.sendMessage(queueUrl, payload);
       console.log(`[handlePdfProcess] Sent message to SQS =>`, payload);
