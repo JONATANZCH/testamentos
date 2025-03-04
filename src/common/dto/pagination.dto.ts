@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
 import { CountryCode } from '../enums/country-code.enum';
+import { ServiceType } from '../enums/service-type.enum';
 
 export class PaginationDto {
   @IsOptional()
@@ -16,6 +17,9 @@ export class PaginationDto {
   readonly limit: number = 10;
 
   @IsOptional()
+  @IsEnum(ServiceType, {
+    message: `type must be one of the following values: ${Object.values(ServiceType).join(', ')}`,
+  })
   readonly type?: string;
 
   @IsOptional()

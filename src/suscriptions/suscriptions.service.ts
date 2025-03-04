@@ -40,8 +40,7 @@ export class SuscriptionsService {
 
       const whereClause = {
         country,
-        ...(type &&
-          type.trim() && { type: { equals: type, mode: 'insensitive' } }),
+        ...(type ? { type: { equals: type } } : {}),
       };
 
       const [services, total] = await Promise.all([
