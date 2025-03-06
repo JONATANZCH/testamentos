@@ -3,9 +3,15 @@ import { SuscriptionsService } from './suscriptions.service';
 import { SuscriptionsController } from './suscriptions.controller';
 import { PrismaProvider } from 'src/providers';
 import { ConfigService } from '../config';
+import { PPErrorManagementService } from '../config/ppErrorManagement.service';
 
 @Module({
   controllers: [SuscriptionsController],
-  providers: [SuscriptionsService, PrismaProvider, ConfigService],
+  providers: [
+    SuscriptionsService,
+    PrismaProvider,
+    ConfigService,
+    PPErrorManagementService,
+  ],
 })
 export class SuscriptionsModule {}

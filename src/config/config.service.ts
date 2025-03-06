@@ -17,6 +17,8 @@ export class ConfigService {
       AWSREGION: Joi.string().required(),
       AWS_SECRET_ID: Joi.string().required(),
       QUEUE_PROCESS_PDF: Joi.string().required(),
+      PPERRORMANAGEMENT: Joi.string().required(),
+      GETSNSTOPICARN: Joi.string().required(),
     });
 
     const { error, value } = schema.validate(envVariables, {
@@ -62,5 +64,13 @@ export class ConfigService {
 
   getQueueProcessPdf(): string {
     return this.get('QUEUE_PROCESS_PDF');
+  }
+
+  getPpErrorManagement(): string {
+    return this.get('PPERRORMANAGEMENT');
+  }
+
+  getSnsTopicArn(): string {
+    return this.get('GETSNSTOPICARN');
   }
 }

@@ -4,4 +4,6 @@ export interface EnvConfig {
   AWSREGION: string;
   AWS_SECRET_ID: string;
   QUEUE_PROCESS_PDF: string;
+  PPERRORMANAGEMENT: string;
+  GETSNSTOPICARN: string;
 }

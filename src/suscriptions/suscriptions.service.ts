@@ -2,13 +2,17 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import { GeneralResponseDto } from '../common';
 import { processException } from '../common/utils/exception.helper';
+import { PPErrorManagementService } from '../config/ppErrorManagement.service';
 
 @Injectable()
 export class SuscriptionsService {
   private readonly logger = new Logger(SuscriptionsService.name);
   private prisma: any = null;
 
-  constructor(private readonly prismaProvider: PrismaProvider) {}
+  constructor(
+    private readonly prismaProvider: PrismaProvider,
+    private readonly ppErrorMgmtService: PPErrorManagementService,
+  ) {}
 
   async getServices(
     page: number,
@@ -280,6 +284,15 @@ export class SuscriptionsService {
 
       // 2. Verificar si el pago cubre el total
       if (amount < totalExpected) {
+        await this.ppErrorMgmtService.sendLog({
+          microsvc: 'Testamentos',
+          process: 'Testamentos/processPaymentData',
+          message: `Pago insuficiente: required=${totalExpected}, got=${amount}`,
+          code: '',
+          idrelated: paymentId,
+          level: 'warning',
+          metadata: { totalExpected, amount, items: itemspaid },
+        });
         await this.prisma.servicesError.create({
           data: {
             paymentId,
