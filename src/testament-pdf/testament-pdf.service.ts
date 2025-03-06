@@ -555,35 +555,70 @@ export class TestamentPdfService {
   }
 
   async getProcessStatus(processId: string, body: any) {
-    // const response = new GeneralResponseDto();
+    const response = new GeneralResponseDto();
 
     try {
       console.log(
         `[getProcessStatus] Starting with processId=${processId} body=`,
         body,
       );
-      // this.prisma = await this.prismaprovider.getPrismaClient();
-      // if (!this.prisma) {
-      //   response.code = 500;
-      //   response.msg = 'Failed to get Prisma instance.';
-      //   throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
-      // }
+      this.prisma = await this.prismaprovider.getPrismaClient();
+      if (!this.prisma) {
+        response.code = 500;
+        response.msg = 'Failed to get Prisma instance.';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
 
-      // const processRecord =
-      //   await this.pdfProcessRepository.getPdfProcessById(processId);
-      // if (!processRecord) {
-      //   response.code = 404;
-      //   response.msg = `Process with ID not found ${processId}`;
-      //   throw new HttpException(response, HttpStatus.NOT_FOUND);
-      // }
+      const processRecord =
+        await this.pdfProcessRepository.getPdfProcessById(processId);
+      if (!processRecord) {
+        response.code = 404;
+        response.msg = `Process with ID not found ${processId}`;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
 
-      // response.code = 200;
-      // response.msg = 'Process status retrieved successfully.';
-      // response.response = {
-      //   processId,
-      //   status: processRecord.status,
-      // };
-      // return response;
+      if (body.status) {
+        console.log(
+          `[getProcessStatus] Updating pdfProcess ID=${processId} with status=${body.status}...`,
+        );
+
+        const pdfUrl = `s3://${body.pdf.bucket}/${body.pdf.key}`;
+
+        await this.pdfProcessRepository.updatePdfProcess({
+          id: processId,
+          status: body.status === 'success' ? 'PdfOk' : 'Failed',
+          metadata: {
+            pdfUrl: pdfUrl,
+          },
+        });
+        console.log(
+          `[getProcessStatus] pdfProcess updated with status and pdfUrl=${pdfUrl}`,
+        );
+
+        await this.prisma.testamentHeader.updateMany({
+          where: {
+            userId: processRecord.userId,
+            version: processRecord.version,
+          },
+          data: {
+            pdfStatus: body.status,
+            url: pdfUrl,
+            updateDate: new Date(),
+          },
+        });
+
+        console.log(
+          `[getProcessStatus] testamentHeader updated => userId=${processRecord.userId}, version=${processRecord.version}`,
+        );
+      }
+
+      response.code = 200;
+      response.msg = 'Process status retrieved successfully.';
+      response.response = {
+        processId,
+        status: processRecord.status,
+      };
+      return response;
     } catch (error) {
       processException(error);
     }

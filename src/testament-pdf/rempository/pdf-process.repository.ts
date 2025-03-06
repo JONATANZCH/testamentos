@@ -54,6 +54,20 @@ export class PdfProcessRepository {
     });
   }
 
+  async updatePdfProcess(params: {
+    id: string;
+    status?: string;
+    metadata?: any;
+  }) {
+    return this.prisma.pdfProcess.update({
+      where: { id: params.id },
+      data: {
+        status: params.status,
+        metadata: params.metadata,
+      },
+    });
+  }
+
   async updateStatus(pdfProcessId: string, newStatus: string) {
     this.prisma = await this.prismaprovider.getPrismaClient();
     return this.prisma.pdfProcess.update({
