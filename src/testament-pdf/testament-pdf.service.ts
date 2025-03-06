@@ -495,6 +495,7 @@ export class TestamentPdfService {
       response.code = 200;
       response.msg = 'Sección 1 generada y encolada para conversión PDF.';
       response.response = { pdfProcessId };
+      console.log('[handlePdfProcess] Response =>', response);
       return response;
     } catch (error) {
       console.error(`[handlePdfProcess] Unexpected error =>`, error);
@@ -595,7 +596,7 @@ export class TestamentPdfService {
           `[getProcessStatus] pdfProcess updated with status and pdfUrl=${pdfUrl}`,
         );
 
-        await this.prisma.testamentHeader.updateMany({
+        await this.prisma.testamentHeader.update({
           where: {
             userId: processRecord.userId,
             version: processRecord.version,
