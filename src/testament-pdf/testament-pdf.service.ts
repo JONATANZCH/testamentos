@@ -487,6 +487,7 @@ export class TestamentPdfService {
       const payload = {
         html: { bucket: bucketName, key: htmlKey },
         pdf: { bucket: bucketName, key: pdfKey },
+        proccesId: pdfProcessId,
       };
       await this.sqsService.sendMessage(queueUrl, payload);
       console.log(`[handlePdfProcess] Sent message to SQS =>`, payload);
@@ -551,5 +552,40 @@ export class TestamentPdfService {
     console.log(
       `[enqueuePdfProcess] SQS message enqueued for pdfProcessId=${processId}`,
     );
+  }
+
+  async getProcessStatus(processId: string, body: any) {
+    // const response = new GeneralResponseDto();
+
+    try {
+      console.log(
+        `[getProcessStatus] Starting with processId=${processId} body=`,
+        body,
+      );
+      // this.prisma = await this.prismaprovider.getPrismaClient();
+      // if (!this.prisma) {
+      //   response.code = 500;
+      //   response.msg = 'Failed to get Prisma instance.';
+      //   throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      // }
+
+      // const processRecord =
+      //   await this.pdfProcessRepository.getPdfProcessById(processId);
+      // if (!processRecord) {
+      //   response.code = 404;
+      //   response.msg = `Process with ID not found ${processId}`;
+      //   throw new HttpException(response, HttpStatus.NOT_FOUND);
+      // }
+
+      // response.code = 200;
+      // response.msg = 'Process status retrieved successfully.';
+      // response.response = {
+      //   processId,
+      //   status: processRecord.status,
+      // };
+      // return response;
+    } catch (error) {
+      processException(error);
+    }
   }
 }

@@ -48,10 +48,10 @@ export class TestamentsController {
   }
 
   @Get('/testaments/:testamentId')
-  async getTestamentById(
+  async getTestamentByIdOrFile(
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
   ): Promise<GeneralResponseDto> {
-    return this.testamentsService.getTestamentById(testamentId);
+    return this.testamentsService.getTestamentByIdOrFile(testamentId);
   }
 
   @Post('/users/:userId/testaments')

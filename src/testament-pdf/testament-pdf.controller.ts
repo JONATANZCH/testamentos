@@ -33,4 +33,13 @@ export class TestamentPdfController {
     console.log(`[processPdfCallback] pdfProcessId=${body.pdfProcessId}`);
     return this.testamentPdfService.handlePdfProcess(body.pdfProcessId);
   }
+
+  @Post('/status/pdfGenerate/:processId')
+  async getProcessStatus(
+    @Param('processId') processId: string,
+    @Body() body: any,
+  ) {
+    console.log(`[getProcessStatus] processId=${processId}`);
+    return this.testamentPdfService.getProcessStatus(processId, body);
+  }
 }

@@ -88,7 +88,9 @@ export class TestamentsService {
     }
   }
 
-  async getTestamentById(testamentId: string): Promise<GeneralResponseDto> {
+  async getTestamentByIdOrFile(
+    testamentId: string,
+  ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
