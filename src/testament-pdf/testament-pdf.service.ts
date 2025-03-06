@@ -556,7 +556,10 @@ export class TestamentPdfService {
     );
   }
 
-  async getProcessStatus(processId: string, body: any) {
+  async getProcessStatus(
+    processId: string,
+    body: any,
+  ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
 
     try {
@@ -597,14 +600,33 @@ export class TestamentPdfService {
           `[getProcessStatus] pdfProcess updated with status and pdfUrl=${pdfUrl}`,
         );
 
-        await this.prisma.testamentHeader.updateMany({
+        const header = await this.prisma.testamentHeader.findFirst({
           where: {
             userId: processRecord.userId,
             version: processRecord.version,
           },
+        });
+
+        if (!header) {
+          console.log(
+            `[getProcessStatus] testamentHeader not found => userId=${processRecord.userId}, version=${processRecord.version}`,
+          );
+          response.code = 404;
+          response.msg = `TestamentHeader not found for userId=${processRecord.userId}, version=${processRecord.version}`;
+          throw new HttpException(response, HttpStatus.NOT_FOUND);
+        }
+
+        await this.prisma.testamentHeader.update({
+          where: { id: header.id },
           data: {
             pdfStatus: body.status,
-            url: body,
+            url: {
+              set: {
+                bucket: body.pdf.bucket,
+                key: body.pdf.key,
+                proccesId: body.proccesId,
+              },
+            },
           },
         });
 
@@ -613,6 +635,9 @@ export class TestamentPdfService {
         );
       }
 
+      console.log(
+        `[getProcessStatus] Response => processId=${processId}, status=${processRecord.status}`,
+      );
       response.code = 200;
       response.msg = 'Process status retrieved successfully.';
       response.response = {
@@ -621,6 +646,7 @@ export class TestamentPdfService {
       };
       return response;
     } catch (error) {
+      console.error(`[getProcessStatus] Unexpected error =>`, error);
       processException(error);
     }
   }

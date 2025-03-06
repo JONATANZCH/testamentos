@@ -38,7 +38,7 @@ export class TestamentPdfController {
   async getProcessStatus(
     @Param('processId') processId: string,
     @Body() body: any,
-  ) {
+  ): Promise<GeneralResponseDto> {
     console.log(`[getProcessStatus] processId=${processId}`);
     return this.testamentPdfService.getProcessStatus(processId, body);
   }
