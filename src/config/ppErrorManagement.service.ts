@@ -55,6 +55,8 @@ export class PPErrorManagementService {
           Message:
             `An error occurred in process "${payload.process}":\n${payload.message}\n\n` +
             `Code: ${payload.code || 'N/A'}\nID Related: ${payload.Idrelated || 'N/A'}\n`,
+          MessageGroupId: 'PPErrorManagementGroup',
+          MessageDeduplicationId: new Date().getTime().toString(),
         });
 
         try {
