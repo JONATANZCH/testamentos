@@ -289,8 +289,8 @@ export class SuscriptionsService {
           process: 'Testamentos/processPaymentData',
           message: `Pago insuficiente: required=${totalExpected}, got=${amount}`,
           code: '',
-          idrelated: paymentId,
-          level: 'warning',
+          Idrelated: paymentId,
+          level: 'error',
           metadata: { totalExpected, amount, items: itemsPaid },
         });
         await this.prisma.servicesError.create({

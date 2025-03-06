@@ -9,7 +9,7 @@ export interface PPLogPayload {
   process: string;
   message: string;
   code?: string;
-  idrelated?: string;
+  Idrelated?: string;
   level?: 'error' | 'warning' | 'info';
   metadata?: any;
 }
@@ -54,7 +54,7 @@ export class PPErrorManagementService {
           Subject: `Error in microservice: ${payload.microsvc}`,
           Message:
             `An error occurred in process "${payload.process}":\n${payload.message}\n\n` +
-            `Code: ${payload.code || 'N/A'}\nID Related: ${payload.idrelated || 'N/A'}\n`,
+            `Code: ${payload.code || 'N/A'}\nID Related: ${payload.Idrelated || 'N/A'}\n`,
         });
 
         try {
