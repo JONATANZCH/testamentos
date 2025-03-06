@@ -602,8 +602,7 @@ export class TestamentPdfService {
           },
           data: {
             pdfStatus: body.status,
-            url: pdfUrl,
-            updateDate: new Date(),
+            url: body,
           },
         });
 
