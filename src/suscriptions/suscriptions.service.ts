@@ -223,24 +223,24 @@ export class SuscriptionsService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      const { userId, itemspaid, amount } = payment;
-      if (!userId || !itemspaid) {
+      const { userId, itemsPaid, amount } = payment;
+      if (!userId || !itemsPaid) {
         console.log(
           '[processPaymentData] Missing userId or itemspaid in payment',
         );
       }
 
       console.log(
-        `[processPayment] Procesando ${itemspaid.length} ítem(es) en paymentId=${paymentId}`,
+        `[processPayment] Procesando ${itemsPaid.length} ítem(es) en paymentId=${paymentId}`,
       );
 
       // 1. Validar que el monto cubra el costo total de todos los ítems
       let totalExpected = 0;
 
-      for (const item of itemspaid) {
-        if (!item.servicetype) {
+      for (const item of itemsPaid) {
+        if (!item.serviceType) {
           console.error(
-            `[processPayment] Ítem sin servicetype en paymentId=${paymentId}`,
+            `[processPayment] Ítem sin serviceType en paymentId=${paymentId}`,
           );
           throw new HttpException(
             { code: 400, msg: 'Service type not specified in payment item' },
@@ -260,14 +260,14 @@ export class SuscriptionsService {
             data: {
               paymentId,
               userId,
-              message: `No price found in PriceList for serviceId=${item.id}, serviceType=${item.servicetype}`,
+              message: `No price found in PriceList for serviceId=${item.id}, serviceType=${item.serviceType}`,
               detail: item, // Guardamos el ítem como JSON
             },
           });
           throw new HttpException(
             {
               code: 404,
-              msg: `Price not found for serviceId=${item.id}, serviceType=${item.servicetype}`,
+              msg: `Price not found for serviceId=${item.id}, serviceType=${item.serviceType}`,
             },
             HttpStatus.NOT_FOUND,
           );
@@ -291,14 +291,14 @@ export class SuscriptionsService {
           code: '',
           idrelated: paymentId,
           level: 'warning',
-          metadata: { totalExpected, amount, items: itemspaid },
+          metadata: { totalExpected, amount, items: itemsPaid },
         });
         await this.prisma.servicesError.create({
           data: {
             paymentId,
             userId,
             message: `Payment amount ${amount} is insufficient (required=${totalExpected})`,
-            detail: { itemspaid, totalExpected },
+            detail: { itemsPaid, totalExpected },
           },
         });
         throw new HttpException(
@@ -311,8 +311,8 @@ export class SuscriptionsService {
       }
 
       // 3. Si el monto es suficiente, crear las suscripciones/add-ons
-      for (const item of itemspaid) {
-        switch (item.servicetype) {
+      for (const item of itemsPaid) {
+        switch (item.serviceType) {
           case 'subscription': {
             // 1. Verificar si el usuario ya tiene una suscripción activa
             const activeSubscription =
@@ -416,13 +416,13 @@ export class SuscriptionsService {
 
           default:
             this.logger.error(
-              `[processPaymentData] servicetype no soportado (${item.servicetype}) en paymentId=${paymentId}`,
+              `[processPaymentData] serviceType no soportado (${item.serviceType}) en paymentId=${paymentId}`,
             );
             await this.prisma.servicesError.create({
               data: {
                 paymentId,
                 userId,
-                message: `Unsupported service type: ${item.servicetype}`,
+                message: `Unsupported service type: ${item.serviceType}`,
               },
             });
             throw new HttpException(
