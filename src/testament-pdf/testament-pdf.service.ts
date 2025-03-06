@@ -483,6 +483,7 @@ export class TestamentPdfService {
 
       // 13) Enviar a SQS
       const queueUrl = process.env.QUEUE_GENERATE_PDF;
+      console.log(`[handlePdfProcess] Enqueuing message to SQS =>`, queueUrl);
       const pdfKey = `${processRecord.userId}_${processRecord.version}.pdf`;
       const payload = {
         html: { bucket: bucketName, key: htmlKey },
@@ -596,7 +597,7 @@ export class TestamentPdfService {
           `[getProcessStatus] pdfProcess updated with status and pdfUrl=${pdfUrl}`,
         );
 
-        await this.prisma.testamentHeader.update({
+        await this.prisma.testamentHeader.updateMany({
           where: {
             userId: processRecord.userId,
             version: processRecord.version,

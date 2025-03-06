@@ -17,7 +17,7 @@ export class SqsService {
     const params = {
       QueueUrl: queueUrl,
       MessageBody: JSON.stringify(messageBody),
-      MessageGroupId: 'payments_group',
+      MessageGroupId: 'testament_group',
       MessageDeduplicationId: uuidv4(),
     };
 
