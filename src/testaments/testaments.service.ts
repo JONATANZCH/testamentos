@@ -543,6 +543,7 @@ export class TestamentsService {
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
       if (!this.prisma) {
+        console.error('[streamTestamentPdf] Could not connect to the database');
         res.status(500).json({
           code: 500,
           msg: 'Could not connect to the database',
@@ -557,6 +558,7 @@ export class TestamentsService {
       });
 
       if (!testament) {
+        console.log('[streamTestamentPdf] Testament not found.');
         res.status(404).json({
           code: 404,
           msg: 'No se ha procesado (testament not found).',
@@ -566,6 +568,8 @@ export class TestamentsService {
       }
 
       const status = testament.pdfStatus;
+      console.log(`[streamTestamentPdf] Testament found - Status: ${status}`);
+
       if (!status) {
         res.status(404).json({
           code: 404,
@@ -608,19 +612,46 @@ export class TestamentsService {
         return;
       }
 
+      console.log(
+        `[streamTestamentPdf] Attempting to fetch from S3: Bucket=${bucket}, Key=${key}`,
+      );
+
       try {
         const params = { Bucket: bucket, Key: key };
-        const { Body } = await s3Client.send(new GetObjectCommand(params));
+        const { Body, ContentLength } = await s3Client.send(
+          new GetObjectCommand(params),
+        );
 
-        if (Body instanceof stream.Readable) {
-          res.setHeader('Content-Type', 'application/pdf');
-          res.setHeader('Content-Disposition', `attachment; filename="${key}"`);
+        console.log(
+          `[streamTestamentPdf] S3 Response - ContentLength: ${ContentLength || 'Unknown'}`,
+        );
 
-          // 🔥 **Streaming directo de S3 al cliente**
-          Body.pipe(res);
-        } else {
-          throw new Error('El objeto de S3 no es un stream válido.');
+        if (!(Body instanceof stream.Readable)) {
+          throw new Error(
+            '[streamTestamentPdf] El objeto de S3 no es un stream válido.',
+          );
         }
+
+        console.log('[streamTestamentPdf] Received a valid stream from S3.');
+
+        let firstChunk = '';
+        Body.once('data', (chunk) => {
+          firstChunk = chunk.toString('base64').substring(0, 50);
+          console.log(
+            `[streamTestamentPdf] First bytes of file (Base64): ${firstChunk}`,
+          );
+        });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${key}"`);
+
+        console.log(
+          '[streamTestamentPdf] Headers before sending:',
+          res.getHeaders(),
+        );
+
+        // Streaming directo de S3 al cliente
+        console.log('[streamTestamentPdf] Streaming PDF to client...');
+        Body.pipe(res);
       } catch (error) {
         console.error('Error al leer desde S3:', error);
         res.status(500).json({

@@ -67,6 +67,9 @@ export const handler = async (event, context) => {
     }
   }
 
+  const response = await cachedServer(event, context);
+
   console.log('Processed event:', event);
-  return cachedServer(event, context);
+  console.log('Response:', response);
+  return response;
 };
