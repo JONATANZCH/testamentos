@@ -575,7 +575,7 @@ export class TestamentsService {
       if (!status) {
         res.status(404).json({
           code: 404,
-          msg: 'No se ha procesado el PDF.',
+          msg: 'The PDF has not been processed.',
           response: null,
         });
         return;
@@ -583,7 +583,7 @@ export class TestamentsService {
       if (status === 'PdfQueued' || status === 'GeneratingHtml') {
         res.status(202).json({
           code: 202,
-          msg: 'PDF en proceso. Regrese más tarde.',
+          msg: 'PDF in process. Please check back later.',
           response: { pdfProcessId: testamentId },
         });
         return;
@@ -591,7 +591,7 @@ export class TestamentsService {
       if (status === 'Failed') {
         res.status(406).json({
           code: 406,
-          msg: 'Hubo un error en la generación del PDF. Contacte a soporte.',
+          msg: 'There was an error generating the PDF. Please contact support.',
           response: { pdfProcessId: testamentId },
         });
         return;
