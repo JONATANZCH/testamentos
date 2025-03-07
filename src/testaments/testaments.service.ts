@@ -2,7 +2,6 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import {
   CreateTestamentDto,
-  UpdateTestamentDto,
   CreateAssignmentDto,
   UpdateAssignmentDto,
 } from './dto';
@@ -182,68 +181,68 @@ export class TestamentsService {
     }
   }
 
-  async updateTestament(
-    testamentId: string,
-    updateTestamentDto: UpdateTestamentDto,
-  ): Promise<GeneralResponseDto> {
-    const response = new GeneralResponseDto();
-    try {
-      this.prisma = await this.prismaProvider.getPrismaClient();
-      if (!this.prisma) {
-        console.log('Error-> db-connection-failed');
-        response.code = 500;
-        response.msg = 'Could not connect to the database';
-        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
-      }
+  // async updateTestament(
+  //   testamentId: string,
+  //   updateTestamentDto: UpdateTestamentDto,
+  // ): Promise<GeneralResponseDto> {
+  //   const response = new GeneralResponseDto();
+  //   try {
+  //     this.prisma = await this.prismaProvider.getPrismaClient();
+  //     if (!this.prisma) {
+  //       console.log('Error-> db-connection-failed');
+  //       response.code = 500;
+  //       response.msg = 'Could not connect to the database';
+  //       throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+  //     }
 
-      const testamentExists = await this.prisma.testamentHeader.findUnique({
-        where: { id: testamentId },
-      });
+  //     const testamentExists = await this.prisma.testamentHeader.findUnique({
+  //       where: { id: testamentId },
+  //     });
 
-      if (!testamentExists) {
-        response.code = 404;
-        response.msg = 'Testament not found';
-        throw new HttpException(response, HttpStatus.NOT_FOUND);
-      }
+  //     if (!testamentExists) {
+  //       response.code = 404;
+  //       response.msg = 'Testament not found';
+  //       throw new HttpException(response, HttpStatus.NOT_FOUND);
+  //     }
 
-      // Verificar si el status es 'ACTIVE'
-      if (updateTestamentDto.status === 'ACTIVE') {
-        // Obtener el userId del testamento a actualizar
-        const currentTestament = await this.prisma.testamentHeader.findUnique({
-          where: { id: testamentId },
-          select: { userId: true },
-        });
+  //     // Verificar si el status es 'ACTIVE'
+  //     if (updateTestamentDto.status === 'ACTIVE') {
+  //       // Obtener el userId del testamento a actualizar
+  //       const currentTestament = await this.prisma.testamentHeader.findUnique({
+  //         where: { id: testamentId },
+  //         select: { userId: true },
+  //       });
 
-        if (!currentTestament) {
-          response.code = 404;
-          response.msg = 'Testament not found';
-          throw new HttpException(response, HttpStatus.NOT_FOUND);
-        }
+  //       if (!currentTestament) {
+  //         response.code = 404;
+  //         response.msg = 'Testament not found';
+  //         throw new HttpException(response, HttpStatus.NOT_FOUND);
+  //       }
 
-        // Actualizar todos los testamentos de este usuario a 'INACTIVE'
-        await this.prisma.testamentHeader.updateMany({
-          where: {
-            userId: currentTestament.userId,
-            status: 'ACTIVE',
-            id: { not: testamentId }, // Excluir el testamento actual
-          },
-          data: { status: 'INACTIVE' },
-        });
-      }
+  //       // Actualizar todos los testamentos de este usuario a 'INACTIVE'
+  //       await this.prisma.testamentHeader.updateMany({
+  //         where: {
+  //           userId: currentTestament.userId,
+  //           status: 'ACTIVE',
+  //           id: { not: testamentId }, // Excluir el testamento actual
+  //         },
+  //         data: { status: 'INACTIVE' },
+  //       });
+  //     }
 
-      const testament = await this.prisma.testamentHeader.update({
-        where: { id: testamentId },
-        data: updateTestamentDto,
-      });
+  //     const testament = await this.prisma.testamentHeader.update({
+  //       where: { id: testamentId },
+  //       data: updateTestamentDto,
+  //     });
 
-      response.code = 200;
-      response.msg = 'Testament updated successfully';
-      response.response = testament;
-      return response;
-    } catch (error) {
-      processException(error);
-    }
-  }
+  //     response.code = 200;
+  //     response.msg = 'Testament updated successfully';
+  //     response.response = testament;
+  //     return response;
+  //   } catch (error) {
+  //     processException(error);
+  //   }
+  // }
 
   async deleteTestament(testamentId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();

@@ -16,7 +16,6 @@ import { TestamentsService } from './testaments.service';
 import { Response } from 'express';
 import {
   CreateTestamentDto,
-  UpdateTestamentDto,
   CreateAssignmentDto,
   UpdateAssignmentDto,
 } from './dto';
@@ -71,16 +70,17 @@ export class TestamentsController {
     return this.testamentsService.createTestament(userId, createTestamentDto);
   }
 
-  @Put('/testaments/:testamentId')
-  async updateTestament(
-    @Param('testamentId', ParseUUIDPipe) testamentId: string,
-    @Body() updateTestamentDto: UpdateTestamentDto,
-  ): Promise<GeneralResponseDto> {
-    return this.testamentsService.updateTestament(
-      testamentId,
-      updateTestamentDto,
-    );
-  }
+  //Desactivamos esto por requqerirlo por reglas de negocio
+  // @Put('/testaments/:testamentId')
+  // async updateTestament(
+  //   @Param('testamentId', ParseUUIDPipe) testamentId: string,
+  //   @Body() updateTestamentDto: UpdateTestamentDto,
+  // ): Promise<GeneralResponseDto> {
+  //   return this.testamentsService.updateTestament(
+  //     testamentId,
+  //     updateTestamentDto,
+  //   );
+  // }
 
   @Delete('/testaments/:testamentId')
   async deleteTestament(
