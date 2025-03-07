@@ -10,8 +10,10 @@ import {
   ParseUUIDPipe,
   HttpException,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
 import { TestamentsService } from './testaments.service';
+import { Response } from 'express';
 import {
   CreateTestamentDto,
   UpdateTestamentDto,
@@ -50,8 +52,15 @@ export class TestamentsController {
   @Get('/testaments/:testamentId')
   async getTestamentByIdOrFile(
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
-  ): Promise<GeneralResponseDto> {
-    return this.testamentsService.getTestamentByIdOrFile(testamentId);
+    @Query('type') type: 'metadata' | 'pdf' = 'metadata', // por defecto 'metadata'
+    @Res() res: Response,
+  ): Promise<GeneralResponseDto | void> {
+    if (type === 'pdf') {
+      return await this.testamentsService.streamTestamentPdf(testamentId, res);
+    } else {
+      const result = await this.testamentsService.getTestamentById(testamentId);
+      res.status(result.code).json(result);
+    }
   }
 
   @Post('/users/:userId/testaments')
