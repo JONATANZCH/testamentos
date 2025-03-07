@@ -54,7 +54,7 @@ export class TestamentsController {
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
     @Query('type') type: 'metadata' | 'pdf' = 'metadata', // por defecto 'metadata'
     @Res() res: Response,
-  ): Promise<GeneralResponseDto | void> {
+  ) {
     if (type === 'pdf') {
       return await this.testamentsService.streamTestamentPdf(testamentId, res);
     } else {
