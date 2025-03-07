@@ -9,12 +9,9 @@ import {
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { processException } from '../common/utils/exception.helper';
 import { Response } from 'express';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import * as stream from 'stream';
+import * as AWS from 'aws-sdk';
 
-const s3Client = new S3Client({
-  region: process.env.AWSREGION,
-});
+const s3 = new AWS.S3();
 
 @Injectable()
 export class TestamentsService {
@@ -550,30 +547,30 @@ export class TestamentsService {
         });
         return;
       }
+      console.log('[streamTestamentPdf] Connected to database.');
 
       const testament = await this.prisma.testamentHeader.findUnique({
         where: { id: testamentId },
       });
 
       if (!testament) {
+        console.log('[streamTestamentPdf] Testament not found.');
         res.status(404).json({
           code: 404,
-          msg: 'No se ha procesado (testament not found).',
+          msg: 'Testament not found',
           response: null,
         });
         return;
       }
 
-      const status = testament.pdfStatus;
-      if (!status) {
-        res.status(404).json({
-          code: 404,
-          msg: 'No se ha procesado el PDF.',
-          response: null,
-        });
-        return;
-      }
-      if (status === 'PdfQueued' || status === 'GeneratingHtml') {
+      console.log(
+        `[streamTestamentPdf] Testament found - pdfStatus: ${testament.pdfStatus}`,
+      );
+
+      if (
+        testament.pdfStatus === 'PdfQueued' ||
+        testament.pdfStatus === 'GeneratingHtml'
+      ) {
         res.status(202).json({
           code: 202,
           msg: 'PDF en proceso. Regrese más tarde.',
@@ -581,7 +578,7 @@ export class TestamentsService {
         });
         return;
       }
-      if (status === 'Failed') {
+      if (testament.pdfStatus === 'Failed') {
         res.status(406).json({
           code: 406,
           msg: 'Hubo un error en la generación del PDF. Contacte a soporte.',
@@ -594,11 +591,21 @@ export class TestamentsService {
       let key: string;
 
       try {
-        const urlData = testament.url.set;
-        bucket = urlData.bucket;
-        key = urlData.key;
+        if (
+          typeof testament.url === 'object' &&
+          typeof testament.url.set === 'object' &&
+          testament.url.set.bucket &&
+          testament.url.set.key
+        ) {
+          bucket = testament.url.set.bucket;
+          key = testament.url.set.key;
+        } else {
+          throw new Error(
+            'El campo url no contiene bucket y key correctamente en set.',
+          );
+        }
       } catch (error) {
-        console.error('Error al parsear el campo url:', error);
+        console.error('[streamTestamentPdf] Error parsing URL:', error);
         res.status(500).json({
           code: 500,
           msg: 'Los datos del PDF no están bien guardados en la columna url.',
@@ -607,21 +614,33 @@ export class TestamentsService {
         return;
       }
 
+      console.log(
+        `[streamTestamentPdf] Streaming from S3 - Bucket: ${bucket}, Key: ${key}`,
+      );
+
       try {
         const params = { Bucket: bucket, Key: key };
-        const { Body } = await s3Client.send(new GetObjectCommand(params));
+        const s3Stream = s3.getObject(params).createReadStream();
 
-        if (Body instanceof stream.Readable) {
-          res.setHeader('Content-Type', 'application/octet-stream');
-          res.setHeader('Content-Disposition', `attachment; filename="${key}"`);
+        s3Stream.on('error', (error) => {
+          console.error('[streamTestamentPdf] S3 stream error:', error);
+          res.status(500).json({
+            code: 500,
+            msg: 'Error al leer el PDF desde S3.',
+            response: null,
+          });
+        });
 
-          // 🔥 **Streaming directo de S3 al cliente**
-          Body.pipe(res);
-        } else {
-          throw new Error('El objeto de S3 no es un stream válido.');
-        }
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${key}"`);
+
+        console.log('[streamTestamentPdf] Streaming PDF to client...');
+        s3Stream.pipe(res);
       } catch (error) {
-        console.error('Error al leer desde S3:', error);
+        console.error(
+          '[streamTestamentPdf] Error al obtener el archivo de S3:',
+          error,
+        );
         res.status(500).json({
           code: 500,
           msg: 'Error interno al descargar el PDF.',
