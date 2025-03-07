@@ -8,16 +8,19 @@ import {
 } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { processException } from '../common/utils/exception.helper';
-import { S3 } from 'aws-sdk';
 import { Response } from 'express';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import * as stream from 'stream';
 
-const s3 = new S3();
+const s3Client = new S3Client({
+  region: process.env.AWSREGION,
+});
 
 @Injectable()
 export class TestamentsService {
   private prisma: any = null;
   // Validate valid state if provided
-  private validStatuses = ['ACTIVE', 'INACsTIVE'];
+  private validStatuses = ['ACTIVE', 'INACTIVE'];
 
   constructor(private readonly prismaProvider: PrismaProvider) {}
 
@@ -533,62 +536,101 @@ export class TestamentsService {
     }
   }
 
-  async streamTestamentPdf(testamentId: string, res: Response) {
+  async streamTestamentPdf(
+    testamentId: string,
+    res: Response, // se usa para enviar el stream
+  ): Promise<void> {
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
-      console.log(`[streamTestamentPdf] Fetching testamentId: ${testamentId}`);
+      if (!this.prisma) {
+        res.status(500).json({
+          code: 500,
+          msg: 'Could not connect to the database',
+          response: null,
+        });
+        return;
+      }
+      console.log('[streamTestamentPdf] Connected to database.');
 
       const testament = await this.prisma.testamentHeader.findUnique({
         where: { id: testamentId },
       });
 
       if (!testament) {
-        console.error('[streamTestamentPdf] Testament not found.');
-        return res
-          .status(404)
-          .json({ code: 404, msg: 'Testament not found', response: null });
+        res.status(404).json({
+          code: 404,
+          msg: 'No se ha procesado (testament not found).',
+          response: null,
+        });
+        return;
       }
 
-      console.log(
-        `[streamTestamentPdf] Found testament - Status: ${testament.pdfStatus}`,
-      );
-
-      if (testament.pdfStatus !== 'success') {
-        console.error('[streamTestamentPdf] PDF is not ready.');
-        return res
-          .status(400)
-          .json({ code: 400, msg: 'PDF not ready', response: null });
+      const status = testament.pdfStatus;
+      if (!status) {
+        res.status(404).json({
+          code: 404,
+          msg: 'No se ha procesado el PDF.',
+          response: null,
+        });
+        return;
+      }
+      if (status === 'PdfQueued' || status === 'GeneratingHtml') {
+        res.status(202).json({
+          code: 202,
+          msg: 'PDF en proceso. Regrese más tarde.',
+          response: { pdfProcessId: testamentId },
+        });
+        return;
+      }
+      if (status === 'Failed') {
+        res.status(406).json({
+          code: 406,
+          msg: 'Hubo un error en la generación del PDF. Contacte a soporte.',
+          response: { pdfProcessId: testamentId },
+        });
+        return;
       }
 
-      const { bucket, key } = testament.url.set;
+      let bucket: string;
+      let key: string;
 
-      console.log(
-        `[streamTestamentPdf] Fetching PDF from S3 - Bucket: ${bucket}, Key: ${key}`,
-      );
-
-      const s3Object = await s3
-        .getObject({ Bucket: bucket, Key: key })
-        .promise();
-
-      if (!s3Object.Body) {
-        console.error('[streamTestamentPdf] S3 file is empty.');
-        return res
-          .status(500)
-          .json({ code: 500, msg: 'PDF file is empty', response: null });
+      try {
+        const urlData = testament.url.set;
+        bucket = urlData.bucket;
+        key = urlData.key;
+      } catch (error) {
+        console.error('Error al parsear el campo url:', error);
+        res.status(500).json({
+          code: 500,
+          msg: 'Los datos del PDF no están bien guardados en la columna url.',
+          response: null,
+        });
+        return;
       }
 
-      const pdfBuffer = s3Object.Body as Buffer;
-      const base64Pdf = pdfBuffer.toString('base64');
+      try {
+        const params = { Bucket: bucket, Key: key };
+        const { Body } = await s3Client.send(new GetObjectCommand(params));
 
-      console.log(
-        `[streamTestamentPdf] Successfully fetched PDF. Returning response...`,
-      );
+        if (Body instanceof stream.Readable) {
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="${key}"`);
 
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${key}"`);
-      res.send(Buffer.from(base64Pdf, 'base64'));
+          // 🔥 **Streaming directo de S3 al cliente**
+          Body.pipe(res);
+        } else {
+          throw new Error('El objeto de S3 no es un stream válido.');
+        }
+      } catch (error) {
+        console.error('Error al leer desde S3:', error);
+        res.status(500).json({
+          code: 500,
+          msg: 'Error interno al descargar el PDF.',
+          response: null,
+        });
+      }
     } catch (error) {
-      console.error('[streamTestamentPdf] Unexpected error:', error);
+      console.error('[streamTestamentPdf] Unexpected error =>', error);
       res.status(500).json({
         code: 500,
         msg: 'Unexpected error streaming PDF.',
