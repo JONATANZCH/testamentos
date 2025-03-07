@@ -20,7 +20,7 @@ const s3Client = new S3Client({
 export class TestamentsService {
   private prisma: any = null;
   // Validate valid state if provided
-  private validStatuses = ['ACTIVE', 'INACTIVE'];
+  private validStatuses = ['ACTIVE', 'INACsTIVE'];
 
   constructor(private readonly prismaProvider: PrismaProvider) {}
 
@@ -612,7 +612,7 @@ export class TestamentsService {
         const { Body } = await s3Client.send(new GetObjectCommand(params));
 
         if (Body instanceof stream.Readable) {
-          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Type', 'application/octet-stream');
           res.setHeader('Content-Disposition', `attachment; filename="${key}"`);
 
           // 🔥 **Streaming directo de S3 al cliente**
