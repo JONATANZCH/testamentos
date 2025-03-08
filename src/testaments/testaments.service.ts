@@ -4,13 +4,16 @@ import {
   CreateTestamentDto,
   CreateAssignmentDto,
   UpdateAssignmentDto,
+  UpdateTestamentDto,
 } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { processException } from '../common/utils/exception.helper';
 import { Response } from 'express';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import * as stream from 'stream';
+import { pipeline } from 'stream';
+import { promisify } from 'util';
 
+const streamPipeline = promisify(pipeline);
 const s3Client = new S3Client({
   region: process.env.AWSREGION,
 });
@@ -245,68 +248,55 @@ export class TestamentsService {
     }
   }
 
-  // async updateTestament(
-  //   testamentId: string,
-  //   updateTestamentDto: UpdateTestamentDto,
-  // ): Promise<GeneralResponseDto> {
-  //   const response = new GeneralResponseDto();
-  //   try {
-  //     this.prisma = await this.prismaProvider.getPrismaClient();
-  //     if (!this.prisma) {
-  //       console.log('Error-> db-connection-failed');
-  //       response.code = 500;
-  //       response.msg = 'Could not connect to the database';
-  //       throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
-  //     }
+  async updateTestament(
+    testamentId: string,
+    updateTestamentDto: UpdateTestamentDto,
+  ): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
 
-  //     const testamentExists = await this.prisma.testamentHeader.findUnique({
-  //       where: { id: testamentId },
-  //     });
+      const updatedTestament = await this.prisma.$transaction(async (tx) => {
+        // Buscar el testamento a actualizar
+        const testamentExists = await tx.testamentHeader.findUnique({
+          where: { id: testamentId },
+        });
+        if (!testamentExists) {
+          throw new HttpException(
+            { code: 404, msg: 'Testament not found' },
+            HttpStatus.NOT_FOUND,
+          );
+        }
 
-  //     if (!testamentExists) {
-  //       response.code = 404;
-  //       response.msg = 'Testament not found';
-  //       throw new HttpException(response, HttpStatus.NOT_FOUND);
-  //     }
+        // Solo se permite actualizar si el testamento está en estado DRAFT
+        if (testamentExists.status !== 'DRAFT') {
+          throw new HttpException(
+            { code: 400, msg: 'Only draft testaments can be updated.' },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
 
-  //     // Verificar si el status es 'ACTIVE'
-  //     if (updateTestamentDto.status === 'ACTIVE') {
-  //       // Obtener el userId del testamento a actualizar
-  //       const currentTestament = await this.prisma.testamentHeader.findUnique({
-  //         where: { id: testamentId },
-  //         select: { userId: true },
-  //       });
+        const updated = await tx.testamentHeader.update({
+          where: { id: testamentId },
+          data: updateTestamentDto,
+        });
+        return updated;
+      });
 
-  //       if (!currentTestament) {
-  //         response.code = 404;
-  //         response.msg = 'Testament not found';
-  //         throw new HttpException(response, HttpStatus.NOT_FOUND);
-  //       }
-
-  //       // Actualizar todos los testamentos de este usuario a 'INACTIVE'
-  //       await this.prisma.testamentHeader.updateMany({
-  //         where: {
-  //           userId: currentTestament.userId,
-  //           status: 'ACTIVE',
-  //           id: { not: testamentId }, // Excluir el testamento actual
-  //         },
-  //         data: { status: 'INACTIVE' },
-  //       });
-  //     }
-
-  //     const testament = await this.prisma.testamentHeader.update({
-  //       where: { id: testamentId },
-  //       data: updateTestamentDto,
-  //     });
-
-  //     response.code = 200;
-  //     response.msg = 'Testament updated successfully';
-  //     response.response = testament;
-  //     return response;
-  //   } catch (error) {
-  //     processException(error);
-  //   }
-  // }
+      response.code = 200;
+      response.msg = 'Testament updated successfully';
+      response.response = updatedTestament;
+      return response;
+    } catch (error) {
+      processException(error);
+    }
+  }
 
   async deleteTestament(testamentId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
@@ -628,6 +618,36 @@ export class TestamentsService {
         return;
       }
 
+      console.log(
+        `[streamTestamentPdf] Testament found - Status: ${testament.status}`,
+      );
+      const status = testament.pdfStatus;
+      if (!status) {
+        res.status(404).json({
+          code: 404,
+          msg: 'The PDF has not been processed.',
+          response: null,
+        });
+        return;
+      }
+
+      if (status === 'PdfQueued' || status === 'GeneratingHtml') {
+        res.status(202).json({
+          code: 202,
+          msg: 'PDF in process. Please check back later.',
+          response: { pdfProcessId: testamentId },
+        });
+        return;
+      }
+      if (status === 'Failed') {
+        res.status(406).json({
+          code: 406,
+          msg: 'There was an error generating the PDF. Please contact support.',
+          response: { pdfProcessId: testamentId },
+        });
+        return;
+      }
+
       let bucket: string;
       let key: string;
 
@@ -653,35 +673,36 @@ export class TestamentsService {
       );
 
       try {
-        const params = { Bucket: bucket, Key: key };
         const { Body, ContentLength } = await s3Client.send(
-          new GetObjectCommand(params),
+          new GetObjectCommand({ Bucket: bucket, Key: key }),
         );
+
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        if (!(Body instanceof require('stream').Readable)) {
+          throw new Error('[streamTestamentPdf] Invalid S3 object stream.');
+        }
 
         console.log(
           `[streamTestamentPdf] S3 Response - ContentLength: ${ContentLength || 'Unknown'}`,
         );
 
-        if (!(Body instanceof stream.Readable)) {
-          throw new Error('[streamTestamentPdf] Invalid S3 object stream.');
-        }
-
         // Convertir el ReadableStream en Buffer
-        const chunks: Buffer[] = [];
-        for await (const chunk of Body) {
-          chunks.push(Buffer.from(chunk));
-        }
-        const fileBuffer = Buffer.concat(chunks);
+        // const chunks: Buffer[] = [];
+        // for await (const chunk of Body) {
+        //   chunks.push(Buffer.from(chunk));
+        // }
+        // const fileBuffer = Buffer.concat(chunks);
 
-        console.log('[streamTestamentPdf] Successfully read PDF from S3.');
+        // console.log('[streamTestamentPdf] Successfully read PDF from S3.');
 
         // Enviar el archivo al cliente
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${key}"`);
-        res.setHeader('Content-Length', ContentLength);
+        // res.setHeader('Content-Length', ContentLength);
 
         console.log('[streamTestamentPdf] Streaming PDF to client...');
-        res.end(fileBuffer);
+        await streamPipeline(Body as unknown as NodeJS.ReadableStream, res);
+        console.log('[streamTestamentPdf] Stream completed successfully.');
       } catch (error) {
         console.log('Error reading from S3:', error);
         res.status(500).json({
