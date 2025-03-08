@@ -145,31 +145,95 @@ export class TestamentsService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      const userExists = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
+      const newTestament = await this.prisma.$transaction(async (tx: any) => {
+        // Consultas iniciales en transacción
+        const userExists = await tx.user.findUnique({ where: { id: userId } });
+        if (!userExists) {
+          throw new HttpException(
+            { code: 404, msg: 'User not found' },
+            HttpStatus.NOT_FOUND,
+          );
+        }
 
-      if (!userExists) {
-        response.code = 404;
-        response.msg = 'User not found';
-        throw new HttpException(response, HttpStatus.NOT_FOUND);
-      }
+        const draftTestament = await tx.testamentHeader.findFirst({
+          where: { userId, status: 'DRAFT' },
+        });
+        if (draftTestament) {
+          throw new HttpException(
+            { code: 400, msg: 'A draft testament already exists.' },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
 
-      // Create new Version
-      const lastVersion = await this.prisma.testamentHeader.findFirst({
-        where: { userId },
-        orderBy: { version: 'desc' },
-        select: { version: true },
-      });
-      const newVersion = (lastVersion?.version || 0) + 1;
+        const lastVersion = await tx.testamentHeader.findFirst({
+          where: { userId },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        });
+        const newVersion = (lastVersion?.version || 0) + 1;
 
-      const newTestament = await this.prisma.testamentHeader.create({
-        data: {
-          ...createTestamentDto,
-          userId,
-          version: newVersion,
-          status: 'INACTIVE',
-        },
+        const activeTestament = await tx.testamentHeader.findFirst({
+          where: { userId, status: 'ACTIVE' },
+          orderBy: { creationDate: 'desc' },
+        });
+
+        let createdTestament;
+        if (activeTestament) {
+          // Regla 3: Copiar información del testamento activo para crear un borrador
+          createdTestament = await tx.testamentHeader.create({
+            data: {
+              userId,
+              version: newVersion,
+              status: 'DRAFT',
+              terms: createTestamentDto.terms ?? activeTestament.terms,
+              legalAdvisor:
+                createTestamentDto.legalAdvisor ?? activeTestament.legalAdvisor,
+              notes: createTestamentDto.notes ?? activeTestament.notes,
+            },
+          });
+
+          // Copiar registros de TestamentAssignment
+          const activeAssignments = await tx.testamentAssignment.findMany({
+            where: { testamentId: activeTestament.id },
+          });
+          for (const assignment of activeAssignments) {
+            await tx.testamentAssignment.create({
+              data: {
+                testamentId: createdTestament.id,
+                assetId: assignment.assetId,
+                percentage: assignment.percentage,
+                assignmentType: assignment.assignmentType,
+                assignmentId: assignment.assignmentId,
+                notes: assignment.notes,
+              },
+            });
+          }
+
+          // Copiar registros de Executor
+          const activeExecutors = await tx.executor.findMany({
+            where: { testamentHeaderId: activeTestament.id },
+          });
+          for (const executor of activeExecutors) {
+            await tx.executor.create({
+              data: {
+                testamentHeaderId: createdTestament.id,
+                type: executor.type,
+                contactId: executor.contactId,
+              },
+            });
+          }
+        } else {
+          // Regla 1: Crear testamento
+          createdTestament = await tx.testamentHeader.create({
+            data: {
+              ...createTestamentDto,
+              userId,
+              version: newVersion,
+              status: 'DRAFT',
+            },
+          });
+        }
+        return createdTestament;
       });
 
       response.code = 201;
@@ -535,10 +599,7 @@ export class TestamentsService {
     }
   }
 
-  async streamTestamentPdf(
-    testamentId: string,
-    res: Response, // se usa para enviar el stream
-  ): Promise<void> {
+  async streamTestamentPdf(testamentId: string, res: Response): Promise<void> {
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
       if (!this.prisma) {
@@ -550,6 +611,7 @@ export class TestamentsService {
         });
         return;
       }
+
       console.log('[streamTestamentPdf] Connected to database.');
 
       const testament = await this.prisma.testamentHeader.findUnique({
@@ -560,38 +622,8 @@ export class TestamentsService {
         console.log('[streamTestamentPdf] Testament not found.');
         res.status(404).json({
           code: 404,
-          msg: 'No se ha procesado (testament not found).',
+          msg: 'Testament not found.',
           response: null,
-        });
-        return;
-      }
-
-      console.log(
-        `[streamTestamentPdf] Testament found - Status: ${testament.status}`,
-      );
-      const status = testament.pdfStatus;
-
-      if (!status) {
-        res.status(404).json({
-          code: 404,
-          msg: 'The PDF has not been processed.',
-          response: null,
-        });
-        return;
-      }
-      if (status === 'PdfQueued' || status === 'GeneratingHtml') {
-        res.status(202).json({
-          code: 202,
-          msg: 'PDF in process. Please check back later.',
-          response: { pdfProcessId: testamentId },
-        });
-        return;
-      }
-      if (status === 'Failed') {
-        res.status(406).json({
-          code: 406,
-          msg: 'There was an error generating the PDF. Please contact support.',
-          response: { pdfProcessId: testamentId },
         });
         return;
       }
@@ -604,20 +636,20 @@ export class TestamentsService {
           bucket = testament.url.set.bucket;
           key = testament.url.set.key;
         } else {
-          throw new Error('El campo url no tiene el formato esperado.');
+          throw new Error('Invalid URL format in database.');
         }
       } catch (error) {
         console.error('[streamTestamentPdf] Error parsing URL:', error);
         res.status(500).json({
           code: 500,
-          msg: 'Los datos del PDF no están bien guardados en la columna url.',
+          msg: 'Invalid URL data format.',
           response: null,
         });
         return;
       }
 
       console.log(
-        `[streamTestamentPdf] Attempting to fetch from S3: Bucket=${bucket}, Key=${key}`,
+        `[streamTestamentPdf] Fetching from S3: Bucket=${bucket}, Key=${key}`,
       );
 
       try {
@@ -631,35 +663,30 @@ export class TestamentsService {
         );
 
         if (!(Body instanceof stream.Readable)) {
-          throw new Error(
-            '[streamTestamentPdf] El objeto de S3 no es un stream válido.',
-          );
+          throw new Error('[streamTestamentPdf] Invalid S3 object stream.');
         }
-        console.log('[streamTestamentPdf] Received a valid stream from S3.');
 
-        let firstChunk = '';
-        Body.once('data', (chunk) => {
-          firstChunk = chunk.toString('base64').substring(0, 50);
-          console.log(
-            `[streamTestamentPdf] First bytes of file (Base64): ${firstChunk}`,
-          );
-        });
+        // Convertir el ReadableStream en Buffer
+        const chunks: Buffer[] = [];
+        for await (const chunk of Body) {
+          chunks.push(Buffer.from(chunk));
+        }
+        const fileBuffer = Buffer.concat(chunks);
 
+        console.log('[streamTestamentPdf] Successfully read PDF from S3.');
+
+        // Enviar el archivo al cliente
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${key}"`);
-        console.log(
-          '[streamTestamentPdf] Headers before sending:',
-          res.getHeaders(),
-        );
+        res.setHeader('Content-Length', ContentLength);
 
         console.log('[streamTestamentPdf] Streaming PDF to client...');
-
-        Body.pipe(res);
+        res.end(fileBuffer);
       } catch (error) {
-        console.log('Error al leer desde S3:', error);
+        console.log('Error reading from S3:', error);
         res.status(500).json({
           code: 500,
-          msg: 'Error interno al descargar el PDF.',
+          msg: 'Internal error downloading PDF.',
           response: null,
         });
       }
