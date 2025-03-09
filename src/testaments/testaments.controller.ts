@@ -22,6 +22,7 @@ import {
 } from './dto';
 import { GeneralResponseDto, TestamentQueryDto } from '../common';
 import { ConfigService } from '../config';
+import { UpdateTestamentStatusDto } from './dto/update-testament-tatus.dto';
 
 @Controller('wills')
 export class TestamentsController {
@@ -185,10 +186,22 @@ export class TestamentsController {
     );
   }
 
-  @Delete('testaments/:testamentId/assignments')
+  @Delete('/testaments/:testamentId/assignments')
   async deleteAssignment(
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
   ): Promise<GeneralResponseDto> {
     return this.testamentsService.deleteAssignment(testamentId);
+  }
+
+  @Put('/users/:userId/mint/:testamentId')
+  async updateTestamentStatus(
+    @Param('testamentId', ParseUUIDPipe)
+    testamentId: string,
+    @Body() updateTestamentStatusDto: UpdateTestamentStatusDto,
+  ): Promise<GeneralResponseDto> {
+    return this.testamentsService.updateTestamentStatus(
+      testamentId,
+      updateTestamentStatusDto,
+    );
   }
 }

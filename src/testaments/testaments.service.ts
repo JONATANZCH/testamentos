@@ -12,6 +12,7 @@ import { Response } from 'express';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
+import { UpdateTestamentStatusDto } from './dto/update-testament-tatus.dto';
 
 const streamPipeline = promisify(pipeline);
 const s3Client = new S3Client({
@@ -718,6 +719,74 @@ export class TestamentsService {
         msg: 'Unexpected error streaming PDF.',
         response: null,
       });
+    }
+  }
+
+  async updateTestamentStatus(
+    testamentId: string,
+    updateTestamentStatusDto: UpdateTestamentStatusDto,
+  ): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const updatedTestament = await this.prisma.$transaction(async (tx) => {
+        // Buscar el testamento por ID
+        const testament = await tx.testamentHeader.findUnique({
+          where: { id: testamentId },
+        });
+        if (!testament) {
+          throw new HttpException(
+            { code: 404, msg: 'Testament not found' },
+            HttpStatus.NOT_FOUND,
+          );
+        }
+        // Solo se permite actualizar el status si el testamento es DRAFT
+        if (testament.status !== 'DRAFT') {
+          throw new HttpException(
+            {
+              code: 400,
+              msg: 'Only draft testaments can have their status changed.',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        // si se desea cambiar a ACTIVE, no exista otro testamento ACTIVE para el mismo usuario
+        if (updateTestamentStatusDto.status === 'ACTIVE') {
+          const existingActiveTestament = await tx.testamentHeader.findFirst({
+            where: {
+              userId: testament.userId,
+              status: 'ACTIVE',
+              id: { not: testamentId },
+            },
+          });
+          if (existingActiveTestament) {
+            throw new HttpException(
+              { code: 400, msg: 'The user already has an active testament.' },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+        }
+        // Actualizar el status del testamento
+        const updated = await tx.testamentHeader.update({
+          where: { id: testamentId },
+          data: { status: updateTestamentStatusDto.status },
+        });
+        return updated;
+      });
+
+      response.code = 200;
+      response.msg = 'Testament status updated successfully';
+      response.response = updatedTestament;
+      return response;
+    } catch (error) {
+      processException(error);
     }
   }
 }
