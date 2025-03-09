@@ -57,7 +57,34 @@ export class TestamentsController {
     @Res() res: Response,
   ) {
     if (type === 'pdf') {
-      return await this.testamentsService.streamTestamentPdf(testamentId, res);
+      const fileStream = await this.testamentsService.streamTestamentPdf(
+        testamentId,
+        res,
+      );
+      if (!fileStream) {
+        console.log(
+          '[getTestamentByIdOrFile] fileStream es nulo o indefinido.',
+        );
+        return res.status(500).json({
+          code: 500,
+          msg: 'No se pudo obtener el archivo PDF.',
+        });
+      }
+      if (typeof fileStream !== 'object' || !fileStream.pipe) {
+        console.log(
+          '[getTestamentByIdOrFile] El archivo no es un stream válido.',
+        );
+        return res.status(500).json({
+          code: 500,
+          msg: 'Error al recuperar el archivo PDF.',
+        });
+      }
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${testamentId}.pdf"`,
+      );
+      res.setHeader('Content-Type', 'application/pdf');
+      fileStream.pipe(res);
     } else {
       const result = await this.testamentsService.getTestamentById(testamentId);
       res.status(result.code).json(result);

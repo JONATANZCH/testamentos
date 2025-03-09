@@ -10,20 +10,17 @@ import { GeneralResponseDto, PaginationDto } from '../common';
 import { processException } from '../common/utils/exception.helper';
 import { Response } from 'express';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { pipeline } from 'stream';
-import { promisify } from 'util';
 import { UpdateTestamentStatusDto } from './dto/update-testament-tatus.dto';
-
-const streamPipeline = promisify(pipeline);
-const s3Client = new S3Client({
-  region: process.env.AWSREGION,
-});
-
+import { PassThrough, Readable } from 'stream';
 @Injectable()
 export class TestamentsService {
   private prisma: any = null;
+  private s3 = new S3Client({
+    region: process.env.AWSREGION,
+  });
+
   // Validate valid state if provided
-  private validStatuses = ['ACTIVE', 'INACTIVE'];
+  private validStatuses = ['ACTIVE', 'INACTIVE', 'DRAFT'];
 
   constructor(private readonly prismaProvider: PrismaProvider) {}
 
@@ -445,7 +442,7 @@ export class TestamentsService {
         console.log('Error-> db-connection-failed');
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       // Validar que la asignación exista
@@ -457,7 +454,7 @@ export class TestamentsService {
       if (!existingAssignment) {
         response.code = 404;
         response.msg = 'Assignment not found';
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       // Validar assetId si se modifica
@@ -468,7 +465,7 @@ export class TestamentsService {
         if (!assetExists) {
           response.code = 400;
           response.msg = 'The provided assetId does not exist';
-          return response;
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
         }
       }
 
@@ -491,7 +488,7 @@ export class TestamentsService {
         if (!entityExists) {
           response.code = 400;
           response.msg = 'assignmentId does not match assignmentType';
-          return response;
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
         }
       }
 
@@ -518,7 +515,7 @@ export class TestamentsService {
       ) {
         response.code = 400;
         response.msg = 'Total percentage exceeds 100% for this asset';
-        return response;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
       // Actualizar
@@ -547,7 +544,7 @@ export class TestamentsService {
       if (!this.prisma) {
         response.code = 500;
         response.msg = 'Could not connect to the database';
-        return response;
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       // 1. Verifica que el testamento exista
@@ -558,7 +555,7 @@ export class TestamentsService {
       if (!testament) {
         response.code = 404;
         response.msg = 'Testament not found';
-        return response;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       // 2. (Opcional) Valida que el testamento esté en estado ACTIVE si tu lógica lo requiere
@@ -590,17 +587,15 @@ export class TestamentsService {
     }
   }
 
-  async streamTestamentPdf(testamentId: string, res: Response): Promise<void> {
+  async streamTestamentPdf(testamentId: string, res: Response) {
+    const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
       if (!this.prisma) {
         console.error('[streamTestamentPdf] Could not connect to the database');
-        res.status(500).json({
-          code: 500,
-          msg: 'Could not connect to the database',
-          response: null,
-        });
-        return;
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       console.log('[streamTestamentPdf] Connected to database.');
@@ -611,12 +606,9 @@ export class TestamentsService {
 
       if (!testament) {
         console.log('[streamTestamentPdf] Testament not found.');
-        res.status(404).json({
-          code: 404,
-          msg: 'Testament not found.',
-          response: null,
-        });
-        return;
+        response.code = 404;
+        response.msg = 'Testament not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       console.log(
@@ -624,29 +616,26 @@ export class TestamentsService {
       );
       const status = testament.pdfStatus;
       if (!status) {
-        res.status(404).json({
-          code: 404,
-          msg: 'The PDF has not been processed.',
-          response: null,
-        });
-        return;
+        console.log('[streamTestamentPdf] PDF status not found.');
+        response.code = 404;
+        response.msg = 'PDF status not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
       if (status === 'PdfQueued' || status === 'GeneratingHtml') {
-        res.status(202).json({
-          code: 202,
-          msg: 'PDF in process. Please check back later.',
-          response: { pdfProcessId: testamentId },
-        });
-        return;
+        console.log('[streamTestamentPdf] PDF is still being generated.');
+        response.code = 202;
+        response.msg = 'PDF in process. Please check back later.';
+        response.response = { pdfProcessId: testamentId };
+        throw new HttpException(response, HttpStatus.ACCEPTED);
       }
       if (status === 'Failed') {
-        res.status(406).json({
-          code: 406,
-          msg: 'There was an error generating the PDF. Please contact support.',
-          response: { pdfProcessId: testamentId },
-        });
-        return;
+        console.log('[streamTestamentPdf] PDF generation failed.');
+        response.code = 406;
+        response.msg =
+          'There was an error generating the PDF. Please contact support.';
+        response.response = { pdfProcessId: testamentId };
+        throw new HttpException(response, HttpStatus.NOT_ACCEPTABLE);
       }
 
       let bucket: string;
@@ -674,36 +663,18 @@ export class TestamentsService {
       );
 
       try {
-        const { Body, ContentLength } = await s3Client.send(
-          new GetObjectCommand({ Bucket: bucket, Key: key }),
-        );
+        const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+        const { Body } = await this.s3.send(command);
 
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        if (!(Body instanceof require('stream').Readable)) {
-          throw new Error('[streamTestamentPdf] Invalid S3 object stream.');
+        if (Body instanceof ReadableStream) {
+          console.log('[streamTestamentPdf] Streaming PDF to client...');
+          const passThrough = new PassThrough();
+          Readable.fromWeb(Body as any).pipe(passThrough);
+          return passThrough;
         }
 
-        console.log(
-          `[streamTestamentPdf] S3 Response - ContentLength: ${ContentLength || 'Unknown'}`,
-        );
-
-        // Convertir el ReadableStream en Buffer
-        // const chunks: Buffer[] = [];
-        // for await (const chunk of Body) {
-        //   chunks.push(Buffer.from(chunk));
-        // }
-        // const fileBuffer = Buffer.concat(chunks);
-
-        // console.log('[streamTestamentPdf] Successfully read PDF from S3.');
-
-        // Enviar el archivo al cliente
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${key}"`);
-        // res.setHeader('Content-Length', ContentLength);
-
-        console.log('[streamTestamentPdf] Streaming PDF to client...');
-        await streamPipeline(Body as unknown as NodeJS.ReadableStream, res);
         console.log('[streamTestamentPdf] Stream completed successfully.');
+        return Body as Readable;
       } catch (error) {
         console.log('Error reading from S3:', error);
         res.status(500).json({
