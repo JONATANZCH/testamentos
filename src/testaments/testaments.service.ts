@@ -665,6 +665,7 @@ export class TestamentsService {
       try {
         const command = new GetObjectCommand({ Bucket: bucket, Key: key });
         const response = await this.s3.send(command);
+        console.log('[streamTestamentPdf] S3 response:', response);
 
         if (!response.Body) {
           console.error('[streamTestamentPdf] S3 response body is null');
@@ -681,8 +682,10 @@ export class TestamentsService {
         const passThrough = new PassThrough();
 
         const readableStream = Readable.from(response.Body as any);
+        console.log('[streamTestamentPdf] Piping streams...', readableStream);
         readableStream.pipe(passThrough);
         passThrough.pipe(res);
+        console.log('[streamTestamentPdf] Piping streams... done', passThrough);
       } catch (error) {
         console.log('Error reading from S3:', error);
         res.status(500).json({
