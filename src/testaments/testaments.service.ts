@@ -11,7 +11,7 @@ import { processException } from '../common/utils/exception.helper';
 import { Response } from 'express';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { UpdateTestamentStatusDto } from './dto/update-testament-tatus.dto';
-import { PassThrough, Readable } from 'stream';
+// import { PassThrough, Readable } from 'stream';
 @Injectable()
 export class TestamentsService {
   private prisma: any = null;
@@ -587,6 +587,14 @@ export class TestamentsService {
     }
   }
 
+  async streamToBuffer(stream: any): Promise<Buffer> {
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of stream) {
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
+  }
+
   async streamTestamentPdf(testamentId: string, res: Response) {
     const response = new GeneralResponseDto();
     try {
@@ -672,20 +680,34 @@ export class TestamentsService {
           return res.status(500).json({ code: 500, msg: 'Empty PDF response' });
         }
 
-        console.log('[streamTestamentPdf] Streaming PDF to client...');
+        const buffer = await this.streamToBuffer(response.Body);
+        const base64String = buffer.toString('base64');
+        console.log('[streamTestamentPdf] Streaming PDF to API Gateway...');
+
+        // console.log('[streamTestamentPdf] Streaming PDF to client...');
         res.set({
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${testamentId}.pdf"`,
+          'Content-Disposition': `inline; filename="${testamentId}.pdf"`,
         });
 
-        console.log('[streamTestamentPdf] Stream completed successfully.');
-        const passThrough = new PassThrough();
+        // console.log('[streamTestamentPdf] Stream completed successfully.');
+        // const passThrough = new PassThrough();
 
-        const readableStream = Readable.from(response.Body as any);
-        console.log('[streamTestamentPdf] Piping streams...', readableStream);
-        readableStream.pipe(passThrough);
-        passThrough.pipe(res);
-        console.log('[streamTestamentPdf] Piping streams... done', passThrough);
+        // const readableStream = Readable.from(response.Body as any);
+        // console.log('[streamTestamentPdf] Piping streams...', readableStream);
+        // readableStream.pipe(passThrough);
+        // passThrough.pipe(res);
+        // console.log('[streamTestamentPdf] Piping streams... done', passThrough);
+        // return res.status(200).json({
+        //   statusCode: 200,
+        //   headers: {
+        //     'Content-Type': 'application/pdf',
+        //     'Content-Disposition': `attachment; filename="${key}.pdf"`,
+        //   },
+        //   body: base64String,
+        //   isBase64Encoded: true, // 🔥 Indispensable para que API Gateway entienda que es binario
+        // });
+        return res.send(Buffer.from(base64String, 'base64'));
       } catch (error) {
         console.log('Error reading from S3:', error);
         res.status(500).json({
