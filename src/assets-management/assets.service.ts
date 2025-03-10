@@ -3,7 +3,6 @@ import { CreateAssetDto, UpdateAssetDto } from './dto';
 import { GeneralResponseDto } from 'src/common';
 import { PrismaProvider } from '../providers';
 import { processException } from '../common/utils/exception.helper';
-import { CategoryType } from '../common/enums/category-type.enum';
 
 @Injectable()
 export class AssetsService {
@@ -237,7 +236,7 @@ export class AssetsService {
   async getAllCategories(
     page: number,
     limit: number,
-    type?: string,
+    categoryType?: string,
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
@@ -259,15 +258,8 @@ export class AssetsService {
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
-      if (type && !Object.values(CategoryType).includes(type as CategoryType)) {
-        response.code = 400;
-        response.msg =
-          'Invalid type provided. Allowed values are "digital" or "physical".';
-        throw new HttpException(response, HttpStatus.BAD_REQUEST);
-      }
-
       const offset = (pageNumber - 1) * limitNumber;
-      const whereClause = type ? { type } : {};
+      const whereClause = categoryType ? { type: categoryType } : {};
 
       const [categories, total] = await Promise.all([
         this.prisma.assetCategory.findMany({
