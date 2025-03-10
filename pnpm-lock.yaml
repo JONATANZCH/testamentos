@@ -50,6 +50,9 @@ importers:
       '@smithy/smithy-client':
         specifier: ^4.1.5
         version: 4.1.5
+      '@smithy/types':
+        specifier: ^4.1.0
+        version: 4.1.0
       '@vendia/serverless-express':
         specifier: ^4.12.6
         version: 4.12.6
