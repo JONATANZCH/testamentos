@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { TestamentsService } from './testaments.service';
 import { Response } from 'express';
+import { Readable } from 'stream';
 import {
   CreateTestamentDto,
   CreateAssignmentDto,
@@ -57,10 +58,8 @@ export class TestamentsController {
     @Res() res: Response,
   ) {
     if (type === 'pdf') {
-      const fileStream = await this.testamentsService.streamTestamentPdf(
-        testamentId,
-        res,
-      );
+      const fileStream: Readable =
+        await this.testamentsService.streamTestamentPdf(testamentId, res);
       if (!fileStream) {
         console.log(
           '[getTestamentByIdOrFile] fileStream es nulo o indefinido.',
@@ -79,11 +78,10 @@ export class TestamentsController {
           msg: 'Error al recuperar el archivo PDF.',
         });
       }
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${testamentId}.pdf"`,
-      );
-      res.setHeader('Content-Type', 'application/pdf');
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${testamentId}.pdf"`,
+      });
       fileStream.pipe(res);
     } else {
       const result = await this.testamentsService.getTestamentById(testamentId);
