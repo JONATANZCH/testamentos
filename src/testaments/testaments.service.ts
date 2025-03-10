@@ -8,7 +8,6 @@ import {
 } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { processException } from '../common/utils/exception.helper';
-import { Response } from 'express';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { UpdateTestamentStatusDto } from './dto/update-testament-tatus.dto';
 // import { PassThrough, Readable } from 'stream';
@@ -595,7 +594,7 @@ export class TestamentsService {
     return Buffer.concat(chunks);
   }
 
-  async streamTestamentPdf(testamentId: string, res: Response) {
+  async streamTestamentPdf(testamentId: string) {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
@@ -658,12 +657,9 @@ export class TestamentsService {
         }
       } catch (error) {
         console.error('[streamTestamentPdf] Error parsing URL:', error);
-        res.status(500).json({
-          code: 500,
-          msg: 'Invalid URL data format.',
-          response: null,
-        });
-        return;
+        response.code = 500;
+        response.msg = 'Invalid URL format in database.';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       console.log(
@@ -677,52 +673,34 @@ export class TestamentsService {
 
         if (!response.Body) {
           console.error('[streamTestamentPdf] S3 response body is null');
-          return res.status(500).json({ code: 500, msg: 'Empty PDF response' });
+          throw new HttpException(
+            'Empty PDF response',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
         }
 
         const buffer = await this.streamToBuffer(response.Body);
         const base64String = buffer.toString('base64');
         console.log('[streamTestamentPdf] Streaming PDF to API Gateway...');
 
-        // console.log('[streamTestamentPdf] Streaming PDF to client...');
-        res.set({
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `inline; filename="${testamentId}.pdf"`,
-        });
-
-        // console.log('[streamTestamentPdf] Stream completed successfully.');
-        // const passThrough = new PassThrough();
-
-        // const readableStream = Readable.from(response.Body as any);
-        // console.log('[streamTestamentPdf] Piping streams...', readableStream);
-        // readableStream.pipe(passThrough);
-        // passThrough.pipe(res);
-        // console.log('[streamTestamentPdf] Piping streams... done', passThrough);
-        // return res.status(200).json({
-        //   statusCode: 200,
-        //   headers: {
-        //     'Content-Type': 'application/pdf',
-        //     'Content-Disposition': `attachment; filename="${key}.pdf"`,
-        //   },
-        //   body: base64String,
-        //   isBase64Encoded: true, // 🔥 Indispensable para que API Gateway entienda que es binario
-        // });
-        return res.send(Buffer.from(base64String, 'base64'));
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="${testamentId}.pdf"`,
+          },
+          body: base64String,
+          isBase64Encoded: true,
+        };
       } catch (error) {
         console.log('Error reading from S3:', error);
-        res.status(500).json({
-          code: 500,
-          msg: 'Internal error downloading PDF.',
-          response: null,
-        });
+        response.code = 500;
+        response.msg = 'Error reading from S3';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
     } catch (error) {
       console.log('[streamTestamentPdf] Unexpected error =>', error);
-      res.status(500).json({
-        code: 500,
-        msg: 'Unexpected error streaming PDF.',
-        response: null,
-      });
+      processException(error);
     }
   }
 
