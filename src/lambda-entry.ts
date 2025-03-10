@@ -69,6 +69,14 @@ export const handler = async (event, context) => {
 
   const response = await cachedServer(event, context);
 
+  // 🔹 Detectar si es una respuesta en Base64 y forzar `isBase64Encoded: true`
+  if (
+    response.headers?.['Content-Type'] === 'application/pdf' &&
+    typeof response.body === 'string'
+  ) {
+    response.isBase64Encoded = true;
+  }
+
   console.log('Processed event:', event);
   console.log('Response:', response);
   return response;
