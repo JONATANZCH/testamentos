@@ -14,7 +14,6 @@ import {
 } from '@nestjs/common';
 import { TestamentsService } from './testaments.service';
 import { Response } from 'express';
-import { Readable } from 'stream';
 import {
   CreateTestamentDto,
   CreateAssignmentDto,
@@ -58,31 +57,8 @@ export class TestamentsController {
     @Res() res: Response,
   ) {
     if (type === 'pdf') {
-      const fileStream: Readable =
-        await this.testamentsService.streamTestamentPdf(testamentId, res);
-      if (!fileStream) {
-        console.log(
-          '[getTestamentByIdOrFile] fileStream es nulo o indefinido.',
-        );
-        return res.status(500).json({
-          code: 500,
-          msg: 'No se pudo obtener el archivo PDF.',
-        });
-      }
-      if (typeof fileStream !== 'object' || !fileStream.pipe) {
-        console.log(
-          '[getTestamentByIdOrFile] El archivo no es un stream válido.',
-        );
-        return res.status(500).json({
-          code: 500,
-          msg: 'Error al recuperar el archivo PDF.',
-        });
-      }
-      res.set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${testamentId}.pdf"`,
-      });
-      fileStream.pipe(res);
+      await this.testamentsService.streamTestamentPdf(testamentId, res);
+      return;
     } else {
       const result = await this.testamentsService.getTestamentById(testamentId);
       res.status(result.code).json(result);

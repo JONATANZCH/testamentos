@@ -664,17 +664,25 @@ export class TestamentsService {
 
       try {
         const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-        const { Body } = await this.s3.send(command);
+        const response = await this.s3.send(command);
 
-        if (Body instanceof ReadableStream) {
-          console.log('[streamTestamentPdf] Streaming PDF to client...');
-          const passThrough = new PassThrough();
-          Readable.fromWeb(Body as any).pipe(passThrough);
-          return passThrough;
+        if (!response.Body) {
+          console.error('[streamTestamentPdf] S3 response body is null');
+          return res.status(500).json({ code: 500, msg: 'Empty PDF response' });
         }
 
+        console.log('[streamTestamentPdf] Streaming PDF to client...');
+        res.set({
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${testamentId}.pdf"`,
+        });
+
         console.log('[streamTestamentPdf] Stream completed successfully.');
-        return Body as Readable;
+        const passThrough = new PassThrough();
+
+        const readableStream = Readable.from(response.Body as any);
+        readableStream.pipe(passThrough);
+        passThrough.pipe(res);
       } catch (error) {
         console.log('Error reading from S3:', error);
         res.status(500).json({
