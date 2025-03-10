@@ -1,4 +1,4 @@
 export enum ServiceType {
   SUBSCRIPTION = 'subscription',
-  ADD_ON = 'addOn',
+  ADD_ON = 'addon',
 }

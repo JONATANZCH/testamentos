@@ -10,8 +10,8 @@ import { GeneralResponseDto, PaginationDto } from '../common';
 import { processException } from '../common/utils/exception.helper';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { UpdateTestamentStatusDto } from './dto/update-testament-tatus.dto';
-// import { Response } from 'express';
-// import { Readable } from 'stream';
+import { Response } from 'express';
+
 @Injectable()
 export class TestamentsService {
   private prisma: any = null;
@@ -587,7 +587,7 @@ export class TestamentsService {
     }
   }
 
-  async streamTestamentPdf(testamentId: string) {
+  async streamTestamentPdf(testamentId: string, res: Response) {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
@@ -673,18 +673,13 @@ export class TestamentsService {
         }
 
         const buffer = Buffer.from(await response.Body.transformToByteArray());
-        console.log(
-          '[streamTestamentPdf] Returning Base64 PDF to API Gateway...',
-        );
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': `inline; filename="${testamentId}.pdf"`,
-          },
-          body: buffer.toString('base64'),
-          isBase64Encoded: true,
-        };
+
+        res.set({
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="${testamentId}.pdf"`,
+        });
+
+        res.send(buffer);
       } catch (error) {
         console.log('Error reading from S3:', error);
         response.code = 500;
