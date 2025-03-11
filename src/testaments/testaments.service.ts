@@ -727,6 +727,31 @@ export class TestamentsService {
             HttpStatus.BAD_REQUEST,
           );
         }
+        // Verificar si el usuario tiene créditos disponibles para mintear
+        const availableCredits = await tx.userCredits.findMany({
+          where: {
+            userId: testament.userId,
+            status: 'New',
+            expirationDate: { gte: new Date() },
+          },
+        });
+
+        if (availableCredits.length === 0) {
+          throw new HttpException(
+            {
+              code: 400,
+              msg: 'User has no available credits to mint the testament.',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        // Marcar los créditos como usados
+        await tx.userCredits.updateMany({
+          where: {
+            id: { in: availableCredits.map((credit) => credit.id) },
+          },
+          data: { status: 'Used', usedDate: new Date() },
+        });
         // si se desea cambiar a ACTIVE, no exista otro testamento ACTIVE para el mismo usuario
         if (updateTestamentStatusDto.status === 'ACTIVE') {
           const existingActiveTestament = await tx.testamentHeader.findFirst({
