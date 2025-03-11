@@ -11,17 +11,20 @@ ARG NPM_TOKEN
 COPY package*.json ./
 COPY pnpm-lock.yaml ./
 
-# Configurar el archivo .npmrc directamente en la capa correcta
 RUN echo "registry=https://pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/" > .npmrc \
-    && echo "always-auth=true" >> .npmrc \
-    && echo "; begin auth token" >> .npmrc \
-    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:username=pastpostmx" >> .npmrc \
-    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:_password=${NPM_TOKEN}" >> .npmrc \
-    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:email=npm_requires_email_but_does_not_use_value" >> .npmrc \
-    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/:username=pastpostmx" >> .npmrc \
-    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/:_password=${NPM_TOKEN}" >> .npmrc \
-    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/:email=npm_requires_email_but_does_not_use_value" >> .npmrc \
-    && echo "; end auth token" >> .npmrc
+    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:_authToken=${NPM_TOKEN}" >> .npmrc
+
+# USE THIS FOR LOCAL TEST USING A PAT of azure
+# RUN echo "registry=https://pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/" > .npmrc \
+#     && echo "always-auth=true" >> .npmrc \
+#     && echo "; begin auth token" >> .npmrc \
+#     && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:username=pastpostmx" >> .npmrc \
+#     && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:_password=${NPM_TOKEN}" >> .npmrc \
+#     && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:email=npm_requires_email_but_does_not_use_value" >> .npmrc \
+#     && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/:username=pastpostmx" >> .npmrc \
+#     && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/:_password=${NPM_TOKEN}" >> .npmrc \
+#     && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/:email=npm_requires_email_but_does_not_use_value" >> .npmrc \
+#     && echo "; end auth token" >> .npmrc
 
 # Instalar PNPM de forma global y las dependencias en una sola capa
 RUN npm install -g pnpm \
