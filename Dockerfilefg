@@ -1,24 +1,46 @@
+# Usa la imagen oficial de Node.js 20 como base
 FROM node:20
 
-# Set the working directory inside the container
+# Establece el directorio de trabajo dentro del contenedor
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the working directory
+# Define el argumento para el token de autenticación
+ARG NPM_TOKEN
+
+# Copia solo los archivos necesarios para instalar dependencias
 COPY package*.json ./
-RUN echo "registry=https://pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/" > $HOME/.npmrc \
-    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:_authToken=${NPM_TOKEN}" >> $HOME/.npmrc \
-    && cat $HOME/.npmrc
-# Install the application dependencies
-RUN npm install
-RUN npx --registry=https://registry.npmjs.org prisma generate --schema=${LAMBDA_TASK_ROOT}/node_modules/getprismaclientmanagement/schema.prisma
-# Copy the rest of the application files
+COPY pnpm-lock.yaml ./
+
+# Configurar el archivo .npmrc directamente en la capa correcta
+RUN echo "registry=https://pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/" > .npmrc \
+    && echo "always-auth=true" >> .npmrc \
+    && echo "; begin auth token" >> .npmrc \
+    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:username=pastpostmx" >> .npmrc \
+    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:_password=${NPM_TOKEN}" >> .npmrc \
+    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:email=npm_requires_email_but_does_not_use_value" >> .npmrc \
+    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/:username=pastpostmx" >> .npmrc \
+    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/:_password=${NPM_TOKEN}" >> .npmrc \
+    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/:email=npm_requires_email_but_does_not_use_value" >> .npmrc \
+    && echo "; end auth token" >> .npmrc
+
+# Instalar PNPM de forma global y las dependencias en una sola capa
+RUN npm install -g pnpm \
+    && pnpm install --frozen-lockfile --ignore-scripts
+
+# Copiar el resto de los archivos después de instalar dependencias (para mejor cacheo)
 COPY . .
 
-# Build the NestJS application
-RUN npm run build
+# Ejecutar Prisma Generate
+RUN npx prisma generate --schema=./node_modules/testgetprismaclient/schema.prisma
 
-# Expose the application port
+# Construir la aplicación NestJS
+RUN pnpm run build
+
+# Exponer el puerto de la aplicación
 EXPOSE 3000
 
-# Command to run the application
+# Ejecutar la aplicación con un usuario no root
+USER node
+
+# Comando por defecto para iniciar la aplicación
 CMD ["node", "dist/main"]
