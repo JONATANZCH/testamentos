@@ -5,10 +5,12 @@ WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
-
+RUN echo "registry=https://pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/" > $HOME/.npmrc \
+    && echo "//pkgs.dev.azure.com/pastpostmx/Testamentos/_packaging/Testamentos/npm/registry/:_authToken=${NPM_TOKEN}" >> $HOME/.npmrc \
+    && cat $HOME/.npmrc
 # Install the application dependencies
 RUN npm install
-
+RUN npx --registry=https://registry.npmjs.org prisma generate --schema=${LAMBDA_TASK_ROOT}/node_modules/getprismaclientmanagement/schema.prisma
 # Copy the rest of the application files
 COPY . .
 
