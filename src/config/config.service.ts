@@ -13,7 +13,7 @@ export class ConfigService {
   private validateEnvVariables(envVariables: NodeJS.ProcessEnv): EnvConfig {
     const schema = Joi.object<EnvConfig>({
       environment: Joi.string().valid('dev', 'prod', 'qa'),
-      PORT: Joi.number(),
+      PORT: Joi.number().default(3000),
       AWSREGION: Joi.string().required(),
       AWS_SECRET_ID: Joi.string().required(),
       QUEUE_PROCESS_PDF: Joi.string().required(),

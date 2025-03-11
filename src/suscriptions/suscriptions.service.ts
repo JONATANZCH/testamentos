@@ -224,6 +224,9 @@ export class SuscriptionsService {
       }
 
       const { userId, itemsPaid, amount } = payment;
+      console.log(
+        `[processPayment] payment received: ${JSON.stringify(payment)}`,
+      );
       if (!userId || !itemsPaid) {
         console.log(
           '[processPaymentData] Missing userId or itemspaid in payment',
@@ -251,7 +254,7 @@ export class SuscriptionsService {
         // Buscar el precio del ítem en PriceList
         const priceRecord = await this.prisma.priceList.findFirst({
           where: {
-            serviceId: item.id,
+            id: item.id,
           },
         });
 
@@ -260,14 +263,14 @@ export class SuscriptionsService {
             data: {
               paymentId,
               userId,
-              message: `No price found in PriceList for serviceId=${item.id}, serviceType=${item.serviceType}`,
+              message: `No price found in PriceList for id=${item.id}, serviceType=${item.serviceType}`,
               detail: item, // Guardamos el ítem como JSON
             },
           });
           throw new HttpException(
             {
               code: 404,
-              msg: `Price not found for serviceId=${item.id}, serviceType=${item.serviceType}`,
+              msg: `Price not found for id=${item.id}, serviceType=${item.serviceType}`,
             },
             HttpStatus.NOT_FOUND,
           );

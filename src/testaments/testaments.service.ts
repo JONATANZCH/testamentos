@@ -9,7 +9,7 @@ import {
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { processException } from '../common/utils/exception.helper';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { UpdateTestamentStatusDto } from './dto/update-testament-tatus.dto';
+import { UpdateTestamentMintDto } from './dto/update-testament-tatus.dto';
 import { Response } from 'express';
 
 @Injectable()
@@ -692,9 +692,9 @@ export class TestamentsService {
     }
   }
 
-  async updateTestamentStatus(
+  async updateTestamentMint(
     testamentId: string,
-    updateTestamentStatusDto: UpdateTestamentStatusDto,
+    updateTestamentMintDto: UpdateTestamentMintDto,
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
@@ -752,26 +752,29 @@ export class TestamentsService {
           },
           data: { status: 'Used', usedDate: new Date() },
         });
-        // si se desea cambiar a ACTIVE, no exista otro testamento ACTIVE para el mismo usuario
-        if (updateTestamentStatusDto.status === 'ACTIVE') {
-          const existingActiveTestament = await tx.testamentHeader.findFirst({
+        // validar que no exista otro testamento ACTIVE para el mismo usuario
+        if (updateTestamentMintDto.status === 'ACTIVE') {
+          const existingActiveTestaments = await tx.testamentHeader.findMany({
             where: {
               userId: testament.userId,
               status: 'ACTIVE',
               id: { not: testamentId },
             },
           });
-          if (existingActiveTestament) {
-            throw new HttpException(
-              { code: 400, msg: 'The user already has an active testament.' },
-              HttpStatus.BAD_REQUEST,
-            );
+
+          if (existingActiveTestaments.length > 0) {
+            await tx.testamentHeader.updateMany({
+              where: {
+                id: { in: existingActiveTestaments.map((t) => t.id) },
+              },
+              data: { status: 'INACTIVE' },
+            });
           }
         }
         // Actualizar el status del testamento
         const updated = await tx.testamentHeader.update({
           where: { id: testamentId },
-          data: { status: updateTestamentStatusDto.status },
+          data: { status: updateTestamentMintDto.status },
         });
         return updated;
       });

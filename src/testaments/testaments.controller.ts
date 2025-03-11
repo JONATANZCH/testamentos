@@ -21,7 +21,7 @@ import {
 } from './dto';
 import { GeneralResponseDto, TestamentQueryDto } from '../common';
 import { ConfigService } from '../config';
-import { UpdateTestamentStatusDto } from './dto/update-testament-tatus.dto';
+import { UpdateTestamentMintDto } from './dto/update-testament-tatus.dto';
 import { Response } from 'express';
 
 @Controller('wills')
@@ -193,14 +193,14 @@ export class TestamentsController {
   }
 
   @Put('/users/:userId/mint/:testamentId')
-  async updateTestamentStatus(
+  async updateTestamentMint(
     @Param('testamentId', ParseUUIDPipe)
     testamentId: string,
-    @Body() updateTestamentStatusDto: UpdateTestamentStatusDto,
+    @Body() updateTestamentMintDto: UpdateTestamentMintDto,
   ): Promise<GeneralResponseDto> {
-    return this.testamentsService.updateTestamentStatus(
+    return this.testamentsService.updateTestamentMint(
       testamentId,
-      updateTestamentStatusDto,
+      updateTestamentMintDto,
     );
   }
 }

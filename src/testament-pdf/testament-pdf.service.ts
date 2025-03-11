@@ -53,6 +53,22 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
+      // Validar que el testamento esté en estado 'DRAFT'
+      const testament = await this.prisma.testamentHeader.findFirst({
+        where: {
+          userId,
+          version,
+          status: 'DRAFT',
+        },
+      });
+
+      if (!testament) {
+        response.code = 400;
+        response.msg =
+          'Only testaments in DRAFT status can request PDF generation.';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
       const newProcess = await this.pdfProcessRepository.createPdfProcess({
         userId,
         version,
@@ -550,7 +566,18 @@ export class TestamentPdfService {
       sqsBody,
       queueUrl,
     );
-    await this.sqsService.sendMessage(queueUrl, sqsBody);
+    try {
+      await this.sqsService.sendMessage(queueUrl, sqsBody);
+    } catch (error) {
+      console.error(
+        `[enqueuePdfProcess] Error sending message to SQS =>`,
+        error,
+      );
+      throw new HttpException(
+        'Error sending message to SQS',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
     console.log(
       `[enqueuePdfProcess] SQS message enqueued for pdfProcessId=${processId}`,
     );
