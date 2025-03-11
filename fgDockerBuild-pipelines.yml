@@ -22,4 +22,4 @@ steps:
   inputs:
     command: 'build'
     Dockerfile: '**/Dockerfilefg'
-    arguments: '--build-arg NPM_TOKEN=$(System.AccessToken)'
+    arguments: '--build-arg NPM_TOKEN=OFlQcnZ6UUdQR0s0S1RZRmYweVBNaXpEVDRhVUNPMXhRaDRZRnZoMTFweElYbE8yWHBBUUpRUUo5OUJDQUNBQUFBQUFBQUFBQUFBU0FaRE8zc2J4'
