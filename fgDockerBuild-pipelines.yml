@@ -23,3 +23,15 @@ steps:
     command: 'build'
     Dockerfile: '**/Dockerfilefg'
     arguments: '--build-arg NPM_TOKEN=$(System.AccessToken)'
+- task: ECRPushImage@1
+  inputs:
+    awsCredentials: 'TESAWSDEV'
+    regionName: 'us-east-2'
+    imageSource: 'imagename'
+    sourceImageName: 'testfargate'
+    sourceImageTag: '$(Build.BuildId)'
+    repositoryName: 'testfargate'
+    pushTag: '$(Build.BuildId)'
+
+
+
