@@ -21,8 +21,10 @@ steps:
 - task: Docker@2
   displayName: Docker Build
   inputs:
+    repository: 'testfargate'
     command: 'build'
     Dockerfile: '**/Dockerfilefg'
+    buildContext: '$(Build.SourcesDirectory)'
     arguments: '--build-arg NPM_TOKEN=$(System.AccessToken)'
 - task: ECRPushImage@1
   inputs:
