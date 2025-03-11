@@ -5,6 +5,7 @@ trigger:
  paths:
   exclude:
     - tesMsPipeline.yaml
+    - Dockerfilefg
 
 resources:
   repositories:
