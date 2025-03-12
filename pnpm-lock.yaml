@@ -78,8 +78,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
       testgetprismaclient:
-        specifier: 1.2.19
-        version: 1.2.19(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
+        specifier: 1.3.0
+        version: 1.3.0(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -937,7 +937,7 @@ packages:
     hasBin: true
 
   '@pkgjs/parseargs@0.11.0':
-    resolution: {integrity: sha1-p36nQvqyV3UUVDTrHSMoz1ATrDM=}
+    resolution: {integrity: sha1-p36nQvqyV3UUVDTrHSMoz1ATrDM=, tarball: https://pkgs.dev.azure.com/pastpostmx/Pastpost/_packaging/pastpostNpm/npm/registry/@pkgjs/parseargs/-/parseargs-0.11.0.tgz}
     engines: {node: '>=14'}
 
   '@pkgr/core@0.1.1':
@@ -3319,8 +3319,8 @@ packages:
     resolution: {integrity: sha1-BKhphmHYBepvopO2y55jrARO8V4=}
     engines: {node: '>=8'}
 
-  testgetprismaclient@1.2.19:
-    resolution: {integrity: sha1-im/W++Hzvd24p9ke1K/GmNMtpJg=}
+  testgetprismaclient@1.3.0:
+    resolution: {integrity: sha1-vVriQ+QQlkDymaDKmYH7oNhRIBQ=}
 
   text-table@0.2.0:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
@@ -7820,7 +7820,7 @@ snapshots:
       glob: 7.2.3
       minimatch: 3.1.2
 
-  testgetprismaclient@1.2.19(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2):
+  testgetprismaclient@1.3.0(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2):
     dependencies:
       '@prisma/client': 6.4.1(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
     transitivePeerDependencies:

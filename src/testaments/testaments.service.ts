@@ -224,7 +224,6 @@ export class TestamentsService {
             });
           }
         } else {
-          // Regla 1: Crear testamento
           createdTestament = await tx.testamentHeader.create({
             data: {
               ...createTestamentDto,
@@ -727,6 +726,42 @@ export class TestamentsService {
             HttpStatus.BAD_REQUEST,
           );
         }
+
+        // primero un crédito de tipo 'subscription'
+        let creditToUse = await tx.userCredits.findFirst({
+          where: {
+            userId: testament.userId,
+            status: 'New',
+            type: 'subscription',
+            expirationDate: { gte: new Date() },
+          },
+          orderBy: { createdAt: 'asc' }, // Prioriza los más antiguos
+        });
+
+        // Si no hay créditos de tipo 'subscription', usar un 'addon'
+        if (!creditToUse) {
+          creditToUse = await tx.userCredits.findFirst({
+            where: {
+              userId: testament.userId,
+              status: 'New',
+              type: 'addon',
+              expirationDate: { gte: new Date() },
+            },
+            orderBy: { createdAt: 'asc' }, // Prioriza los más antiguos
+          });
+        }
+
+        // Si no hay créditos disponibles
+        if (!creditToUse) {
+          throw new HttpException(
+            {
+              code: 400,
+              msg: 'User has no available credits to mint the testament.',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
         // Verificar si el usuario tiene créditos disponibles para mintear
         const availableCredits = await tx.userCredits.findMany({
           where: {

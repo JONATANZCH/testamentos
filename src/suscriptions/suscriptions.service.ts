@@ -317,12 +317,20 @@ export class SuscriptionsService {
       for (const item of itemsPaid) {
         switch (item.serviceType) {
           case 'subscription': {
+            await this.prisma.usersSuscriptions.updateMany({
+              where: {
+                status: 'Active',
+                expireDate: { lt: new Date() }, // Si expireDate es menor a la fecha actual, ha expirado
+              },
+              data: { status: 'Expired' },
+            });
             // 1. Verificar si el usuario ya tiene una suscripción activa
             const activeSubscription =
               await this.prisma.usersSuscriptions.findFirst({
                 where: {
                   userId: userId,
                   status: 'Active',
+                  suscriptionType: item.id,
                 },
               });
 
@@ -338,9 +346,14 @@ export class SuscriptionsService {
                   },
                 },
               });
-
+              console.log(
+                `[processPaymentData] User already has an active subscription (id=${activeSubscription.id}).`,
+              );
               throw new HttpException(
-                { code: 400, msg: 'User already has an active subscription' },
+                {
+                  code: 400,
+                  msg: `User already has an active subscription (id=${activeSubscription.id})`,
+                },
                 HttpStatus.BAD_REQUEST,
               );
             }
@@ -382,6 +395,13 @@ export class SuscriptionsService {
           }
 
           case 'addon': {
+            await this.prisma.usersAddOns.updateMany({
+              where: {
+                status: 'Active',
+                expireDate: { lt: new Date() }, // Si expireDate es menor a la fecha actual, ha expirado
+              },
+              data: { status: 'Expired' },
+            });
             // 1. Verificar si el usuario ya tiene un add-on activo
             const activeAddon = await this.prisma.usersAddOns.findFirst({
               where: {
@@ -392,18 +412,14 @@ export class SuscriptionsService {
             });
 
             if (activeAddon) {
-              // await this.prisma.servicesError.create({
-              //   data: {
-              //     paymentId,
-              //     userId,
-              //     message: `User already has an active add-on (id=${activeAddon.id}). Cannot add another.`,
-              //     detail: { item, existingAddOnId: activeAddon.id },
-              //   },
-              // });
-              // throw new HttpException(
-              //   { code: 400, msg: 'User already has an active add-on' },
-              //   HttpStatus.BAD_REQUEST,
-              // );
+              await this.prisma.servicesError.create({
+                data: {
+                  paymentId,
+                  userId,
+                  message: `User already has an active add-on (id=${activeAddon.id}). Cannot add another.`,
+                  detail: { item, existingAddOnId: activeAddon.id },
+                },
+              });
               console.log(
                 `[processPaymentData] User already has an active add-on (id=${activeAddon.id}).`,
               );
