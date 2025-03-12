@@ -16,7 +16,7 @@ export class ConfigService {
       PORT: Joi.number().default(3000),
       AWSREGION: Joi.string().required(),
       AWS_SECRET_ID: Joi.string().required(),
-      QUEUE_PROCESS_PDF: Joi.string().required(),
+      QUEUE_WILLS_COMMUNICATIONS: Joi.string().required(),
       PPERRORMANAGEMENT: Joi.string().required(),
       GETSNSTOPICARN: Joi.string().required(),
     });
@@ -62,8 +62,8 @@ export class ConfigService {
     return this.get('AWS_SECRET_ID');
   }
 
-  getQueueProcessPdf(): string {
-    return this.get('QUEUE_PROCESS_PDF');
+  getQueueWillsCommunications(): string {
+    return this.get('QUEUE_WILLS_COMMUNICATIONS');
   }
 
   getPpErrorManagement(): string {

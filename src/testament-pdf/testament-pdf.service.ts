@@ -14,7 +14,7 @@ import * as path from 'path';
 @Injectable()
 export class TestamentPdfService {
   private prisma: any = null;
-  private readonly getQueueProcessPdf: any;
+  private readonly getQueueWillsCommunications: any;
   private readonly environment: string;
   private readonly sqsService: SqsService;
 
@@ -25,7 +25,8 @@ export class TestamentPdfService {
     readonly sqsservice: SqsService,
   ) {
     this.environment = this.configService.getNodeEnv();
-    this.getQueueProcessPdf = this.configService.getQueueProcessPdf();
+    this.getQueueWillsCommunications =
+      this.configService.getQueueWillsCommunications();
     this.sqsService = sqsservice;
   }
 
@@ -560,7 +561,7 @@ export class TestamentPdfService {
       body: JSON.stringify({ pdfProcessId: processId }),
     };
 
-    const queueUrl = this.getQueueProcessPdf;
+    const queueUrl = this.getQueueWillsCommunications;
     console.log(
       '[enqueuePdfProcess] Enqueuing message to SQS =>',
       sqsBody,
