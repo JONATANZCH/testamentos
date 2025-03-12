@@ -9,6 +9,12 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
+variables:
+  AWS_REGION: 'us-east-2'
+  ECR_REPOSITORY: 'testfargate'
+  SERVICE_NAME: 'nestjs-service'
+  CLUSTER_NAME: 'nestjs-cluster'
+  TASK_FAMILY: 'nestjs-task'
 
 stages:
   - stage: Build
@@ -28,7 +34,7 @@ stages:
         - task: Docker@2
           displayName: Docker Build
           inputs:
-            repository: 'testfargate'
+            repository: $(ECR_REPOSITORY)
             command: 'build'
             Dockerfile: '**/Dockerfilefg'
             buildContext: '$(Build.SourcesDirectory)'
@@ -36,11 +42,11 @@ stages:
         - task: ECRPushImage@1
           inputs:
             awsCredentials: 'TESAWSDEV'
-            regionName: 'us-east-2'
+            regionName: $(AWS_REGION)
             imageSource: 'imagename'
-            sourceImageName: 'testfargate'
+            sourceImageName: $(ECR_REPOSITORY)
             sourceImageTag: '$(Build.BuildId)'
-            repositoryName: 'testfargate'
+            repositoryName: $(ECR_REPOSITORY)
             pushTag: '$(Build.BuildId)'
 
 
