@@ -11,6 +11,7 @@ pool:
 
 variables:
   AWS_REGION: 'us-east-2'
+  ECR_REGISTRY: '440744252508.dkr.ecr.us-east-2.amazonaws.com'
   ECR_REPOSITORY: 'testfargate'
   SERVICE_NAME: 'nestjs-service'
   CLUSTER_NAME: 'nestjs-cluster'
@@ -49,5 +50,30 @@ stages:
             repositoryName: $(ECR_REPOSITORY)
             pushTag: '$(Build.BuildId)'
 
+  - stage: Deploy
+    displayName: 'Deploy to Fargate'
+    jobs:
+      - job: Deploy
+        displayName: 'Update Fargate Service'
+        steps:
+          - task: AWSShellScript@1
+            inputs:
+              awsCredentials: 'TESAWSDEV'
+              regionName: 'us-east-2'
+              scriptType: 'inline'
+              inlineScript: |
+                # You can write your script inline here
+                TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $(TASK_FAMILY))
+                NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$(ECR_REGISTRY)/$(ECR_REPOSITORY):$(Build.BuildId)" '.taskDefinition | {family: .family, containerDefinitions: (.containerDefinitions | map(if .name == "nestjs-container" then .image = $IMAGE else . end)), executionRoleArn: .executionRoleArn, taskRoleArn: .taskRoleArn, networkMode: .networkMode, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory}')
+                echo "$NEW_TASK_DEFINITION" > new-task-def.json
+                cat new-task-def.json
+                aws ecs register-task-definition --cli-input-json file://new-task-def.json
 
-
+          - task: AWSCLI@1
+            displayName: Update Service
+            inputs:
+              awsCredentials: 'TESAWSDEV'
+              regionName: 'us-east-2'
+              awsCommand: 'ecs'
+              awsSubCommand: 'update-service'
+              awsArguments: '--cluster $(CLUSTER_NAME) --service $(SERVICE_NAME) --task-definition $(TASK_FAMILY)'
