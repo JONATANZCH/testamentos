@@ -62,7 +62,7 @@ stages:
               regionName: 'us-east-2'
               awsCommand: 'ecs'
               awsSubCommand: 'describe-task-definition'
-              awsArguments: '--task-definition $(TASK_FAMILY) --json >taskdef.json'
+              awsArguments: '--task-definition $(TASK_FAMILY) --output json >taskdef.json'
 
           - task: AWSCLI@1
             displayName: Update Service
