@@ -12,7 +12,7 @@ pool:
 variables:
   AWS_REGION: 'us-east-2'
   ECR_REGISTRY: '440744252508.dkr.ecr.us-east-2.amazonaws.com'
-  ECR_REPOSITORY: 'testfargate'
+  ECR_REPOSITORY: 'willsmsvfargate'
   SERVICE_NAME: 'nestjs-service'
   CLUSTER_NAME: 'nestjs-cluster'
   TASK_FAMILY: 'nestjs-task'
