@@ -358,7 +358,7 @@ export class TestamentsService {
         if (!assetExists) {
           response.code = 400;
           response.msg = 'The provided assetId does not exist in the system';
-          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+          return response;
         }
 
         // Validar que el asset pertenezca al mismo usuario que el testamento
@@ -366,7 +366,7 @@ export class TestamentsService {
           response.code = 400;
           response.msg =
             'The provided assetId does not belong to the same user as the testament';
-          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+          return response;
         }
       }
 
@@ -382,7 +382,7 @@ export class TestamentsService {
             response.code = 400;
             response.msg =
               'The provided assignmentId does not exist in Contact';
-            throw new HttpException(response, HttpStatus.BAD_REQUEST);
+            return response;
           }
 
           // Verificar que el contact pertenezca al mismo usuario que el testamento
@@ -390,7 +390,7 @@ export class TestamentsService {
             response.code = 400;
             response.msg =
               'The provided assignmentId (Contact) does not belong to the same user as the testament';
-            throw new HttpException(response, HttpStatus.BAD_REQUEST);
+            return response;
           }
         } else if (createAssignmentDto.assignmentType === 'le') {
           // Buscar en LegalEntity
@@ -402,7 +402,7 @@ export class TestamentsService {
             response.code = 400;
             response.msg =
               'The provided assignmentId does not exist in LegalEntity';
-            throw new HttpException(response, HttpStatus.BAD_REQUEST);
+            return response;
           }
         }
       }
@@ -428,7 +428,7 @@ export class TestamentsService {
       if (currentPercentageSum + createAssignmentDto.percentage > 100) {
         response.code = 400;
         response.msg = 'Total percentage for assignments exceeds 100%';
-        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        return response;
       }
 
       // 7. Crear la asignación
