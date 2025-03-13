@@ -338,7 +338,7 @@ export class TestamentsService {
         response.msg = 'Could not connect to the database';
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
-      // Validate that the testament exists for the given userId
+      // 1. Verificar que el testamento exista
       const testament = await this.prisma.testamentHeader.findUnique({
         where: { id: testamentId },
       });
@@ -349,6 +349,7 @@ export class TestamentsService {
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
+      // 2. Validar que el asset exista y que pertenezca al mismo userId
       if (createAssignmentDto.assetId) {
         const assetExists = await this.prisma.asset.findUnique({
           where: { id: createAssignmentDto.assetId },
@@ -357,7 +358,7 @@ export class TestamentsService {
         if (!assetExists) {
           response.code = 400;
           response.msg = 'The provided assetId does not exist in the system';
-          return response;
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
         }
 
         // Validar que el asset pertenezca al mismo usuario que el testamento
@@ -365,34 +366,48 @@ export class TestamentsService {
           response.code = 400;
           response.msg =
             'The provided assetId does not belong to the same user as the testament';
-          return response;
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
         }
       }
 
-      // Validate if the assignmentId exists, if it was provided
+      // 3. Validar assignmentId según assignmentType
       if (createAssignmentDto.assignmentId) {
-        // Validate in Contact table
-        const contactExists = await this.prisma.contact.findUnique({
-          where: { id: createAssignmentDto.assignmentId },
-        });
+        if (createAssignmentDto.assignmentType === 'c') {
+          // Buscar en Contact
+          const contactExists = await this.prisma.contact.findUnique({
+            where: { id: createAssignmentDto.assignmentId },
+          });
 
-        // If not found in Contact, check in LegalEntity
-        if (!contactExists) {
+          if (!contactExists) {
+            response.code = 400;
+            response.msg =
+              'The provided assignmentId does not exist in Contact';
+            throw new HttpException(response, HttpStatus.BAD_REQUEST);
+          }
+
+          // Verificar que el contact pertenezca al mismo usuario que el testamento
+          if (contactExists.userId !== testament.userId) {
+            response.code = 400;
+            response.msg =
+              'The provided assignmentId (Contact) does not belong to the same user as the testament';
+            throw new HttpException(response, HttpStatus.BAD_REQUEST);
+          }
+        } else if (createAssignmentDto.assignmentType === 'le') {
+          // Buscar en LegalEntity
           const legalEntityExists = await this.prisma.legalEntity.findUnique({
             where: { id: createAssignmentDto.assignmentId },
           });
 
-          // If not found in either table, return an error response
           if (!legalEntityExists) {
             response.code = 400;
             response.msg =
-              'The provided assignmentId does not exist in the system';
-            return response;
+              'The provided assignmentId does not exist in LegalEntity';
+            throw new HttpException(response, HttpStatus.BAD_REQUEST);
           }
         }
       }
 
-      // Retrieve existing assignment percentages for the testament
+      // 4. Obtener las asignaciones existentes para ese asset en el testamento
       const existingAssignments =
         await this.prisma.testamentAssignment.findMany({
           where: {
@@ -402,21 +417,21 @@ export class TestamentsService {
           select: { percentage: true },
         });
 
-      // Add up the existing assignment percentages
+      // 5. Calcular la suma de porcentajes ya asignados
       const currentPercentageSum: number = existingAssignments.reduce(
         (sum: number, assignment: { percentage: number }) =>
           sum + assignment.percentage,
         0,
       );
 
-      // Verify that the percentage does not exceed 100%
+      // 6. Verificar que la nueva asignación no exceda el 100%
       if (currentPercentageSum + createAssignmentDto.percentage > 100) {
         response.code = 400;
         response.msg = 'Total percentage for assignments exceeds 100%';
-        return response;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
-      // Create the assignment
+      // 7. Crear la asignación
       const assignment = await this.prisma.testamentAssignment.create({
         data: { testamentId, ...createAssignmentDto },
       });
