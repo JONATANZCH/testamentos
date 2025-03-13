@@ -56,18 +56,13 @@ stages:
       - job: Deploy
         displayName: 'Update Fargate Service'
         steps:
-          - task: AWSShellScript@1
+          - task: AWSCLI@1
             inputs:
               awsCredentials: 'TESAWSDEV'
               regionName: 'us-east-2'
-              scriptType: 'inline'
-              inlineScript: |
-                # You can write your script inline here
-                TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $(TASK_FAMILY))
-                NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$(ECR_REGISTRY)/$(ECR_REPOSITORY):$(Build.BuildId)" '.taskDefinition | {family: .family, containerDefinitions: (.containerDefinitions | map(if .name == "nestjs-container" then .image = $IMAGE else . end)), executionRoleArn: .executionRoleArn, taskRoleArn: .taskRoleArn, networkMode: .networkMode, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory}')
-                echo "$NEW_TASK_DEFINITION" > new-task-def.json
-                cat new-task-def.json
-                aws ecs register-task-definition --cli-input-json file://new-task-def.json
+              awsCommand: 'ecs'
+              awsSubCommand: 'describe-task-definition'
+              awsArguments: '--task-definition $(TASK_FAMILY) --json >taskdef.json'
 
           - task: AWSCLI@1
             displayName: Update Service
