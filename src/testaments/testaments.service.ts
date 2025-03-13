@@ -821,6 +821,12 @@ export class TestamentsService {
           );
         }
 
+        // Consumir *solamente* ese crédito
+        await tx.userCredits.update({
+          where: { id: creditToUse.id },
+          data: { status: 'Used', usedDate: new Date() },
+        });
+
         // Verificar si el usuario tiene créditos disponibles para mintear
         const availableCredits = await tx.userCredits.findMany({
           where: {
@@ -839,13 +845,6 @@ export class TestamentsService {
             HttpStatus.BAD_REQUEST,
           );
         }
-        // Marcar los créditos como usados
-        await tx.userCredits.updateMany({
-          where: {
-            id: { in: availableCredits.map((credit) => credit.id) },
-          },
-          data: { status: 'Used', usedDate: new Date() },
-        });
         // validar que no exista otro testamento ACTIVE para el mismo usuario
         if (updateTestamentMintDto.status === 'ACTIVE') {
           const existingActiveTestaments = await tx.testamentHeader.findMany({
