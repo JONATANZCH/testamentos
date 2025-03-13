@@ -254,7 +254,7 @@ export class SuscriptionsService {
         // Buscar el precio del ítem en PriceList
         const priceRecord = await this.prisma.priceList.findFirst({
           where: {
-            id: item.id,
+            serviceId: item.id,
           },
         });
 
