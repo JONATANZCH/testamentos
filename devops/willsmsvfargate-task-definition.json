@@ -1,0 +1,88 @@
+{
+    "family": "nestjs-task",
+    "containerDefinitions": [
+        {
+            "name": "nestjs-container",
+            "image": "440744252508.dkr.ecr.us-east-2.amazonaws.com/testfargate:5875",
+            "cpu": 256,
+            "memory": 512,
+            "portMappings": [
+                {
+                    "containerPort": 3000,
+                    "hostPort": 3000,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "environment",
+                    "value": "dev"
+                },
+                {
+                    "name": "PORT",
+                    "value": "3000"
+                },
+                {
+                    "name": "BUCKET_WILL",
+                    "value": "dev-testaments"
+                },
+                {
+                    "name": "AWS_SECRET_ID",
+                    "value": "dev/testamentos/mysql"
+                },
+                {
+                    "name": "AWSREGION",
+                    "value": "us-east-2"
+                },
+                {
+                    "name": "QUEUE_GENERATE_PDF",
+                    "value": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_security_0.fifo"
+                },
+                {
+                    "name": "GETSNSTOPICARN",
+                    "value": "arn:aws:sns:us-east-2:440744252508:PPErrorManagement.fifo"
+                },
+                {
+                    "name": "PPERRORMANAGEMENT",
+                    "value": "arn:aws:lambda:us-east-2:440744252508:function:devWillC_PPErrorManagement"
+                },
+                {
+                    "name": "QUEUE_PROCESS_PDF",
+                    "value": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_users_1.fifo"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/nestjs",
+                    "awslogs-region": "us-east-2",
+                    "awslogs-stream-prefix": "nestjs"
+                }
+            },
+            "systemControls": []
+        }
+    ],
+    "tags": [
+        {
+            "key": "Project",
+            "value": "willc"
+        },
+        {
+            "key": "Environment",
+            "value": "dev"
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::440744252508:role/CarlosBorrarECSRole",
+    "executionRoleArn": "arn:aws:iam::440744252508:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "256",
+    "memory": "512"
+}
