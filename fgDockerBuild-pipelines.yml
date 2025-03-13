@@ -15,7 +15,7 @@ variables:
   ECR_REPOSITORY: 'willsmsvfargate'
   SERVICE_NAME: 'nestjs-service'
   CLUSTER_NAME: 'nestjs-cluster'
-  TASK_FAMILY: 'nestjs-task'
+  TASK_FAMILY: 'TestFargate'
 
 stages:
   - stage: Build
