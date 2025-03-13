@@ -48,7 +48,7 @@ stages:
             sourceImageName: $(ECR_REPOSITORY)
             sourceImageTag: '$(Build.BuildId)'
             repositoryName: $(ECR_REPOSITORY)
-            pushTag: '$(Build.BuildId)'
+            pushTag: '5890' # '$(Build.BuildId)'
 
   - stage: Deploy
     displayName: 'Deploy to Fargate'
@@ -66,7 +66,7 @@ stages:
                 TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $(TASK_FAMILY))
                 echo 'actual task'
                 echo $TASK_DEFINITION
-                NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$(ECR_REGISTRY)/$(ECR_REPOSITORY):$(Build.BuildId)" '.taskDefinition | {family: .family, containerDefinitions: (.containerDefinitions | map(if .name == "nestjs-container" then .image = $IMAGE else . end)), executionRoleArn: .executionRoleArn, taskRoleArn: .taskRoleArn, networkMode: .networkMode, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory}')
+                NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$(ECR_REGISTRY)/$(ECR_REPOSITORY):$(pushTag)" '.taskDefinition | {family: .family, containerDefinitions: (.containerDefinitions | map(if .name == "nestjs-container" then .image = $IMAGE else . end)), executionRoleArn: .executionRoleArn, taskRoleArn: .taskRoleArn, networkMode: .networkMode, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory}')
                 echo "$NEW_TASK_DEFINITION" > new-task-def.json
                 echo 'calculated task'
                 cat new-task-def.json
