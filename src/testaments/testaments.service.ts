@@ -95,7 +95,7 @@ export class TestamentsService {
     }
   }
 
-  async getTestamentById(testamentId: string): Promise<GeneralResponseDto> {
+  async getTestamentById(testamentId: string, res: Response) {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
@@ -126,8 +126,9 @@ export class TestamentsService {
       response.code = 200;
       response.msg = 'Testament retrieved successfully';
       response.response = testament;
-      return response;
+      return res.status(200).json(response);
     } catch (error) {
+      console.log('Error getting testament:', error);
       processException(error);
     }
   }

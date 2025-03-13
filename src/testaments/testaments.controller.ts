@@ -59,7 +59,7 @@ export class TestamentsController {
     if (type === 'pdf') {
       return this.testamentsService.streamTestamentPdf(testamentId, res);
     } else {
-      return this.testamentsService.getTestamentById(testamentId);
+      return this.testamentsService.getTestamentById(testamentId, res);
     }
   }
 
