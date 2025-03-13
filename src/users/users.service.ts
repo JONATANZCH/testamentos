@@ -314,7 +314,7 @@ export class UsersService {
       let assetsCompletion = 0;
       const userAssetsCount = user.assets?.length || 0;
       const userActiveTestamentsCount =
-        user.testamentHeaders?.filter((t) => t.status === 'ACTIVE').length || 0;
+        user.testamentHeaders?.filter((t) => t.status === 'DRAFT').length || 0;
 
       if (userAssetsCount > 0) {
         assetsCompletion += 50;
