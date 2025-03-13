@@ -110,6 +110,7 @@ export class TestamentsController {
           testamentId,
           assignmentDto,
         );
+        console.log('Service returned:', JSON.stringify(result, null, 2));
 
         // If successful, add it to successfulResults
         if (result.code === 201) {
@@ -130,13 +131,22 @@ export class TestamentsController {
           });
         }
       } catch (error) {
-        // Catch unexpected errors
+        let msg = error.message || 'Unexpected error occurred';
+        if (error instanceof HttpException) {
+          const responseData = error.getResponse();
+          if (typeof responseData === 'object' && responseData !== null) {
+            msg =
+              (responseData as any).msg || 'HttpException without msg field';
+          } else if (typeof responseData === 'string') {
+            msg = responseData;
+          }
+        }
         errorResults.push({
           assingationId: assignmentDto.assignmentId,
           assetId: assignmentDto.assetId,
           assignmentType: assignmentDto.assignmentType,
           assignmentId: assignmentDto.assignmentId,
-          msg: error.message || 'Unexpected error occurred',
+          msg,
         });
       }
     }

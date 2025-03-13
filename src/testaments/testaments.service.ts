@@ -357,15 +357,22 @@ export class TestamentsService {
             where: { id: createAssignmentDto.assetId },
           });
           if (!asset) {
-            response.code = 400;
-            response.msg = 'The provided assetId does not exist in the system';
-            return response;
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'The provided assetId does not exist in the system',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
           }
           if (asset.userId !== testament.userId) {
-            response.code = 400;
-            response.msg =
-              'The provided assetId does not belong to the same user as the testament';
-            return response;
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'The provided asset does not belong to the same user as the testament',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
           }
         }
 
@@ -377,27 +384,36 @@ export class TestamentsService {
               where: { id: createAssignmentDto.assignmentId },
             });
             if (!contact) {
-              response.code = 400;
-              response.msg =
-                'The provided assignmentId does not exist in Contact';
-              return response;
+              throw new HttpException(
+                {
+                  code: 400,
+                  msg: 'The provided assignmentId does not exist in Contact.',
+                },
+                HttpStatus.BAD_REQUEST,
+              );
             }
             // Verificar que el contact pertenezca al mismo userId
             if (contact.userId !== testament.userId) {
-              response.code = 400;
-              response.msg =
-                'The provided Contact does not belong to the same user as the testament';
-              return response;
+              throw new HttpException(
+                {
+                  code: 400,
+                  msg: 'The provided assignmentId (Contact) does not belong to the same user as the testament.',
+                },
+                HttpStatus.BAD_REQUEST,
+              );
             }
           } else if (createAssignmentDto.assignmentType === 'le') {
             const legalEntity = await tx.legalEntity.findUnique({
               where: { id: createAssignmentDto.assignmentId },
             });
             if (!legalEntity) {
-              response.code = 400;
-              response.msg =
-                'The provided assignmentId does not exist in LegalEntity';
-              return response;
+              throw new HttpException(
+                {
+                  code: 400,
+                  msg: 'The provided assignmentId does not exist in LegalEntity.',
+                },
+                HttpStatus.BAD_REQUEST,
+              );
             }
           }
         }
@@ -419,10 +435,13 @@ export class TestamentsService {
             (a) => a.assignmentId === createAssignmentDto.assignmentId,
           )
         ) {
-          response.code = 400;
-          response.msg =
-            'An assignment already exists for this contact/legal entity with the same asset. Cannot create duplicates.';
-          return response;
+          throw new HttpException(
+            {
+              code: 400,
+              msg: 'An assignment already exists for this contact/legal entity with the same asset. Cannot create duplicates.',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
         }
 
         // 4.2) Verificar que al sumar el nuevo porcentaje no exceda el 100%
@@ -431,9 +450,13 @@ export class TestamentsService {
           0,
         );
         if (currentPercentageSum + createAssignmentDto.percentage > 100) {
-          response.code = 400;
-          response.msg = 'The sum of the percentages cannot exceed 100%';
-          return response;
+          throw new HttpException(
+            {
+              code: 400,
+              msg: 'The sum of the percentages cannot exceed 100% for this asset.',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
         }
 
         // 5) Crear la asignación
@@ -444,6 +467,7 @@ export class TestamentsService {
           },
         });
 
+        console.log('New assignment from Prisma:', newAssignment);
         return newAssignment;
       });
 
@@ -452,6 +476,15 @@ export class TestamentsService {
       response.response = assignment;
       return response;
     } catch (error) {
+      if (error.message?.includes('Transaction not found')) {
+        throw new HttpException(
+          {
+            code: 400,
+            msg: 'The transaction was cancelled because a duplicate allocation was detected for that asset.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       processException(error);
     }
   }
