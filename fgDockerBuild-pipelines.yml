@@ -56,6 +56,9 @@ stages:
       - job: Deploy
         displayName: 'Update Fargate Service'
         steps:
+          - task: replacetokens@6
+            inputs:
+              sources: 'willsmsvfargate-task-definition.tkn.json'
           - task: AWSShellScript@1
             inputs:
               awsCredentials: 'TESAWSDEV'
