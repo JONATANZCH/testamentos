@@ -97,7 +97,7 @@ stages:
     dependsOn: 
       - Build
       - BuildDummy
-    condition: succeeded()
+    condition: or(succeeded('Build'), succeeded('BuildDummy'))
     jobs:
     - deployment: Deploy
       environment: dev
