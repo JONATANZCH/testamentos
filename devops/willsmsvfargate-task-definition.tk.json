@@ -3,7 +3,7 @@
     "containerDefinitions": [
         {
             "name": "nestjs-container",
-            "image": "440744252508.dkr.ecr.us-east-2.amazonaws.com/willsmsvfargate:5890",
+            "image": "#{image}#",
             "cpu": 256,
             "memory": 512,
             "portMappings": [

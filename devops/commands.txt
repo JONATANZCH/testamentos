@@ -1,0 +1,39 @@
+
+
+1er paso validar que el servicio ya esta actualizado al nombre del container.
+aws ecs describe-services --profile testamentosdev --cluster nestjs-cluster --services willsmsvfargate-svc --query "services[0].loadBalancers"
+Si la respuesta es containerName: willsmsvfargate-container seguimos, sino lo actualizo
+
+aws ecs register-task-definition --cli-input-json file://willsmsvfargate-task-definition.json --profile testamentosdev
+aws ecs update-service \
+    --cluster nestjs-cluster \
+    --service willsmsvfargate-svc \
+    --task-definition willsmsvfargate-task \
+    --desired-count 1 \
+    --profile testamentosdev
+
+-------------------
+aws ecs describe-task-definition --task-definition willsmsvfargate-task --profile testamentosdev    // revisa el task 
+
+aws ecs register-task-definition --cli-input-json file://willsmsvfargate-task-definition.json --profile testamentosdev
+aws ecs update-service \
+    --cluster nestjs-cluster \
+    --service willsmsvfargate-svc \
+    --task-definition willsmsvfargate-task \
+    --profile testamentosdev
+
+aws ecs update-service \
+    --cluster nestjs-cluster \
+    --service willsmsvfargate-svc \
+    --task-definition willsmsvfargate-task \
+    --desired-count 1 \
+    --platform-version LATEST \
+    --profile testamentosdev
+
+    aws ecs update-service \
+    --cluster nestjs-cluster \
+    --service willsmsvfargate-svc \
+    --task-definition willsmsvfargate-task \
+    --desired-count 1 \
+    --load-balancers targetGroupArn=arn:aws:elasticloadbalancing:us-east-2:440744252508:targetgroup/fargate-target-group/b2776cbc07d3c144,containerName=nestjs-container,containerPort=3000 \
+    --profile testamentosdev
