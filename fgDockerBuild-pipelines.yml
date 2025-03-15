@@ -122,9 +122,9 @@ stages:
                     pwd
                     ls -la
                     cat willsmsvfargate-task-definition.tk.json
-                    copy  willsmsvfargate-task-definition.tk.json $(Build.SourcesDirectory)
+                    cp  willsmsvfargate-task-definition.tk.json $(Build.SourcesDirectory)
                     cd $(Build.SourcesDirectory)
-                    pdw
+                    pwd
                     ls -la
                   
               - task: replacetokens@6
