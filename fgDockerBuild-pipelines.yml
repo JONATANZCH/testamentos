@@ -9,46 +9,23 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
+
 variables:
-  AWS_REGION: 'us-east-2'
-  ECR_REGISTRY: '440744252508.dkr.ecr.us-east-2.amazonaws.com'
-  ECR_REPOSITORY: 'willsmsvfargate'
-  SERVICE_NAME: 'nestjs-service'
-  CLUSTER_NAME: 'nestjs-cluster'
-  TASK_FAMILY: 'willsmsvfargate'
+  - name: AWS_REGION
+    value: 'us-east-2'
+  - name: ECR_REGISTRY
+    value: '440744252508.dkr.ecr.us-east-2.amazonaws.com'
+  - name: ECR_REPOSITORY
+    value: 'willsmsvfargate'
+  - name: SERVICE_NAME
+    value: 'nestjs-service'
+  - name: CLUSTER_NAME
+    value: 'nestjs-cluster'
+  - name: TASK_FAMILY
+    value: 'willsmsvfargate'
+  - group: Tesdev
 
 stages:
-  - stage: Build
-    displayName: 'Build and push'
-    jobs:
-      - job: Build
-        displayName: 'Build and push'
-        steps:
-        - script: echo Hello, world!
-          displayName: 'Run a one-line script'
-
-        - script: |
-            echo Add other tasks to build, test, and deploy your project.
-            echo See https://aka.ms/yaml
-          displayName: 'Run a multi-line script'
-
-        - task: Docker@2
-          displayName: Docker Build
-          inputs:
-            repository: $(ECR_REPOSITORY)
-            command: 'build'
-            Dockerfile: '**/Dockerfilefg'
-            buildContext: '$(Build.SourcesDirectory)'
-            arguments: '--build-arg NPM_TOKEN=$(System.AccessToken)'
-        - task: ECRPushImage@1
-          inputs:
-            awsCredentials: 'TESAWSDEV'
-            regionName: $(AWS_REGION)
-            imageSource: 'imagename'
-            sourceImageName: $(ECR_REPOSITORY)
-            sourceImageTag: '$(Build.BuildId)'
-            repositoryName: $(ECR_REPOSITORY)
-            pushTag: '5890' # '$(Build.BuildId)'
 
   - stage: Deploy
     displayName: 'Deploy to Fargate'
@@ -59,27 +36,20 @@ stages:
           - task: replacetokens@6
             inputs:
               sources: 'willsmsvfargate-task-definition.tkn.json'
-          - task: AWSShellScript@1
-            inputs:
-              awsCredentials: 'TESAWSDEV'
-              regionName: 'us-east-2'
-              scriptType: 'inline'
-              inlineScript: |
-                # You can write your script inline here
-                TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition $(TASK_FAMILY))
-                echo 'actual task'
-                echo $TASK_DEFINITION
-                NEW_TASK_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$(ECR_REGISTRY)/$(ECR_REPOSITORY):$(pushTag)" '.taskDefinition | {family: .family, containerDefinitions: (.containerDefinitions | map(if .name == "nestjs-container" then .image = $IMAGE else . end)), executionRoleArn: .executionRoleArn, taskRoleArn: .taskRoleArn, networkMode: .networkMode, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory}')
-                echo "$NEW_TASK_DEFINITION" > new-task-def.json
-                echo 'calculated task'
-                cat new-task-def.json
-                aws ecs register-task-definition --cli-input-json file://new-task-def.json
 
           - task: AWSCLI@1
-            displayName: Update Service
             inputs:
               awsCredentials: 'TESAWSDEV'
-              regionName: 'us-east-2'
+              regionName: $(AWSREGION)
+              awsCommand: 'ecs'
+              awsSubCommand: 'register-task-definition'
+              awsArguments: '--cli-input-json file://willsmsvfargate-task-definition.json'
+          
+          - task: AWSCLI@1
+            inputs:
+              awsCredentials: 'TESAWSDEV'
+              regionName: '$(AWSREGION)'
               awsCommand: 'ecs'
               awsSubCommand: 'update-service'
-              awsArguments: '--cluster $(CLUSTER_NAME) --service $(SERVICE_NAME) --task-definition $(TASK_FAMILY)'
+              awsArguments: '--cluster nestjs-cluster --service willsmsvfargate-svc --task-definition willsmsvfargate-task --desired-count 1 '         
+
