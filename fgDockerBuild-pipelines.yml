@@ -70,6 +70,14 @@ stages:
       - job: BuildImage
         displayName: 'Set image to deploy'
         steps:
+        - task: Bash@3
+          displayName: "Debug - List repo files"
+          inputs:
+            targetType: 'inline'
+            script: |
+              pwd
+              echo "Current directory: $(Build.SourcesDirectory)"
+              ls -la 
         - task: PowerShell@2
           name: "Transfervar"
           displayName: Set ECR variable
