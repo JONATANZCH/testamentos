@@ -88,7 +88,7 @@ stages:
               Write-Host "##vso[task.setvariable variable=gecrimage;isoutput=true ]${{ parameters.ImagerUrl }}"
         - task: PublishBuildArtifacts@1
           inputs:
-            PathtoPublish: '$(Build.SourcesDirectory)/devops/willsmsvfargate-task-definition.tkn.json'
+            PathtoPublish: '$(Build.SourcesDirectory)/devops/willsmsvfargate-task-definition.tk.json'
             ArtifactName: 'drop'
             publishLocation: 'Container'
 
