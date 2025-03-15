@@ -100,9 +100,11 @@ stages:
                   targetType: 'inline'
                   script: |
                     # Write your commands here
+                    pwd
+                    ls -la
                     echo imagen $(ecrimageurlg)
                     cat willsmsvfargate-task-definition.tkn.json
-                  workingDirectory: '$(Build.SourcesDirectory)/devops'
+                  
               - task: replacetokens@6
                 displayName: Token replacement
                 inputs:
