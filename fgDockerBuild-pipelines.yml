@@ -86,7 +86,9 @@ stages:
 
   - stage: DeployDev
     displayName: 'Deploy to Fargate Dev'
-    dependsOn: Build
+    dependsOn: 
+      - Build
+      - BuildDummy
     condition: succeeded()
     jobs:
     - deployment: Deploy
