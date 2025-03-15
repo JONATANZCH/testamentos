@@ -3,7 +3,7 @@
     "containerDefinitions": [
         {
             "name": "nestjs-container",
-            "image": "#{image}#",
+            "image": "#{ecrimageurlg}#",
             "cpu": 256,
             "memory": 512,
             "portMappings": [
