@@ -116,11 +116,11 @@ stages:
                   targetType: 'inline'
                   script: |
                     # Write your commands here
+                    echo imagen $(ecrimageurlg)
                     pwd
-                    cd $(Pipeline.Workspace)
+                    cd $(Pipeline.Workspace)/drop
                     pwd
                     ls -la
-                    echo imagen $(ecrimageurlg)
                     cat willsmsvfargate-task-definition.tk.json
                     copy  willsmsvfargate-task-definition.tk.json $(Build.SourcesDirectory)
                     cd $(Build.SourcesDirectory)
