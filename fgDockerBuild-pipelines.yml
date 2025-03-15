@@ -47,6 +47,7 @@ stages:
               awsArguments: '--cli-input-json file://devops/willsmsvfargate-task-definition.json'
           
           - task: AWSCLI@1
+            displayName: Update Fargate Service
             inputs:
               awsCredentials: 'TESAWSDEV'
               regionName: '$(AWSREGION)'
