@@ -17,7 +17,7 @@
             "environment": [
                 {
                     "name": "environment",
-                    "value": "dev"
+                    "value": "#{environment}#"
                 },
                 {
                     "name": "PORT",
@@ -25,35 +25,35 @@
                 },
                 {
                     "name": "BUCKET_WILL",
-                    "value": "dev-testaments"
+                    "value": "#{BUCKET_WILL}#"
                 },
                 {
                     "name": "AWS_SECRET_ID",
-                    "value": "dev/testamentos/mysql"
+                    "value": "#{AWS_SECRET_ID}#" 
                 },
                 {
                     "name": "AWSREGION",
-                    "value": "us-east-2"
+                    "value": "#{AWSREGION}#"
                 },
                 {
                     "name": "QUEUE_GENERATE_PDF",
-                    "value": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_security_0.fifo"
+                    "value": "#{QUEUE_GENERATE_PDF}#"
                 },
                 {
                     "name": "GETSNSTOPICARN",
-                    "value": "arn:aws:sns:us-east-2:440744252508:PPErrorManagement.fifo"
+                    "value": "#{GETSNSTOPICARN}#"
                 },
                 {
                     "name": "PPERRORMANAGEMENT",
-                    "value": "arn:aws:lambda:us-east-2:440744252508:function:devWillC_PPErrorManagement"
+                    "value": "#{PPERRORMANAGEMENT}#"
                 },
                 {
                     "name": "QUEUE_PROCESS_PDF",
-                    "value": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_users_1.fifo"
+                    "value": "#{QUEUE_PROCESS_PDF}#"
                 },
                 {
                     "name":"QUEUE_WILLS_COMMUNICATIONS",
-                    "value":"https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_users_0.fifo"
+                    "value":"#{QUEUE_WILLS_COMMUNICATIONS}#"
                 }
             ],
             "mountPoints": [],
@@ -76,7 +76,7 @@
         },
         {
             "key": "Environment",
-            "value": "dev"
+            "value": "#{environment}#"
         }
     ],
     "taskRoleArn": "arn:aws:iam::440744252508:role/CarlosBorrarECSRole",
