@@ -80,7 +80,7 @@ stages:
               Write-Host "##vso[task.setvariable variable=gecrimage;isoutput=true ]${{ parameters.ImagerUrl }}"
         - task: PublishBuildArtifacts@1
           inputs:
-            PathtoPublish: '$(Build.ArtifactStagingDirectory)/devops/willsmsvfargate-task-definition.tkn.json'
+            PathtoPublish: '$(Build.SourcesDirectory)/devops/willsmsvfargate-task-definition.tkn.json'
             ArtifactName: 'drop'
             publishLocation: 'Container'
 
@@ -116,7 +116,6 @@ stages:
               - task: replacetokens@6
                 displayName: Token replacement
                 inputs:
-                  root: '$(Build.SourcesDirectory)/devops'
                   sources: 'willsmsvfargate-task-definition.tkn.json'
               - task: AWSCLI@1
                 displayName: Register new task
