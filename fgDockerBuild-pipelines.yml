@@ -26,32 +26,78 @@ variables:
   - group: Tesdev
 
 stages:
-
-  - stage: Deploy
-    displayName: 'Deploy to Fargate'
+  - stage: Build
+    displayName: 'Build and push'
     jobs:
-      - job: Deploy
-        displayName: 'Update Fargate Service'
+      - job: BuildImage
+        displayName: 'Build and push'
         steps:
-          - task: replacetokens@6
-            inputs:
-              sources: 'willsmsvfargate-task-definition.tkn.json'
+        - task: Docker@2
+          displayName: Docker Build
+          inputs:
+            repository: $(ECR_REPOSITORY)
+            command: 'build'
+            Dockerfile: '**/Dockerfilefg'
+            buildContext: '$(Build.SourcesDirectory)'
+            arguments: '--build-arg NPM_TOKEN=$(System.AccessToken)'
+        - task: ECRPushImage@1
+          inputs:
+            awsCredentials: 'TESAWSDEV'
+            regionName: $(AWS_REGION)
+            imageSource: 'imagename'
+            sourceImageName: $(ECR_REPOSITORY)
+            sourceImageTag: '$(Build.BuildId)'
+            repositoryName: $(ECR_REPOSITORY)
+            pushTag: '$(Build.BuildId)'
+            outputVariable: 'ecrimage'
+        - task: PowerShell@2
+          name: "Transfervar"
+          displayName: Set ECR variable
+          inputs:
+            targetType: 'inline'
+            script: |
+              echo 'Hello urlImage' $(ecrimage)
+              Write-Host "##vso[task.setvariable variable=gecrimage;isoutput=true ]$(ecrimage)"
 
-          - task: AWSCLI@1
-            displayName: Register new task
-            inputs:
-              awsCredentials: 'TESAWSDEV'
-              regionName: $(AWSREGION)
-              awsCommand: 'ecs'
-              awsSubCommand: 'register-task-definition'
-              awsArguments: '--cli-input-json file://devops/willsmsvfargate-task-definition.json'
-          
-          - task: AWSCLI@1
-            displayName: Update Fargate Service
-            inputs:
-              awsCredentials: 'TESAWSDEV'
-              regionName: '$(AWSREGION)'
-              awsCommand: 'ecs'
-              awsSubCommand: 'update-service'
-              awsArguments: '--cluster nestjs-cluster --service willsmsvfargate-svc --task-definition willsmsvfargate-task --desired-count 1 '         
+  - stage: DeployDev
+    displayName: 'Deploy to Fargate Dev'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+    - deployment: Deploy
+      environment: dev
+      variables:
+      - name: ecrimageurlg
+        value: $[ stageDependencies.Build.BuildImage.outputs['Transfervar.gecrimage'] ]  
+      - group: Tesdev
+      strategy:
+        runOnce:
+          deploy:    
+            steps:
+              - task: replacetokens@6
+                inputs:
+                  sources: 'willsmsvfargate-task-definition.tkn.json'
+              - task: Bash@3
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    # Write your commands here
+                    echo imagen $(ecrimageurlg)
+              - task: AWSCLI@1
+                displayName: Register new task
+                inputs:
+                  awsCredentials: 'TESAWSDEV'
+                  regionName: $(AWSREGION)
+                  awsCommand: 'ecs'
+                  awsSubCommand: 'register-task-definition'
+                  awsArguments: '--cli-input-json file://devops/willsmsvfargate-task-definition.json'
+              
+              - task: AWSCLI@1
+                displayName: Update Fargate Service
+                inputs:
+                  awsCredentials: 'TESAWSDEV'
+                  regionName: '$(AWSREGION)'
+                  awsCommand: 'ecs'
+                  awsSubCommand: 'update-service'
+                  awsArguments: '--cluster nestjs-cluster --service willsmsvfargate-svc --task-definition willsmsvfargate-task --desired-count 1 '         
 
