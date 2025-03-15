@@ -131,6 +131,15 @@ stages:
                 displayName: Token replacement
                 inputs:
                   sources: 'willsmsvfargate-task-definition.tk.json'
+
+              - task: Bash@3
+                displayName: Validar json del task
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    # Write your commands here
+                    cat willsmsvfargate-task-definition.tk.json
+                    
               - task: AWSCLI@1
                 displayName: Register new task
                 inputs:
@@ -138,7 +147,7 @@ stages:
                   regionName: $(AWSREGION)
                   awsCommand: 'ecs'
                   awsSubCommand: 'register-task-definition'
-                  awsArguments: '--cli-input-json file://devops/willsmsvfargate-task-definition.tk.json'
+                  awsArguments: '--cli-input-json file://willsmsvfargate-task-definition.tk.json'
               
               - task: AWSCLI@1
                 displayName: Update Fargate Service
