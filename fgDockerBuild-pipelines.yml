@@ -75,14 +75,19 @@ stages:
           deploy:    
             steps:
               - task: replacetokens@6
+                displayName: Token replacement
                 inputs:
+                  root: '$(Build.SourcesDirectory)/Devops'
                   sources: 'willsmsvfargate-task-definition.tkn.json'
               - task: Bash@3
+                displayName: Debug info
                 inputs:
                   targetType: 'inline'
                   script: |
                     # Write your commands here
                     echo imagen $(ecrimageurlg)
+                    cat willsmsvfargate-task-definition.tkn.json
+                  workingDirectory: '$(Build.SourcesDirectory)/Devops'
               - task: AWSCLI@1
                 displayName: Register new task
                 inputs:
@@ -90,7 +95,7 @@ stages:
                   regionName: $(AWSREGION)
                   awsCommand: 'ecs'
                   awsSubCommand: 'register-task-definition'
-                  awsArguments: '--cli-input-json file://devops/willsmsvfargate-task-definition.json'
+                  awsArguments: '--cli-input-json file://devops/willsmsvfargate-task-definition.tkn.json'
               
               - task: AWSCLI@1
                 displayName: Update Fargate Service
