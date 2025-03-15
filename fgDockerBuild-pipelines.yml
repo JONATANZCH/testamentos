@@ -38,12 +38,13 @@ stages:
               sources: 'willsmsvfargate-task-definition.tkn.json'
 
           - task: AWSCLI@1
+            displayName: Register new task
             inputs:
               awsCredentials: 'TESAWSDEV'
               regionName: $(AWSREGION)
               awsCommand: 'ecs'
               awsSubCommand: 'register-task-definition'
-              awsArguments: '--cli-input-json file://willsmsvfargate-task-definition.json'
+              awsArguments: '--cli-input-json file://devops/willsmsvfargate-task-definition.json'
           
           - task: AWSCLI@1
             inputs:
