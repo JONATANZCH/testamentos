@@ -78,6 +78,11 @@ stages:
             script: |
               echo 'Hello urlImage' $(ImagerUrl)
               Write-Host "##vso[task.setvariable variable=gecrimage;isoutput=true ]$(ImagerUrl)"
+        - task: PublishBuildArtifacts@1
+          inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)/devops/willsmsvfargate-task-definition.tkn.json'
+            ArtifactName: 'drop'
+            publishLocation: 'Container'
 
   - stage: DeployDev
     displayName: 'Deploy to Fargate Dev'
@@ -88,7 +93,8 @@ stages:
       environment: dev
       variables:
       - name: ecrimageurlg
-        value: $[ stageDependencies.Build.BuildImage.outputs['Transfervar.gecrimage'] ]  
+        value: $[coalesce(stageDependencies.Build.BuildImage.outputs['Transfervar.gecrimage'], stageDependencies.BuildDummy.BuildImage.outputs['Transfervar.gecrimage'])]  
+        
       - group: Tesdev
       strategy:
         runOnce:
