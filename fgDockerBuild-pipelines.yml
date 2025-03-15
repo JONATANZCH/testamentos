@@ -117,9 +117,15 @@ stages:
                   script: |
                     # Write your commands here
                     pwd
+                    cd $(Pipeline.Workspace)
+                    pwd
                     ls -la
                     echo imagen $(ecrimageurlg)
                     cat willsmsvfargate-task-definition.tk.json
+                    copy  willsmsvfargate-task-definition.tk.json $(Build.SourcesDirectory)
+                    cd $(Build.SourcesDirectory)
+                    pdw
+                    ls -la
                   
               - task: replacetokens@6
                 displayName: Token replacement
