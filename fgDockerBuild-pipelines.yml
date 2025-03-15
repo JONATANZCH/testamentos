@@ -77,7 +77,7 @@ stages:
               - task: replacetokens@6
                 displayName: Token replacement
                 inputs:
-                  root: '$(Build.SourcesDirectory)/Devops'
+                  root: '$(Build.SourcesDirectory)/devops'
                   sources: 'willsmsvfargate-task-definition.tkn.json'
               - task: Bash@3
                 displayName: Debug info
@@ -87,7 +87,7 @@ stages:
                     # Write your commands here
                     echo imagen $(ecrimageurlg)
                     cat willsmsvfargate-task-definition.tkn.json
-                  workingDirectory: '$(Build.SourcesDirectory)/Devops'
+                  workingDirectory: '$(Build.SourcesDirectory)/devops'
               - task: AWSCLI@1
                 displayName: Register new task
                 inputs:
