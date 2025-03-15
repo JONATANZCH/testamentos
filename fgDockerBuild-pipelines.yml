@@ -8,8 +8,10 @@ trigger:
 
 pool:
   vmImage: ubuntu-latest
-
-
+parameters:
+  - name: ImagerUrl
+    type: string
+    default: ''
 variables:
   - name: AWS_REGION
     value: 'us-east-2'
@@ -26,7 +28,9 @@ variables:
   - group: Tesdev
 
 stages:
+  
   - stage: Build
+    condition: eq('${{ parameters.ImagerUrl }}', '')
     displayName: 'Build and push'
     jobs:
       - job: BuildImage
@@ -58,6 +62,22 @@ stages:
             script: |
               echo 'Hello urlImage' $(ecrimage)
               Write-Host "##vso[task.setvariable variable=gecrimage;isoutput=true ]$(ecrimage)"
+  
+  - stage: BuildDummy
+    condition: ne('${{ parameters.ImagerUrl }}', '')
+    displayName: 'Build and push'
+    jobs:
+      - job: BuildImage
+        displayName: 'Build and push'
+        steps:
+        - task: PowerShell@2
+          name: "Transfervar"
+          displayName: Set ECR variable
+          inputs:
+            targetType: 'inline'
+            script: |
+              echo 'Hello urlImage' $(ImagerUrl)
+              Write-Host "##vso[task.setvariable variable=gecrimage;isoutput=true ]$(ImagerUrl)"
 
   - stage: DeployDev
     displayName: 'Deploy to Fargate Dev'
