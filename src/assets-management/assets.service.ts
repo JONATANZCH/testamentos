@@ -13,7 +13,10 @@ export class AssetsService {
     this._prismaprovider = prismaprovider;
   }
 
-  async getUserAssets(userId: string): Promise<GeneralResponseDto> {
+  async getUserAssets(
+    userId: string,
+    type?: string,
+  ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();
@@ -32,10 +35,23 @@ export class AssetsService {
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
-      const assets = await this.prisma.asset.findMany({ where: { userId } });
+      const whereCondition: any = { userId };
+      if (type) {
+        whereCondition.type = type;
+      }
+
+      const assets = await this.prisma.asset.findMany({
+        where: whereCondition,
+      });
       if (assets.length === 0) {
         response.code = 404;
-        response.msg = 'No assets found';
+        if (type === 'digital') {
+          response.msg = 'No digital assets found for this user.';
+        } else if (type === 'physical') {
+          response.msg = 'No physical assets found for this user.';
+        } else {
+          response.msg = 'No assets found for this user.';
+        }
         response.response = {};
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
@@ -116,7 +132,11 @@ export class AssetsService {
 
       // Crear el activo si la categoría es válida
       const asset = await this.prisma.asset.create({
-        data: { userId, ...createAssetDto },
+        data: {
+          userId,
+          ...createAssetDto,
+          type: categoryExists.type,
+        },
       });
 
       response.code = 201;
@@ -142,6 +162,16 @@ export class AssetsService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
+      const existingAsset = await this.prisma.asset.findUnique({
+        where: { id: assetId },
+      });
+      if (!existingAsset) {
+        response.code = 404;
+        response.msg = 'Asset not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      let newType: string | null = null;
       if (updateAssetDto.categoryId) {
         const categoryExists = await this.prisma.assetCategory.findUnique({
           where: { id: updateAssetDto.categoryId },
@@ -152,20 +182,15 @@ export class AssetsService {
             'Invalid asset category. The specified category does not exist.';
           throw new HttpException(response, HttpStatus.BAD_REQUEST);
         }
-      }
-
-      const existingAsset = await this.prisma.asset.findUnique({
-        where: { id: assetId },
-      });
-      if (!existingAsset) {
-        response.code = 404;
-        response.msg = 'Asset not found';
-        throw new HttpException(response, HttpStatus.NOT_FOUND);
+        newType = categoryExists.type;
       }
 
       const asset = await this.prisma.asset.update({
         where: { id: assetId },
-        data: updateAssetDto,
+        data: {
+          ...updateAssetDto,
+          ...(newType !== null && { type: newType }),
+        },
       });
 
       response.code = 200;
