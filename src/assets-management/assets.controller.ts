@@ -31,10 +31,10 @@ export class AssetsController {
   @Get('/user/:userId/assets')
   async getUserAssets(
     @Param('userId', ParseUUIDPipe) userId: string,
-    @Query('type') type?: string,
+    @Query() paginationDto: PaginationDto,
   ): Promise<GeneralResponseDto> {
     console.log('Get user assets request received');
-    return this.assetsService.getUserAssets(userId, type);
+    return this.assetsService.getUserAssets(userId, paginationDto);
   }
 
   @Get('/asset/:assetId')

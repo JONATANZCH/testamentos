@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { CreateAssetDto, UpdateAssetDto } from './dto';
-import { GeneralResponseDto } from 'src/common';
+import { GeneralResponseDto, PaginationDto } from '../common';
 import { PrismaProvider } from '../providers';
 import { processException } from '../common/utils/exception.helper';
 
@@ -15,7 +15,7 @@ export class AssetsService {
 
   async getUserAssets(
     userId: string,
-    type?: string,
+    paginationDto: PaginationDto,
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
@@ -35,19 +35,41 @@ export class AssetsService {
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
-      const whereCondition: any = { userId };
-      if (type) {
-        whereCondition.type = type;
+      const pageNumber = parseInt(String(paginationDto.page), 10) || 1;
+      const limitNumber = parseInt(String(paginationDto.limit), 10) || 10;
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber < 1 ||
+        limitNumber < 1
+      ) {
+        response.code = 400;
+        response.msg = 'Page and limit must be valid positive numbers';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
-      const assets = await this.prisma.asset.findMany({
-        where: whereCondition,
-      });
-      if (assets.length === 0) {
+      const offset = (pageNumber - 1) * limitNumber;
+
+      const whereCondition: any = { userId };
+      if (paginationDto.type) {
+        whereCondition.type = paginationDto.type;
+      }
+
+      const [assets, total] = await Promise.all([
+        this.prisma.asset.findMany({
+          where: whereCondition,
+          skip: offset,
+          take: limitNumber,
+          orderBy: { createdAt: 'desc' }, // Ordena por fecha de creación, puedes cambiarlo
+        }),
+        this.prisma.asset.count({ where: whereCondition }),
+      ]);
+      if (total === 0) {
         response.code = 404;
-        if (type === 'digital') {
+        if (paginationDto.type === 'digital') {
           response.msg = 'No digital assets found for this user.';
-        } else if (type === 'physical') {
+        } else if (paginationDto.type === 'physical') {
           response.msg = 'No physical assets found for this user.';
         } else {
           response.msg = 'No assets found for this user.';
@@ -58,7 +80,13 @@ export class AssetsService {
 
       response.code = 200;
       response.msg = 'Assets retrieved successfully';
-      response.response = assets;
+      response.response = {
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(total / limitNumber),
+        assets,
+      };
       return response;
     } catch (error) {
       processException(error);
