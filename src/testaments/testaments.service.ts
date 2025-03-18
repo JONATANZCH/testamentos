@@ -363,6 +363,16 @@ export class TestamentsService {
           );
         }
 
+        if (testament.inheritanceType !== 'HP') {
+          throw new HttpException(
+            {
+              code: 400,
+              msg: 'This testament is of type "HU" or "HL" and does not support assignments.',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
         // 2) Validar que el asset exista y pertenezca al mismo userId
         if (createAssignmentDto.assetId) {
           const asset = await tx.asset.findUnique({
@@ -620,6 +630,27 @@ export class TestamentsService {
         response.code = 500;
         response.msg = 'Could not connect to the database';
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const testament = await this.prisma.testamentHeader.findUnique({
+        where: { id: testamentId },
+        select: { inheritanceType: true },
+      });
+
+      if (!testament) {
+        response.code = 404;
+        response.msg = 'Testament not found.';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      if (
+        testament.inheritanceType === 'HU' ||
+        testament.inheritanceType === 'HL'
+      ) {
+        response.code = 400;
+        response.msg =
+          'This testament is of type "HU" or "HL" and does not have assignments.';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
       const pageNumber = parseInt(String(page), 10);
