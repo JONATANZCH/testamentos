@@ -113,7 +113,12 @@ export class TestamentsService {
       }
       const testament = await this.prisma.testamentHeader.findFirst({
         where: { id: testamentId },
-        include: { TestamentAssignment: true },
+        select: {
+          id: true,
+          status: true,
+          version: true,
+          terms: true,
+        },
       });
 
       if (!testament) {
