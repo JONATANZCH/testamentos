@@ -218,6 +218,14 @@ export class TestamentsService {
                 createTestamentDto.legalAdvisor ?? activeTestament.legalAdvisor,
               notes: createTestamentDto.notes ?? activeTestament.notes,
             },
+            select: {
+              id: true,
+              status: true,
+              version: true,
+              inheritanceType: true,
+              universalHeirId: true,
+              creationDate: true,
+            },
           });
 
           // Copiar registros de TestamentAssignment
@@ -257,6 +265,14 @@ export class TestamentsService {
               userId,
               version: newVersion,
               status: 'DRAFT',
+            },
+            select: {
+              id: true,
+              status: true,
+              version: true,
+              inheritanceType: true,
+              universalHeirId: true,
+              creationDate: true,
             },
           });
         }
@@ -324,6 +340,14 @@ export class TestamentsService {
         const updated = await tx.testamentHeader.update({
           where: { id: testamentId },
           data: updateTestamentDto,
+          select: {
+            id: true,
+            status: true,
+            version: true,
+            inheritanceType: true,
+            universalHeirId: true,
+            updateDate: true,
+          },
         });
         return updated;
       });
