@@ -19,7 +19,11 @@ import {
   UpdateAssignmentDto,
   UpdateTestamentDto,
 } from './dto';
-import { GeneralResponseDto, TestamentQueryDto } from '../common';
+import {
+  GeneralResponseDto,
+  PaginationDto,
+  TestamentQueryDto,
+} from '../common';
 import { ConfigService } from '../config';
 import { UpdateTestamentMintDto } from './dto/update-testament-tatus.dto';
 import { Response } from 'express';
@@ -201,6 +205,26 @@ export class TestamentsController {
       assignmentId,
       updateAssignmentDto,
     );
+  }
+
+  @Get('/testaments/:testamentId/assignments')
+  async getTestamentAssignments(
+    @Param('testamentId', ParseUUIDPipe) testamentId: string,
+    @Query() paginationDto: PaginationDto,
+  ): Promise<GeneralResponseDto> {
+    console.log(`[TestamentsController] getTestamentAssignments, entering...`);
+    return this.testamentsService.getTestamentAssignments(
+      testamentId,
+      paginationDto,
+    );
+  }
+
+  @Get('/:assignmentId/assignments')
+  async getAssignmentById(
+    @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
+  ): Promise<GeneralResponseDto> {
+    console.log(`[TestamentsController] getAssignmentById, entering...`);
+    return this.testamentsService.getAssignmentById(assignmentId);
   }
 
   @Delete('/testaments/:testamentId/assignments')

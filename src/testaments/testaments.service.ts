@@ -606,6 +606,121 @@ export class TestamentsService {
     }
   }
 
+  async getTestamentAssignments(
+    testamentId: string,
+    paginationDto: PaginationDto,
+  ): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    const { page, limit } = paginationDto;
+
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const pageNumber = parseInt(String(page), 10);
+      const limitNumber = parseInt(String(limit), 10);
+
+      if (
+        isNaN(pageNumber) ||
+        isNaN(limitNumber) ||
+        pageNumber < 1 ||
+        limitNumber < 1
+      ) {
+        response.code = 400;
+        response.msg = 'Page and limit must be valid positive numbers';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
+      const offset = (pageNumber - 1) * limitNumber;
+
+      const whereClause: any = { testamentId };
+      if (paginationDto.assignmentType) {
+        whereClause.assignmentType = paginationDto.assignmentType;
+      }
+
+      const [assignments, total] = await Promise.all([
+        this.prisma.testamentAssignment.findMany({
+          where: whereClause,
+          skip: offset,
+          take: limitNumber,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            assetId: true,
+            percentage: true,
+            assignmentType: true,
+            assignmentId: true,
+          },
+        }),
+        this.prisma.testamentAssignment.count({ where: whereClause }),
+      ]);
+
+      if (total === 0) {
+        response.code = 404;
+        response.msg = paginationDto.assignmentType
+          ? `No assignments found with type "${paginationDto.assignmentType}".`
+          : 'No assignments found for this testament.';
+        response.response = {};
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      response.code = 200;
+      response.msg = 'Assignments retrieved successfully';
+      response.response = {
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(total / limitNumber),
+        assignments,
+      };
+      return response;
+    } catch (error) {
+      processException(error);
+    }
+  }
+
+  async getAssignmentById(assignmentId: string): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const assignment = await this.prisma.testamentAssignment.findUnique({
+        where: { id: assignmentId },
+        select: {
+          id: true,
+          assetId: true,
+          percentage: true,
+          assignmentType: true,
+          assignmentId: true,
+        },
+      });
+
+      if (!assignment) {
+        response.code = 404;
+        response.msg = 'Assignment not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      response.code = 200;
+      response.msg = 'Assignment retrieved successfully';
+      response.response = assignment;
+      return response;
+    } catch (error) {
+      processException(error);
+    }
+  }
+
   async deleteAssignment(testamentId: string): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {

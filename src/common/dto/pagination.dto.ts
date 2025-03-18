@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { IsEnum, IsIn, IsInt, IsOptional, Min } from 'class-validator';
 import { CountryCode } from '../enums/country-code.enum';
 import { ServiceType } from '../enums/service-type.enum';
 import { CategoryType } from '../enums/category-type.enum';
@@ -32,4 +32,11 @@ export class PaginationDto {
   @IsOptional()
   @IsEnum(CountryCode)
   readonly country?: string;
+
+  @IsOptional()
+  @IsIn(['c', 'le'], {
+    message:
+      'assignmentType must be either "c" (contact) or "le" (legal entity)',
+  })
+  readonly assignmentType?: string;
 }
