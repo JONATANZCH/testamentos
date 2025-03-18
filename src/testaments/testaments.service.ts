@@ -69,6 +69,12 @@ export class TestamentsService {
           skip: offset,
           take: limitNumber,
           orderBy: { creationDate: 'desc' },
+          select: {
+            id: true,
+            version: true,
+            status: true,
+            creationDate: true,
+          },
         }),
         this.prisma.testamentHeader.count({ where: whereClause }),
       ]);

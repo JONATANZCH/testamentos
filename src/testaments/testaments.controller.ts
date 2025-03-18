@@ -41,6 +41,7 @@ export class TestamentsController {
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query() queryDto: TestamentQueryDto,
   ): Promise<GeneralResponseDto> {
+    console.log('[TestamentsController] getUserTestaments, entering...');
     const { page, limit, status, version } = queryDto;
     return this.testamentsService.getUserTestaments(
       userId,
@@ -57,8 +58,10 @@ export class TestamentsController {
     @Res() res: Response,
   ) {
     if (type === 'pdf') {
+      console.log('streaming pdf');
       return this.testamentsService.streamTestamentPdf(testamentId, res);
     } else {
+      console.log('getting metadata');
       return this.testamentsService.getTestamentById(testamentId, res);
     }
   }
@@ -68,6 +71,7 @@ export class TestamentsController {
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() createTestamentDto: CreateTestamentDto,
   ): Promise<GeneralResponseDto> {
+    console.log('[TestamentsController] createTestament, entering...');
     return this.testamentsService.createTestament(userId, createTestamentDto);
   }
 
@@ -76,6 +80,7 @@ export class TestamentsController {
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
     @Body() updateTestamentDto: UpdateTestamentDto,
   ): Promise<GeneralResponseDto> {
+    console.log('[TestamentsController] updateTestament, entering...');
     return this.testamentsService.updateTestament(
       testamentId,
       updateTestamentDto,
@@ -86,6 +91,7 @@ export class TestamentsController {
   async deleteTestament(
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
   ): Promise<GeneralResponseDto> {
+    console.log('[TestamentsController] deleteTestament, entering...');
     return this.testamentsService.deleteTestament(testamentId);
   }
 
@@ -94,6 +100,7 @@ export class TestamentsController {
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
     @Body() body: CreateAssignmentDto | CreateAssignmentDto[],
   ): Promise<GeneralResponseDto> {
+    console.log('[TestamentsController] createAssignment, entering...');
     // We check if the body is an array; otherwise, we convert it to an array.
     const assignments: CreateAssignmentDto[] = Array.isArray(body)
       ? body
@@ -189,6 +196,7 @@ export class TestamentsController {
     @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
     @Body() updateAssignmentDto: UpdateAssignmentDto,
   ): Promise<GeneralResponseDto> {
+    console.log('[TestamentsController] updateAssignment, entering...');
     return this.testamentsService.updateAssignment(
       assignmentId,
       updateAssignmentDto,
@@ -199,6 +207,7 @@ export class TestamentsController {
   async deleteAssignment(
     @Param('testamentId', ParseUUIDPipe) testamentId: string,
   ): Promise<GeneralResponseDto> {
+    console.log('[TestamentsController] deleteAssignment, entering...');
     return this.testamentsService.deleteAssignment(testamentId);
   }
 

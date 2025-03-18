@@ -83,6 +83,7 @@ export class UsersController {
   async getUserProgress(
     @Param('id', ParseUUIDPipe) userId: string,
   ): Promise<GeneralResponseDto> {
+    console.log('[getUserProgress] Get user progress request received');
     return await this.usersService.getUserProgress(userId);
   }
 }
