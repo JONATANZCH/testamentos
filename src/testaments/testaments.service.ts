@@ -427,6 +427,16 @@ export class TestamentsService {
           );
         }
 
+        if (testament.status !== 'DRAFT') {
+          throw new HttpException(
+            {
+              code: 400,
+              msg: 'You can only create assignments to wills in Draft..',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
         // 2) Validar que el asset exista y pertenezca al mismo userId
         if (createAssignmentDto.assetId) {
           const asset = await tx.asset.findUnique({
