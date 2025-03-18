@@ -185,6 +185,21 @@ export class TestamentsService {
         });
         const newVersion = (lastVersion?.version || 0) + 1;
 
+        if (createTestamentDto.universalHeirId) {
+          const heirExists = await tx.contact.findUnique({
+            where: { id: createTestamentDto.universalHeirId },
+          });
+          if (!heirExists) {
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'The provided universalHeirId does not exist in Contact.',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+        }
+
         const activeTestament = await tx.testamentHeader.findFirst({
           where: { userId, status: 'ACTIVE' },
           orderBy: { creationDate: 'desc' },
@@ -289,6 +304,21 @@ export class TestamentsService {
             { code: 400, msg: 'Only draft testaments can be updated.' },
             HttpStatus.BAD_REQUEST,
           );
+        }
+
+        if (updateTestamentDto.universalHeirId) {
+          const heirExists = await tx.contact.findUnique({
+            where: { id: updateTestamentDto.universalHeirId },
+          });
+          if (!heirExists) {
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'The provided universalHeirId does not exist in Contact.',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
         }
 
         const updated = await tx.testamentHeader.update({
