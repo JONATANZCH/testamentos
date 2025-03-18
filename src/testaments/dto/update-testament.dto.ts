@@ -20,7 +20,7 @@ export class UpdateTestamentDto {
   readonly notes?: string;
 
   @IsNotEmpty()
-  @IsIn(['HP, HL, HU'], {
+  @IsIn(['HP', 'HL', 'HU'], {
     message:
       "inheritanceType must be 'HP' (Heirs by Percentage), 'HL' (Legal Heirs) or 'HU' (Universal Heir)",
   })
