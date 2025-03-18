@@ -11,6 +11,7 @@ export class ExecutorService {
   constructor(private readonly prismaProvider: PrismaProvider) {}
 
   async createExecutor(
+    testamentId: string,
     createExecutorDto: CreateExecutorDto,
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
@@ -25,30 +26,73 @@ export class ExecutorService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      //Validate testamentHeaderId exists
       const testamentHeader = await this.prisma.testamentHeader.findUnique({
-        where: { id: createExecutorDto.testamentHeaderId },
+        where: { id: testamentId },
+        select: { id: true, status: true, userId: true },
       });
-
       if (!testamentHeader) {
+        response.code = 404;
+        response.msg = 'Testament not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      if (testamentHeader.status !== 'DRAFT') {
         response.code = 400;
-        response.msg = `Testament not found`;
+        response.msg =
+          'You can only create executors for a testament in DRAFT status.';
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
-      // Validate contactId exists
       const contact = await this.prisma.contact.findUnique({
         where: { id: createExecutorDto.contactId },
+        select: { userId: true },
       });
-
       if (!contact) {
         response.code = 400;
-        response.msg = `Contact not found`;
+        response.msg = 'Contact not found';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
+      if (contact.userId !== testamentHeader.userId) {
+        response.code = 400;
+        response.msg =
+          'The provided contact does not belong to the same user as the testament.';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
+      const samePriorityExecutor = await this.prisma.executor.findFirst({
+        where: {
+          testamentHeaderId: testamentId,
+          priorityOrder: createExecutorDto.priorityOrder,
+        },
+        select: { id: true },
+      });
+      if (samePriorityExecutor) {
+        response.code = 400;
+        response.msg = `There's already an executor with priorityOrder '${createExecutorDto.priorityOrder}' for this testament.`;
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
+      const sameContactExecutor = await this.prisma.executor.findFirst({
+        where: {
+          testamentHeaderId: testamentId,
+          contactId: createExecutorDto.contactId,
+        },
+        select: { id: true },
+      });
+      if (sameContactExecutor) {
+        response.code = 400;
+        response.msg = `There's already an executor with contactId '${createExecutorDto.contactId}' for this testament.`;
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
       const executor = await this.prisma.executor.create({
-        data: createExecutorDto,
+        data: {
+          testamentHeaderId: testamentId,
+          contactId: createExecutorDto.contactId,
+          type: createExecutorDto.type ?? null,
+          priorityOrder: createExecutorDto.priorityOrder,
+        },
       });
 
       response.code = 201;
@@ -152,45 +196,107 @@ export class ExecutorService {
           'Could not connect to DB, no prisma client created error getting secret';
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
-      const executorExist = await this.prisma.executor.findUnique({
+      const existingExecutor = await this.prisma.executor.findUnique({
         where: { id: execId },
+        select: {
+          id: true,
+          testamentHeaderId: true,
+          contactId: true,
+          priorityOrder: true,
+        },
       });
-
-      if (!executorExist) {
+      if (!existingExecutor) {
         response.code = 404;
         response.msg = `Executor not found`;
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
-      //Validate testamentHeaderId exists
-      const testamentHeader = await this.prisma.testamentHeader.findUnique({
-        where: { id: updateExecutorDto.testamentHeaderId },
+      const testament = await this.prisma.testamentHeader.findUnique({
+        where: { id: existingExecutor.testamentHeaderId },
+        select: { id: true, status: true, userId: true },
       });
-
-      if (!testamentHeader) {
-        response.code = 400;
-        response.msg = `Testament not found`;
-        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      if (!testament) {
+        response.code = 404;
+        response.msg = 'Testament not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
-      // Validate contactId exists
-      const contact = await this.prisma.contact.findUnique({
-        where: { id: updateExecutorDto.contactId },
-      });
-
-      if (!contact) {
+      if (testament.status !== 'DRAFT') {
         response.code = 400;
-        response.msg = `Contact not found`;
+        response.msg =
+          'You can only update executors if the testament is in DRAFT status.';
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
-      const executor = await this.prisma.executor.update({
+      if (
+        updateExecutorDto.contactId &&
+        updateExecutorDto.contactId !== existingExecutor.contactId
+      ) {
+        const contact = await this.prisma.contact.findUnique({
+          where: { id: updateExecutorDto.contactId },
+          select: { userId: true },
+        });
+        if (!contact) {
+          response.code = 400;
+          response.msg = 'New contact not found';
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
+
+        // (opcional) Validar que el nuevo contacto pertenezca al mismo userId que el testamento
+        if (contact.userId !== testament.userId) {
+          response.code = 400;
+          response.msg =
+            'The new contact does not belong to the same user as the testament.';
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
+
+        const sameContactExecutor = await this.prisma.executor.findFirst({
+          where: {
+            testamentHeaderId: existingExecutor.testamentHeaderId,
+            contactId: updateExecutorDto.contactId,
+          },
+          select: { id: true },
+        });
+        if (sameContactExecutor) {
+          response.code = 400;
+          response.msg = `There's already an executor with contactId '${updateExecutorDto.contactId}' for this testament.`;
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      if (
+        updateExecutorDto.priorityOrder &&
+        updateExecutorDto.priorityOrder !== existingExecutor.priorityOrder
+      ) {
+        const samePriorityExecutor = await this.prisma.executor.findFirst({
+          where: {
+            testamentHeaderId: existingExecutor.testamentHeaderId,
+            priorityOrder: updateExecutorDto.priorityOrder,
+          },
+          select: { id: true },
+        });
+        if (samePriorityExecutor) {
+          response.code = 400;
+          response.msg = `There's already an executor with priorityOrder '${updateExecutorDto.priorityOrder}' for this testament.`;
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      const updatedExecutor = await this.prisma.executor.update({
         where: { id: execId },
         data: updateExecutorDto,
+        select: {
+          id: true,
+          testamentHeaderId: true,
+          contactId: true,
+          type: true,
+          priorityOrder: true,
+          updatedAt: true,
+        },
       });
 
       response.code = 200;
       response.msg = 'Executor updated successfully';
-      response.response = executor;
+      response.response = updatedExecutor;
       return response;
     } catch (error) {
       processException(error);
@@ -221,10 +327,11 @@ export class ExecutorService {
       const executor = await this.prisma.executor.delete({
         where: { id: execId },
       });
+      console.log('Executor deleted:', executor);
 
       response.code = 200;
       response.msg = 'Executor deleted successfully';
-      response.response = executor;
+      response.response = {};
       return response;
     } catch (error) {
       console.error('Error deleting executor:', error);

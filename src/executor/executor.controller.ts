@@ -27,17 +27,23 @@ export class ExecutorController {
     console.log('Environment running -> ' + this.environment);
   }
 
-  @Post('/executors')
+  @Post('/testaments/:testamentId/executors')
   async createExecutor(
+    @Param('testamentId', ParseUUIDPipe) testamentId: string,
     @Body() createExecutorDto: CreateExecutorDto,
   ): Promise<GeneralResponseDto> {
-    return this.executorService.createExecutor(createExecutorDto);
+    console.log('[ExecutorController] createExecutor =>', {
+      testamentId,
+      createExecutorDto,
+    });
+    return this.executorService.createExecutor(testamentId, createExecutorDto);
   }
 
   @Get('/executors/:execId')
   async getExecutorById(
     @Param('execId', ParseUUIDPipe) execId: string,
   ): Promise<GeneralResponseDto> {
+    console.log('[ExecutorController] getExecutorById =>', { execId });
     return this.executorService.getExecutorById(execId);
   }
 
@@ -45,14 +51,19 @@ export class ExecutorController {
   async getUserExecutors(
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<GeneralResponseDto> {
+    console.log('[ExecutorController] getUserExecutors =>', { userId });
     return this.executorService.getUserExecutors(userId);
   }
 
-  @Put('/executors/:execId')
+  @Put('/testaments/executors/:execId')
   async updateExecutor(
     @Param('execId', ParseUUIDPipe) execId: string,
     @Body() updateExecutorDto: UpdateExecutorDto,
   ): Promise<GeneralResponseDto> {
+    console.log('[ExecutorController] updateExecutor =>', {
+      execId,
+      updateExecutorDto,
+    });
     return this.executorService.updateExecutor(execId, updateExecutorDto);
   }
 
@@ -60,6 +71,7 @@ export class ExecutorController {
   async deleteExecutor(
     @Param('execId', ParseUUIDPipe) execId: string,
   ): Promise<GeneralResponseDto> {
+    console.log('[ExecutorController] deleteExecutor =>', { execId });
     return this.executorService.deleteExecutor(execId);
   }
 }

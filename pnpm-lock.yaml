@@ -78,8 +78,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
       testgetprismaclient:
-        specifier: 1.3.3
-        version: 1.3.3(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
+        specifier: 1.3.4
+        version: 1.3.4(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -3319,8 +3319,8 @@ packages:
     resolution: {integrity: sha1-BKhphmHYBepvopO2y55jrARO8V4=}
     engines: {node: '>=8'}
 
-  testgetprismaclient@1.3.3:
-    resolution: {integrity: sha1-moW+BZXLC8O+O0cqmPxjDGC1Nro=}
+  testgetprismaclient@1.3.4:
+    resolution: {integrity: sha1-2rSPsERwo2G8GEsZvPs2Jhfi/N4=}
 
   text-table@0.2.0:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
@@ -7820,7 +7820,7 @@ snapshots:
       glob: 7.2.3
       minimatch: 3.1.2
 
-  testgetprismaclient@1.3.3(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2):
+  testgetprismaclient@1.3.4(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2):
     dependencies:
       '@prisma/client': 6.4.1(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
     transitivePeerDependencies:

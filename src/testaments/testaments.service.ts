@@ -898,7 +898,7 @@ export class TestamentsService {
       if (!status) {
         console.log('[streamTestamentPdf] PDF status not found.');
         response.code = 404;
-        response.msg = 'PDF status not found';
+        response.msg = 'PDF not found';
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
