@@ -52,8 +52,8 @@ export class AssetsService {
       const offset = (pageNumber - 1) * limitNumber;
 
       const whereCondition: any = { userId };
-      if (paginationDto.type) {
-        whereCondition.type = paginationDto.type;
+      if (paginationDto.categoryType) {
+        whereCondition.type = paginationDto.categoryType;
       }
 
       const [assets, total] = await Promise.all([

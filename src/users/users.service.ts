@@ -304,6 +304,22 @@ export class UsersService {
       const profileCompletion =
         (profileFieldsCompleted / totalProfileFields) * 100;
 
+      const hasNonHpTestament = user.testamentHeaders.some(
+        (t) => t.inheritanceType !== 'HP', // t.inheritanceType es HU o HL (o incluso null)
+      );
+
+      if (hasNonHpTestament) {
+        const progressData = {
+          profile: '100%',
+          assets: '100%',
+          assignments: '100%',
+        };
+
+        response.code = 200;
+        response.msg = 'User progress retrieved successfully';
+        response.response = progressData;
+        return response;
+      }
       /**
        * ------------------------------------------------------
        * STEP 2: ASSETS
