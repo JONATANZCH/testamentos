@@ -56,20 +56,7 @@ export class ExecutorService {
       if (contact.userId !== testamentHeader.userId) {
         response.code = 400;
         response.msg =
-          'The provided contact does not belong to the same user as the testament.';
-        throw new HttpException(response, HttpStatus.BAD_REQUEST);
-      }
-
-      const samePriorityExecutor = await this.prisma.executor.findFirst({
-        where: {
-          testamentHeaderId: testamentId,
-          priorityOrder: createExecutorDto.priorityOrder,
-        },
-        select: { id: true },
-      });
-      if (samePriorityExecutor) {
-        response.code = 400;
-        response.msg = `There's already an executor with priorityOrder '${createExecutorDto.priorityOrder}' for this testament.`;
+          'Contact does not belong to the same user as the testament.';
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
@@ -82,16 +69,32 @@ export class ExecutorService {
       });
       if (sameContactExecutor) {
         response.code = 400;
-        response.msg = `There's already an executor with contactId '${createExecutorDto.contactId}' for this testament.`;
+        response.msg = `There's already an executor with id '${createExecutorDto.contactId}' for this testament.`;
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
+
+      const countExecutors = await this.prisma.executor.count({
+        where: { testamentHeaderId: testamentId },
+      });
+      if (countExecutors >= 4) {
+        response.code = 400;
+        response.msg = 'You already have 4 executors. Limit reached.';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
+      const newPriorityOrder = countExecutors + 1;
 
       const executor = await this.prisma.executor.create({
         data: {
           testamentHeaderId: testamentId,
           contactId: createExecutorDto.contactId,
           type: createExecutorDto.type ?? null,
-          priorityOrder: createExecutorDto.priorityOrder,
+          priorityOrder: newPriorityOrder,
+        },
+        select: {
+          id: true,
+          testamentHeaderId: true,
+          createdAt: true,
         },
       });
 
@@ -227,75 +230,108 @@ export class ExecutorService {
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
-      if (
-        updateExecutorDto.contactId &&
-        updateExecutorDto.contactId !== existingExecutor.contactId
-      ) {
-        const contact = await this.prisma.contact.findUnique({
-          where: { id: updateExecutorDto.contactId },
-          select: { userId: true },
-        });
-        if (!contact) {
-          response.code = 400;
-          response.msg = 'New contact not found';
-          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      const updatedExecutor = await this.prisma.$transaction(async (tx) => {
+        if (
+          updateExecutorDto.contactId &&
+          updateExecutorDto.contactId !== existingExecutor.contactId
+        ) {
+          const contact = await tx.contact.findUnique({
+            where: { id: updateExecutorDto.contactId },
+            select: { userId: true },
+          });
+          if (!contact) {
+            throw new HttpException(
+              { code: 400, msg: 'New contact not found' },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+          if (contact.userId !== testament.userId) {
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'Contact does not belong to the testament user.',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+          const sameContactExecutor = await tx.executor.findFirst({
+            where: {
+              testamentHeaderId: existingExecutor.testamentHeaderId,
+              contactId: updateExecutorDto.contactId,
+            },
+          });
+          if (sameContactExecutor) {
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'Contact already used as executor in this testament.',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
         }
 
-        // (opcional) Validar que el nuevo contacto pertenezca al mismo userId que el testamento
-        if (contact.userId !== testament.userId) {
-          response.code = 400;
-          response.msg =
-            'The new contact does not belong to the same user as the testament.';
-          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        // (B) Manejar drag & drop => reorder
+        let newPriority = updateExecutorDto.priorityOrder;
+        const oldPriority = existingExecutor.priorityOrder;
+
+        if (newPriority && newPriority !== oldPriority) {
+          const totalExecutors = await tx.executor.count({
+            where: { testamentHeaderId: existingExecutor.testamentHeaderId },
+          });
+          if (newPriority > totalExecutors) {
+            newPriority = totalExecutors;
+          }
+
+          if (newPriority < oldPriority) {
+            await tx.executor.updateMany({
+              where: {
+                testamentHeaderId: existingExecutor.testamentHeaderId,
+                priorityOrder: {
+                  gte: newPriority,
+                  lt: oldPriority,
+                },
+              },
+              data: {
+                priorityOrder: {
+                  increment: 1,
+                },
+              },
+            });
+          } else {
+            await tx.executor.updateMany({
+              where: {
+                testamentHeaderId: existingExecutor.testamentHeaderId,
+                priorityOrder: {
+                  gt: oldPriority,
+                  lte: newPriority,
+                },
+              },
+              data: {
+                priorityOrder: {
+                  decrement: 1,
+                },
+              },
+            });
+          }
         }
 
-        const sameContactExecutor = await this.prisma.executor.findFirst({
-          where: {
-            testamentHeaderId: existingExecutor.testamentHeaderId,
-            contactId: updateExecutorDto.contactId,
+        const updated = await tx.executor.update({
+          where: { id: execId },
+          data: updateExecutorDto,
+          select: {
+            id: true,
+            testamentHeaderId: true,
+            priorityOrder: true,
+            updatedAt: true,
           },
-          select: { id: true },
         });
-        if (sameContactExecutor) {
-          response.code = 400;
-          response.msg = `There's already an executor with contactId '${updateExecutorDto.contactId}' for this testament.`;
-          throw new HttpException(response, HttpStatus.BAD_REQUEST);
-        }
-      }
 
-      if (
-        updateExecutorDto.priorityOrder &&
-        updateExecutorDto.priorityOrder !== existingExecutor.priorityOrder
-      ) {
-        const samePriorityExecutor = await this.prisma.executor.findFirst({
-          where: {
-            testamentHeaderId: existingExecutor.testamentHeaderId,
-            priorityOrder: updateExecutorDto.priorityOrder,
-          },
-          select: { id: true },
-        });
-        if (samePriorityExecutor) {
-          response.code = 400;
-          response.msg = `There's already an executor with priorityOrder '${updateExecutorDto.priorityOrder}' for this testament.`;
-          throw new HttpException(response, HttpStatus.BAD_REQUEST);
-        }
-      }
-
-      const updatedExecutor = await this.prisma.executor.update({
-        where: { id: execId },
-        data: updateExecutorDto,
-        select: {
-          id: true,
-          testamentHeaderId: true,
-          contactId: true,
-          type: true,
-          priorityOrder: true,
-          updatedAt: true,
-        },
+        return updated;
       });
 
       response.code = 200;
-      response.msg = 'Executor updated successfully';
+      response.msg = 'Executor updated successfully with drag-and-drop reorder';
       response.response = updatedExecutor;
       return response;
     } catch (error) {
