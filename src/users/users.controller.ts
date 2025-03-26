@@ -57,7 +57,8 @@ export class UsersController {
   async getUserById(@Param('id') _dummy: string, @Req() req: Request) {
     const authorizerData = req['authorizerData'];
     const claims = authorizerData.claims;
-    const email = claims.username || claims.email || claims.name;
+    const email =
+      claims.username || claims.email || claims.name || claims.userId;
 
     return this.usersService.findUser(email);
   }

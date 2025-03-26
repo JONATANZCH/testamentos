@@ -45,12 +45,21 @@ export class AuthorizerGuard implements CanActivate {
       authorizerData?.jwt?.claims ||
       authorizerData?.lambda;
 
-    const username = claims?.username || claims?.email || claims?.name || null;
-
-    if (!claims || !username) {
-      console.log('No username found in token claims');
+    if (!claims) {
+      console.log('No claims found in token');
       throw new HttpException(
-        'Unauthorized: missing username claim',
+        'Unauthorized: no claims provided',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const userIdentifier =
+      claims.username || claims.email || claims.name || claims.userId || null;
+
+    if (!userIdentifier) {
+      console.log('No valid user identifier found in token claims');
+      throw new HttpException(
+        'Unauthorized: missing user identifier claim',
         HttpStatus.UNAUTHORIZED,
       );
     }
