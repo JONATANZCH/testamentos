@@ -11,6 +11,8 @@ import {
   UseInterceptors,
   Req,
   UseGuards,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto';
@@ -36,10 +38,44 @@ export class UsersController {
   }
 
   @Post()
+  @UseGuards(AuthorizerGuard)
   async createUser(
     @Body() createUserDto: CreateUserDto,
+    @Req() req: Request,
   ): Promise<GeneralResponseDto> {
     console.log('Create user request received');
+    const claims = req['authorizerData'].claims;
+    const tokenEmail =
+      claims.username || claims.email || claims.name || claims.userId;
+    if (
+      tokenEmail &&
+      createUserDto.email &&
+      tokenEmail.toLowerCase() !== createUserDto.email.toLowerCase()
+    ) {
+      throw new HttpException(
+        {
+          code: 400,
+          msg: 'The user does not match the token',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    let oauthId = '';
+    let authTool = '';
+    if (claims?.sub) {
+      oauthId = claims.sub;
+      authTool = 'cognito';
+    } else if (claims?.userId) {
+      oauthId = claims.userId;
+      authTool = 'auth0';
+    } else {
+      throw new HttpException(
+        { code: 400, msg: 'No valid oauthId found in token' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    createUserDto.oauthId = oauthId;
+    createUserDto.authTool = authTool;
     return this.usersService.createUser(createUserDto);
   }
 

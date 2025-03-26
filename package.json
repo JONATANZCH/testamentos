@@ -43,7 +43,7 @@
     "joi": "^17.13.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "testgetprismaclient": "1.3.5",
+    "testgetprismaclient": "1.3.6",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

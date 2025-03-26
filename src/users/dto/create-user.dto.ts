@@ -94,4 +94,10 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   hasPets?: boolean;
+
+  @IsString()
+  oauthId: string;
+
+  @IsString()
+  authTool: string;
 }
