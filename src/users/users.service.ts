@@ -4,6 +4,10 @@ import { CreateUserDto, UpdateUserDto } from './dto';
 import { GeneralResponseDto } from '../common';
 import { reverseCountryPhoneCodeMap } from '../common/utils/reverseCountryPhoneCodeMap';
 import { processException } from '../common/utils/exception.helper';
+interface CreateUserWithTokenData extends CreateUserDto {
+  oauthId: string;
+  authTool: string;
+}
 
 @Injectable()
 export class UsersService {
@@ -73,7 +77,9 @@ export class UsersService {
     }
   }
 
-  async createUser(createUserDto: CreateUserDto): Promise<GeneralResponseDto> {
+  async createUser(
+    createUserDto: CreateUserWithTokenData,
+  ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this._prismaprovider.getPrismaClient();

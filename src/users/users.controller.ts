@@ -74,9 +74,12 @@ export class UsersController {
         HttpStatus.BAD_REQUEST,
       );
     }
-    createUserDto.oauthId = oauthId;
-    createUserDto.authTool = authTool;
-    return this.usersService.createUser(createUserDto);
+    const dataToSave = {
+      ...createUserDto,
+      oauthId,
+      authTool,
+    };
+    return this.usersService.createUser(dataToSave);
   }
 
   @Get()
