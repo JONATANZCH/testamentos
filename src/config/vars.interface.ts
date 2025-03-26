@@ -6,4 +6,5 @@ export interface EnvConfig {
   QUEUE_WILLS_COMMUNICATIONS: string;
   PPERRORMANAGEMENT: string;
   GETSNSTOPICARN: string;
+  SQSCOMM_NOWAIT_QUEUE: string;
 }

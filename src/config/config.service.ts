@@ -19,6 +19,7 @@ export class ConfigService {
       QUEUE_WILLS_COMMUNICATIONS: Joi.string().required(),
       PPERRORMANAGEMENT: Joi.string().required(),
       GETSNSTOPICARN: Joi.string().required(),
+      SQSCOMM_NOWAIT_QUEUE: Joi.string().required(),
     });
 
     const { error, value } = schema.validate(envVariables, {
@@ -72,5 +73,9 @@ export class ConfigService {
 
   getSnsTopicArn(): string {
     return this.get('GETSNSTOPICARN');
+  }
+
+  getSqsCommNoWaitQueue(): string {
+    return this.get('SQSCOMM_NOWAIT_QUEUE');
   }
 }

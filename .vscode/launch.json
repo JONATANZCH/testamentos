@@ -22,16 +22,17 @@
         "PORT": "3000",
         "AWSREGION": "us-east-2",
         "AWS_SECRET_ID": "dev/testamentos/mysql",
-        "AWS_ACCESS_KEY_ID": "ASIAWNHTHSROG4KHES5M",
-        "AWS_SECRET_ACCESS_KEY": "8neh4JFemXkJZKrTvus0b9+fj35Wr9jjM9fCbESf",
-        "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEDcaCXVzLWVhc3QtMiJGMEQCIDkbNU4YjzJi3at5tlWXG2ubk/9SZ8dHcTFwKnDOloI+AiA3uqphD3X1lHZRJH+CIymT+mQGJinY/+Do0UEM1EnfTCr4AQiR//////////8BEAAaDDQ0MDc0NDI1MjUwOCIMND+xNvucYydKTmLbKswBi+uOuU4SeLN6OzX3Fgj3/PZaPRahA6h9jslGL5opIP0+2O1XpruVbJTFTIVp9KVYR0PFFrAiZn7juEw2p+Z1Aa709yAFIxPGaBi/07CBBSBQuX79QO0SDx2/iw0eM2H2fsZ4jIaPgwVDOnTndbIgOzyncvXjPOllbvu/Nj4V6b+GVv61KCw6nfcG06mqsKzjhzuO2Q8sJ2xJp1bpGdsw8aLZgjFSdpBWdiIm/izWY9NVSgzSfmoqyxfJx2engcgS+bHT/pFQFO7dC50YMP3l8L4GOpkBFdkqi5kzRdrSXfPGoswQ2w2e7mpxeyndmXM6z9EiPtp9GbUJ5UVTxYd7a/lXc/DYLu5zgd/6WYdXbYTSrD2H285TGxIPYx3iDHjjancN6wAPehaGOBYZr5SEOGFCCM3Ff/SM2Uga7Lnat5fQuJEl0pO3bcihdLfdsYXot0pDDvfkaLux0h+7rnPJS4wev4hLVA+btrLx57ri",
+        "AWS_ACCESS_KEY_ID": "ASIAWNHTHSROA7LFJCMI",
+        "AWS_SECRET_ACCESS_KEY": "DNpAcrCpltLwlsOiyip/UsH4QFfbs7lvSX9IhJJ/",
+        "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjELX//////////wEaCXVzLWVhc3QtMiJHMEUCIQDr3jvvrWhb4AKbZTQmuVIOOAPdunQhaopXdWFLbZxWaQIgL50Hulrvj0lMdmv6KJI8HVw3lPKZcP2EYNFNy1Jqf8cq7wEIHhAAGgw0NDA3NDQyNTI1MDgiDPsoG14J6RsxTDesxCrMAQdgttxbjrlJJt/fyl1J8yVIGZTZbuVk96Hlykf4SLVplE98GiJG8PzI/rOLIJKIsXJlO7XjQvmWJ9MNq9A9RjqpkJudLDn1MILqmfnji+xWQ0sv5TeAFiv2I/lrptC4scNW6e/CzoMavIKeOlhmXLK9ToR91nb4WA1Sa7/PlSBdOdiSuMBw2RdE6mthbmG2WN4AhXPdUYjkBwUSln6HyHiORyEjLEcEx9Ku0sYN43gG0xzauPKoZd5B0cU39BDCvAb+ID5DVNIV5SsFRjC3t4y/BjqYAUsC9KHMBpMLTGnvbs3PV7Q4fqsMk6Gh0gJIi2HISkx7zkK8Wiz7VGFPTvhiT91sH1w8iBp4fgFCtU5ohyHiFJBMbd8yCD+mB33I6JwzQgBM1hzU1YNaKsaWGOtPugCrKXyeYZu3gVEj9mFZfjG6tBTO73WPhatLlVO2RzTvZi6sbN+/2QUozzVgTLIqqqGeetdJzNj+Z6Nb",
         "AWS_REGION": "us-east-2",
         "QUEUE_WILLS_COMMUNICATIONS": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_users_0.fifo",
         "BUCKET_WILL": "dev-testaments",
         "QUEUE_GENERATE_PDF": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_security_0.fifo",
         "PPERRORMANAGEMENT": "arn:aws:lambda:us-east-2:440744252508:function:devWillC_PPErrorManagement",
         "GETSNSTOPICARN": "arn:aws:sns:us-east-2:440744252508:PPErrorManagement.fifo",
-        "QUEUE_PDF_GENERATE": "https://sqs.us-east-2.amazonaws.com/440744252508/borrartesthebhookpdf.fifo"
+        "QUEUE_PDF_GENERATE": "https://sqs.us-east-2.amazonaws.com/440744252508/borrartesthebhookpdf.fifo",
+        "SQSCOMM_NOWAIT_QUEUE": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_services_messaging_0.fifo"
       }
     }
   ]
