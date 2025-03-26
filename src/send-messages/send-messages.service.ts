@@ -13,12 +13,16 @@ export class SendMessagesService {
   private readonly environment: string;
   private readonly getSqsCommNoWaitQueue: any;
   private readonly sqsClient: SQSClient;
+  private readonly getEmailFrom: any;
+  private readonly getSgSendWills: any;
 
   constructor(
     private prismaprovider: PrismaProvider,
     private readonly configService: ConfigService,
   ) {
     this.getSqsCommNoWaitQueue = this.configService.getSqsCommNoWaitQueue();
+    this.getEmailFrom = this.configService.getEmailFrom();
+    this.getSgSendWills = this.configService.getSgSendWills();
     this.sqsClient = new SQSClient({
       region: this.configService.getAwsRegion(),
     });
@@ -145,8 +149,8 @@ export class SendMessagesService {
               {
                 msg: {
                   to: toEmails,
-                  from: 'Past Post <mensaje@pastpost.com>',
-                  templateId: 'd-b5575cad947d4523bbbb5d1ee2351959',
+                  from: this.getEmailFrom,
+                  templateId: this.getSgSendWills,
                   dynamicTemplateData: {
                     subject: `${user.name} te envió su testamento.`,
                     from: user.name,

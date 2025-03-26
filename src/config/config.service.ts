@@ -20,6 +20,8 @@ export class ConfigService {
       PPERRORMANAGEMENT: Joi.string().required(),
       GETSNSTOPICARN: Joi.string().required(),
       SQSCOMM_NOWAIT_QUEUE: Joi.string().required(),
+      EMAIL_FROM: Joi.string().required(),
+      SG_SEND_WILLS: Joi.string().required(),
     });
 
     const { error, value } = schema.validate(envVariables, {
@@ -77,5 +79,13 @@ export class ConfigService {
 
   getSqsCommNoWaitQueue(): string {
     return this.get('SQSCOMM_NOWAIT_QUEUE');
+  }
+
+  getEmailFrom(): string {
+    return this.get('EMAIL_FROM');
+  }
+
+  getSgSendWills(): string {
+    return this.get('SG_SEND_WILLS');
   }
 }

@@ -7,4 +7,6 @@ export interface EnvConfig {
   PPERRORMANAGEMENT: string;
   GETSNSTOPICARN: string;
   SQSCOMM_NOWAIT_QUEUE: string;
+  EMAIL_FROM: string;
+  SG_SEND_WILLS: string;
 }
