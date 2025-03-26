@@ -208,7 +208,7 @@ export class SendMessagesService {
         });
 
         response.code = 200;
-        response.msg = 'Mensaje encolado correctamente.';
+        response.msg = 'Message queued successfully.';
         response.response = updatedMessage;
         return response;
       } catch (err) {
@@ -218,6 +218,13 @@ export class SendMessagesService {
           data: {
             errorLog: err.message,
             status: 'FAILED',
+          },
+          select: {
+            id: true,
+            userId: true,
+            status: true,
+            errorLog: true,
+            createdAt: true,
           },
         });
         response.code = 500;
