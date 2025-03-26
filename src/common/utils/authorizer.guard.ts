@@ -39,9 +39,15 @@ export class AuthorizerGuard implements CanActivate {
       );
     }
 
-    // 4. Verificar que contenga claims y username
-    const claims = authorizerData.claims || authorizerData?.jwt?.claims;
-    if (!claims || !claims.username) {
+    // 4. Intentamos extraer "username" de la estructura Cognito
+    const claims =
+      authorizerData.claims ||
+      authorizerData?.jwt?.claims ||
+      authorizerData?.lambda;
+
+    const username = claims?.username || claims?.email || claims?.name || null;
+
+    if (!claims || !username) {
       console.log('No username found in token claims');
       throw new HttpException(
         'Unauthorized: missing username claim',
@@ -50,7 +56,10 @@ export class AuthorizerGuard implements CanActivate {
     }
 
     // 5. Inyectar en el request
-    request['authorizerData'] = authorizerData;
+    request['authorizerData'] = {
+      ...authorizerData,
+      claims,
+    };
 
     // 6. Retornar true => pasa al controlador
     return true;

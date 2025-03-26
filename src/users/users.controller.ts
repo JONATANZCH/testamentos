@@ -56,8 +56,8 @@ export class UsersController {
   @UseGuards(AuthorizerGuard)
   async getUserById(@Param('id') _dummy: string, @Req() req: Request) {
     const authorizerData = req['authorizerData'];
-    const claims = authorizerData.claims || authorizerData?.jwt?.claims;
-    const email = claims.username;
+    const claims = authorizerData.claims;
+    const email = claims.username || claims.email || claims.name;
 
     return this.usersService.findUser(email);
   }
