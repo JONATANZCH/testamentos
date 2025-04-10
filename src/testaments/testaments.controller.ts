@@ -25,7 +25,7 @@ import {
   TestamentQueryDto,
 } from '../common';
 import { ConfigService } from '../config';
-import { UpdateTestamentMintDto } from './dto/update-testament-tatus.dto';
+import { UpdateTestamentMintDto, UpdateMinorSupportDto } from './dto';
 import { Response } from 'express';
 
 @Controller('wills')
@@ -245,5 +245,22 @@ export class TestamentsController {
       testamentId,
       updateTestamentMintDto,
     );
+  }
+
+  @Put('/testaments/:testamentId/minor-support')
+  async updateMinorSupport(
+    @Param('testamentId', ParseUUIDPipe) testamentId: string,
+    @Body() body: UpdateMinorSupportDto,
+  ): Promise<GeneralResponseDto> {
+    console.log('[TestamentsController] updateMinorSupport, entering...');
+    return this.testamentsService.updateMinorSupport(testamentId, body);
+  }
+
+  @Get('/testaments/:testamentId/minor-support')
+  async getMinorSupport(
+    @Param('testamentId', ParseUUIDPipe) testamentId: string,
+  ): Promise<GeneralResponseDto> {
+    console.log('[TestamentsController] getMinorSupport, entering...');
+    return this.testamentsService.getMinorSupport(testamentId);
   }
 }

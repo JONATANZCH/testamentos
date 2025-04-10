@@ -9,7 +9,7 @@ import {
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { processException } from '../common/utils/exception.helper';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { UpdateTestamentMintDto } from './dto/update-testament-tatus.dto';
+import { UpdateTestamentMintDto, UpdateMinorSupportDto } from './dto';
 import { Response } from 'express';
 
 @Injectable()
@@ -1101,5 +1101,205 @@ export class TestamentsService {
     } catch (error) {
       processException(error);
     }
+  }
+
+  async updateMinorSupport(
+    testamentId: string,
+    body: UpdateMinorSupportDto,
+  ): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    this.prisma = await this.prismaProvider.getPrismaClient();
+    if (!this.prisma) {
+      console.log('Error-> wills cj90d2');
+      response.code = 500;
+      response.msg = 'Could not connect to the database';
+      throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    if (!body.tutor || !body.tutor.main) {
+      throw new HttpException('Tutor.main is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const testament = await this.prisma.testamentHeader.findUnique({
+      where: { id: testamentId },
+      select: {
+        id: true,
+        inheritanceType: true,
+        userId: true,
+        universalHeirId: true,
+      },
+    });
+
+    if (!testament) {
+      console.log('testament not found');
+      response.code = 404;
+      response.msg = 'Testament not found';
+      throw new HttpException(response, HttpStatus.NOT_FOUND);
+    }
+
+    if (!['HP', 'HU'].includes(testament.inheritanceType)) {
+      console.log('testament is not of type HP or HU');
+      response.code = 400;
+      response.msg = 'Tutor/Guardian only valid for inheritance types HP or HU';
+      throw new HttpException(response, HttpStatus.BAD_REQUEST);
+    }
+
+    let hasMinor = false;
+
+    // ⚠️ Validación de menor de edad según tipo de testamento
+    if (testament.inheritanceType === 'HU' && testament.universalHeirId) {
+      const heir = await this.prisma.contact.findUnique({
+        where: { id: testament.universalHeirId },
+        select: { birthDate: true },
+      });
+
+      if (heir?.birthDate) {
+        const now = new Date();
+        const eighteenYearsAgo = new Date(
+          now.getFullYear() - 18,
+          now.getMonth(),
+          now.getDate(),
+        );
+        hasMinor = heir.birthDate > eighteenYearsAgo;
+      }
+    }
+
+    if (testament.inheritanceType === 'HP') {
+      const assignments = await this.prisma.testamentAssignment.findMany({
+        where: {
+          testamentId: testament.id,
+          assignmentType: 'c',
+        },
+        select: { assignmentId: true },
+      });
+
+      if (!assignments || assignments.length === 0) {
+        console.log('No assignments found for this testament');
+        response.code = 400;
+        response.msg = 'No assignments found for this testament';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
+      const contactIds = assignments.map((a) => a.assignmentId).filter(Boolean);
+
+      if (contactIds.length > 0) {
+        const contacts = await this.prisma.contact.findMany({
+          where: {
+            id: { in: contactIds },
+          },
+          select: { id: true, birthDate: true },
+        });
+
+        const now = new Date();
+        const eighteenYearsAgo = new Date(
+          now.getFullYear() - 18,
+          now.getMonth(),
+          now.getDate(),
+        );
+
+        hasMinor = contacts.some(
+          (c) => c.birthDate && c.birthDate > eighteenYearsAgo,
+        );
+      }
+    }
+
+    if (!hasMinor) {
+      response.code = 400;
+      response.msg =
+        'No minor beneficiaries found. Tutor/Guardian cannot be assigned.';
+      throw new HttpException(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // ✅ Validación de dependencia tutor -> guardián
+    if (body.guardian && !body.tutor) {
+      console.log('Cannot assign guardian without tutor');
+      response.code = 400;
+      response.msg = 'Cannot assign guardian without tutor';
+      throw new HttpException(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // ✅ Validar que no se repita ningún ID entre tutor y guardian
+    const tutorIds = [body.tutor.main];
+    if (body.tutor.substitute) tutorIds.push(body.tutor.substitute);
+
+    const guardianIds = [];
+    if (body.guardian?.main) guardianIds.push(body.guardian.main);
+    if (body.guardian?.substitute) guardianIds.push(body.guardian.substitute);
+
+    const duplicatedIds = tutorIds.filter((id) => guardianIds.includes(id));
+    if (duplicatedIds.length > 0) {
+      throw new HttpException(
+        `Tutor and Guardian cannot share the same contact(s): ${duplicatedIds.join(', ')}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // ✅ Validar existencia de contactos
+    const allContactIds = [...tutorIds, ...guardianIds];
+    const foundContacts = await this.prisma.contact.findMany({
+      where: { id: { in: allContactIds }, userId: testament.userId },
+      select: { id: true },
+    });
+    const foundIds = foundContacts.map((c) => c.id);
+    const missing = allContactIds.filter((id) => !foundIds.includes(id));
+    if (missing.length > 0) {
+      throw new HttpException(
+        `The following contact(s) were not found or do not belong to the user: ${missing.join(', ')}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // ✅ Construir payload dinámicamente
+    const minorSupportPayload: any = {
+      tutor: {
+        main: body.tutor.main,
+        ...(body.tutor.substitute && { substitute: body.tutor.substitute }),
+      },
+    };
+
+    if (body.guardian) {
+      minorSupportPayload.guardian = {
+        main: body.guardian.main,
+        ...(body.guardian.substitute && {
+          substitute: body.guardian.substitute,
+        }),
+      };
+    }
+
+    const updatedTestament = await this.prisma.testamentHeader.update({
+      where: { id: testamentId },
+      data: { minorSupport: minorSupportPayload },
+      select: { id: true, minorSupport: true },
+    });
+
+    response.code = 200;
+    response.msg = 'Minor support updated successfully';
+    response.response = updatedTestament;
+    return response;
+  }
+
+  async getMinorSupport(testamentId: string): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    this.prisma = await this.prismaProvider.getPrismaClient();
+    if (!this.prisma) {
+      throw new HttpException(
+        'DB connection error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const testament = await this.prisma.testamentHeader.findUnique({
+      where: { id: testamentId },
+      select: { id: true, minorSupport: true },
+    });
+
+    if (!testament) {
+      throw new HttpException('Testament not found', HttpStatus.NOT_FOUND);
+    }
+
+    response.code = 200;
+    response.msg = 'Minor support data retrieved';
+    response.response = testament.minorSupport ?? {};
+    return response;
   }
 }
