@@ -124,13 +124,6 @@ export class LegaciesService {
           skip: offset,
           take: limitNumber,
           orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            testamentId: true,
-            contactId: true,
-            name: true,
-            createdAt: true,
-          },
         }),
         this.prisma.legacy.count({ where: { testamentId } }),
       ]);
