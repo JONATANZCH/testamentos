@@ -225,7 +225,7 @@
                 }
 
                 @bottom-left {
-                    content: "UUID: #{{uui}}#";
+                    content: "UUID: {{uui}}";
                     font-size: 10pt;
                     padding-left: 0.5cm;
                     padding-bottom: 1cm;
@@ -239,8 +239,8 @@
     <!-- ================== FIXED HEADER (SCREEN VIEW) ================== -->
     <header>
         <div class="header-container">
-            <img src="images/image1.png" alt="Logo">
-            <div>#{{folio_number}}#</div>
+            <img src="https://public-srctestborrar.s3.us-east-2.amazonaws.com/images/image1.png" alt="Logo">
+            <div>{{folio_number}}</div>
         </div>
     </header>
 
@@ -257,8 +257,8 @@
                 <td>
                     <div class="header-container-print">
                         <!-- Logo repeated on every printed page -->
-                        <img src="images/image1.png" alt="Logo" style="height: 32px;">
-                        <span style="font-size: 12px; font-weight: bold;">#{{print_folio}}#</span>
+                        <img src="https://public-srctestborrar.s3.us-east-2.amazonaws.com/images/image1.png" alt="Logo" style="height: 32px;">
+                        <span style="font-size: 12px; font-weight: bold;">{{print_folio}}</span>
                     </div>
                     <hr>
                 </td>
@@ -280,15 +280,15 @@
                         <!-- ============ SECTION 1 ============ -->
                         <section id="section1">
                             <div class="content">
-                                <p><strong>Registro del Documento: </strong>#{{document_number}}#</p>
-                                <p><strong>En la Ciudad de México a #{{date_and_time_SIGNATURE}}#</strong></p>
+                                <p><strong>Registro del Documento:</strong> {{document_number}}</p>
+                                <p><strong>En la Ciudad de México a {{date_and_time_SIGNATURE}}</strong></p>
                                 <p>
-                                    Yo, <strong>#{{name}}# #{{fatherLastName}}# #{{motherLastName}}#</strong>, de nacionalidad
-                                    <strong>#{{nationality}}#</strong>, de estado civil
-                                    <strong>#{{martial_status}}#</strong>, con
-                                    domicilio en <strong>#{{address}}#</strong>, de <strong>#{{age}}#</strong> años, de
-                                    profesión <strong>#{{job}}#</strong>, identificándome con <strong>#{{id_type}}#
-                                        #{{id_number}}#</strong>,
+                                    Yo, <strong>{{name}} {{fatherLastName}} {{motherLastName}}</strong>, de nacionalidad
+                                    <strong>{{nationality}}</strong>, de estado civil
+                                    <strong>{{martial_status}}</strong>, con
+                                    domicilio en <strong>{{address}}</strong>, de <strong>{{age}}</strong> años, 
+                                    identificándome con <strong>{{id_type}}
+                                    {{id_number}}</strong>,
                                     en pleno uso de mis facultades mentales y sin estar condicionado, forzado o
                                     influenciado por
                                     ninguna persona, declaro libremente mi Última voluntad mediante este
@@ -345,12 +345,12 @@
                                 <h3 class="subsection-title">DESIGNACIÓN DE ALBACEA</h3>
                                 <p>
                                     Para la administración y ejecución de este testamento, nombro como <strong>Albacea
-                                        General</strong> a <strong>#{{albacea_name}}# #{{albacea_fatherLastName}}#
-                                        #{{albacea_motherLastName}}#</strong>, con las facultades necesarias para
+                                        General</strong> a <strong>{{albacea_name}} {{albacea_fatherLastName}}
+                                        {{albacea_motherLastName}}</strong>, con las facultades necesarias para
                                     representar mis intereses y garantizar el cumplimiento de mi Última voluntad. En
                                     caso de que el Albacea no pueda o no quiera asumir el cargo, designo como sustituto
-                                    a <strong>#{{albacea_subtitue_name}}# #{{albacea_subtitue_fatherLastName}}#
-                                        #{{albacea_subtitue_motherLastName}}#</strong>.
+                                    a <strong>{{albacea_subtitue_name}} {{albacea_subtitue_fatherLastName}}
+                                        {{albacea_subtitue_motherLastName}}</strong>.
                                 </p>
                             </div>
                         </section>
@@ -360,17 +360,11 @@
                             <div class="content">
                                 <h3 class="subsection-title">DESIGNACIÓN DE HEREDEROS</h3>
                                 <p>
-                                    Designo como herederos universales de todos mis bienes, derechos y obligaciones a
+                                    Designo como herederos de todos mis bienes, derechos y obligaciones a
                                     las siguientes personas:
                                 </p>
                                 <ol>
-                                    <li>
-                                        <strong>#{{relation_to_user}}#</strong>, <strong>#{{beneficiarie_name}}#
-                                            #{{beneficiarie_fatherLastName}}# #{{beneficiarie_motherLastName}}#</strong>,
-                                        con identificación <strong>#{{id_type_beneficiarie}}#
-                                            #{{id_number_beneficiarie}}#</strong>, quien recibirá
-                                        <strong>#{{asset_percentage_beneficiarie}}# #{{asset_name_beneficiarie}}#</strong>.
-                                    </li>
+                                    #{{designacion_herederos_loop}}#
                                 </ol>
                                 <p>
                                     En caso de que alguno de los herederos designados no pudiera o no quisiera recibir
@@ -389,11 +383,7 @@
                                     menciono a continuación:
                                 </p>
                                 <ol>
-                                    <li>
-                                        <strong>#{{asset_notes}}#</strong> será legado a <strong>#{{legay_name}}#
-                                            #{{legay_fatherLastName}}# #{{legacy_motherLastName}}#</strong>, con
-                                        identificación <strong>#{{id_type_legacy}}# #{{id_number_legacy}}#</strong>.
-                                    </li>
+                                    #{{legados_loop}}#
                                 </ol>
                                 <p>
                                     En caso de que alguno de los beneficiarios designados no pudiera o no quisiera
@@ -403,56 +393,24 @@
                             </div>
                         </section>
 
-                        <!-- Original Section: DESIGNACIÓN DE HEREDEROS Y CONSTITUCIÓN DE FIDEICOMISO -->
+                        <!-- Original Section: DESIGNACIÓN DE HEREDEROS -->
                         <section id="section6">
                             <div class="content">
-                                <h3 class="subsection-title">DESIGNACIÓN DE HEREDEROS Y CONSTITUCIÓN DE FIDEICOMISO</h3>
+                                <h3 class="subsection-title">DESIGNACIÓN DE HEREDEROS</h3>
                                 <p>
-                                    Designo como herederos universales de todos mis bienes, derechos y obligaciones a
-                                    las siguientes personas:
+                                    Designo como heredero universal de todos mis bienes, derechos y obligaciones a
+                                    la siguiente persona:
                                 </p>
                                 <ol>
                                     <li>
-                                        <strong>#{{parentesco_fideicomiso1}}#</strong>,
-                                        <strong>#{{nombre_heredero1_fideicomiso}}#</strong>, con identificación
-                                        <strong>#{{tipo_identificacion1_fideicomiso}}#
-                                            #{{numero_identificacion1_fideicomiso}}#</strong>, quien recibirá
-                                        <strong>#{{porcentaje_heredero1_fideicomiso}}#
-                                            #{{bien_heredero1_fideicomiso}}#</strong>.
+                                        <strong>{{universal_heir_name}}</strong>
+                                        <strong>{{universal_heir_fatherLastName}}</strong>
+                                        <strong>{{universal_heir_motherLastName}},</strong>
+                                        con identificación
+                                        <strong>{{universal_heir_id_type}}
+                                            {{universal_heir_id_number}}</strong>
                                     </li>
-                                    <li>
-                                        <strong>#{{parentesco_fideicomiso2}}#</strong>,
-                                        <strong>#{{nombre_heredero2_fideicomiso}}#</strong>, con identificación
-                                        <strong>#{{tipo_identificacion2_fideicomiso}}#
-                                            #{{numero_identificacion2_fideicomiso}}#</strong>, quien recibirá
-                                        <strong>#{{porcentaje_heredero2_fideicomiso}}#
-                                            #{{bien_heredero2_fideicomiso}}#</strong>.
-                                    </li>
-                                    <li>
-                                        <strong>#{{parentesco_fideicomiso3}}#</strong>,
-                                        <strong>#{{nombre_heredero3_fideicomiso}}#</strong>, con identificación
-                                        <strong>#{{tipo_identificacion3_fideicomiso}}#
-                                            #{{numero_identificacion3_fideicomiso}}#</strong>, quien recibirá
-                                        <strong>#{{porcentaje_heredero3_fideicomiso}}#
-                                            #{{bien_heredero3_fideicomiso}}#</strong>.
-                                    </li>
-                                </ol>
-                                <p>
-                                    Asimismo, ordeno la constitución de un fideicomiso para la administración y
-                                    disposición de mis bienes, con las siguientes condiciones:
-                                </p>
-                                <ol>
-                                    <li><strong>Fideicomitente:</strong> #{{nombre_testador_fideicomiso}}#.</li>
-                                    <li><strong>Fiduciario:</strong> #{{nombre_fiduciario_fideicomiso}}#.</li>
-                                    <li><strong>Beneficiarios:</strong> #{{beneficiarios_fideicomiso}}#.</li>
-                                    <li><strong>Finalidad del fideicomiso:</strong> #{{finalidad_fideicomiso}}#.</li>
-                                    <li><strong>Duración:</strong> #{{duracion_fideicomiso}}#.</li>
-                                </ol>
-                                <p>
-                                    En caso de que alguno de los herederos designados no pudiera o no quisiera recibir
-                                    su parte, su porcentaje será administrado por el fideicomiso y redistribuido
-                                    conforme a las instrucciones establecidas en el mismo.
-                                </p>
+                                </ol>                            
                             </div>
                         </section>
 
@@ -461,160 +419,68 @@
                             <div class="content">
                                 <h3 class="subsection-title">DESIGNACIÓN DE HEREDEROS Y BIENES DIGITALES</h3>
                                 <p>
-                                    Dispongo que los siguientes bienes y derechos sean entregados a las personas que
+                                    Dispongo que los siguientes bienes digitales y derechos sean entregados a las personas que
                                     menciono a continuación:
                                 </p>
                                 <ol>
-                                    #{{digital_assets_loop}}#
+                                    #{{designacion_herederos_digital_loop}}#
                                 </ol>
                                 <p>
-                                    De igual forma dispongo que los siguientes <strong>bienes digitales</strong> sean
-                                    entregados a las personas que menciono a continuación:
-                                </p>
-                                <ol>
-                                    #{{digital_assets_loop_2}}#
-                                </ol>
-                                <p>
-                                    Para la entrega segura de estos bienes digitales...
+                                    Para la entrega segura de estos bienes digitales, los accesos y claves
+                                    criptográficas se almacenarán bajo un protocolo de seguridad que garantice su acceso
+                                    exclusivo a los beneficiarios designados.
                                 </p>
                                 <p>
-                                    En caso de que alguno de los beneficiarios...
+                                    En caso de que alguno de los beneficiarios designados no pudiera o no quisiera
+                                    recibir su legado, dicho bien o derecho será transferido al heredero universal
+                                    designado en este testamento.
                                 </p>
                             </div>
                         </section>
-
-                        <!-- Original Section: INSTRUCCIONES PÓSTUMAS Y ÚLTIMOS DESEOS -->
-                        <section id="section8">
-                            <div class="content">
-                                <h3 class="subsection-title">INSTRUCCIONES PÓSTUMAS Y ÚLTIMOS DESEOS</h3>
-                                <p>
-                                    Dispongo que las siguientes instrucciones póstumas y <strong>Últimos deseos</strong>
-                                    sean cumplidos por mis herederos y/o albacea:
-                                </p>
-                                <ol>
-                                    <li>
-                                        <strong>Destino de mis restos mortales:</strong> Expreso mi voluntad de ser
-                                        <strong>#{{entierro_cremacion_donacion}}#</strong>, y que mis restos sean ubicados
-                                        en <strong>#{{lugar_especificaciones_restos}}#</strong>.
-                                    </li>
-                                    <li>
-                                        <strong>Ceremonia y despedida:</strong> Deseo que se realice
-                                        <strong>#{{tipo_ceremonia}}</strong>, con la presencia de
-                                        <strong>#{{familiares_ceremonia}}#</strong>.
-                                    </li>
-                                    <li>
-                                        <strong>Mensajes póstumos:</strong> He dejado mensajes personales para mis seres
-                                        queridos, los cuales deberán ser entregados conforme a mis instrucciones.
-                                    </li>
-                                </ol>
-                            </div>
-                        </section>
-
-                        <!-- Original Section: EXCLUSIÓN DE HEREDEROS -->
-                        <section id="section9">
-                            <div class="content">
-                                <h3 class="subsection-title">EXCLUSIÓN DE HEREDEROS</h3>
-                                <p>
-                                    Por medio de este testamento, <strong>expresamente excluyo</strong> de mi herencia a
-                                    las siguientes personas:
-                                </p>
-                                <ol>
-                                    <li>
-                                        <strong>#{{parentesco_excluido}}#</strong>, <strong>#{{nombre_excluido}}#</strong>,
-                                        con identificación <strong>#{{tipo_identificacion_excluido}}#
-                                            #{{numero_identificacion_excluido}}#</strong>, quedando privado(a) de
-                                        cualquier derecho sucesorio sobre mis bienes y derechos.
-                                    </li>
-                                </ol>
-                                <p>
-                                    Esta exclusión se hace con base en el <strong>Código Civil Federal y demás
-                                        disposiciones aplicables</strong>, asegurando que los bienes sean distribuidos
-                                    conforme a mi voluntad y sin intervención de las personas mencionadas.
-                                </p>
-                                <p>
-                                    En caso de que alguno de los excluidos impugne este testamento, solicito que se
-                                    apliquen las disposiciones legales que protejan mi derecho a disponer libremente de
-                                    mis bienes.
-                                </p>
-                            </div>
-                        </section>
-
                         <!-- Original Section: DESIGNACIÓN DE HEREDEROS Y TUTORES -->
                         <section id="section10">
                             <div class="content">
                                 <h3 class="subsection-title">DESIGNACIÓN DE HEREDEROS Y TUTORES</h3>
                                 <p>
-                                    Designo como herederos universales de todos mis bienes, derechos y obligaciones a
+                                    Designo como herederos tutores y guardianes de mis beneficiarios menores de edad a, 
                                     las siguientes personas:
                                 </p>
                                 <ol>
                                     <li>
-                                        <strong>#{{parentesco_tutor1}}#</strong>,
-                                        <strong>#{{nombre_heredero1_tutor}}#</strong>, con identificación
-                                        <strong>#{{tipo_identificacion1_tutor}}#
-                                            #{{numero_identificacion1_tutor}}#</strong>, quien recibirá
-                                        <strong>#{{porcentaje_heredero1_tutor}}# #{{bien_heredero1_tutor}}#</strong>.
+                                        Como tutor principal:
+                                         <strong>{{parentesco_tutor1}}</strong>,
+                                        <strong>{{nombre_heredero1_tutor}}</strong>
+                                         <strong>{{fatherLastName_heredero1_tutor}}</strong>
+                                         <strong>{{motherLastName_heredero1_tutor}}</strong>
+                                        , con identificación
+                                        <strong>{{tipo_identificacion1_tutor}}
+                                            {{numero_identificacion1_tutor}}</strong>,
                                     </li>
                                     <li>
-                                        <strong>#{{parentesco_tutor2}}#</strong>,
-                                        <strong>#{{nombre_heredero2_tutor}}#</strong>, con identificación
+                                        Como tutor suplente:
+                                         <strong>{{parentesco_tutor2}}</strong>,
+                                        <strong>{{nombre_heredero2_tutor}}</strong>
+                                         <strong>{{fatherLastName_heredero2_tutor}}</strong>
+                                         <strong>{{motherLastName_heredero2_tutor}}</strong>
+                                        , con identificación
                                         <strong>{{tipo_identificacion2_tutor}}
-                                            #{{numero_identificacion2_tutor}}#</strong>, quien recibirá
-                                        <strong>#{{porcentaje_heredero2_tutor}}# #{{bien_heredero2_tutor}}#</strong>.
+                                            {{numero_identificacion2_tutor}}</strong>.
                                     </li>
                                 </ol>
                                 <p>
                                     Asimismo, para garantizar su bienestar y cumplimiento de su legítima herencia,
-                                    designo como <strong>tutor legal</strong> a <strong>#{{nombre_tutor}}#</strong>, con
-                                    identificación <strong>#{{tipo_identificacion_tutor}}#
-                                        #{{numero_identificacion_tutor}}#</strong>, quien tendrá la responsabilidad de
-                                    velar por su educación, salud y administración de sus bienes hasta que alcancen la
-                                    mayoría de edad o sean capaces de autogestionarse conforme a la ley.
+                                    designo como <strong>guardian</strong> a <strong>{{name_guardian1}}</strong> <strong>{{fatherLastName_guardian1}}</strong> <strong>{{motherLastName_guardian1}}</strong>, con
+                                    identificación <strong>{{tipo_identificacion_guardian}}
+                                        {{numero_identificacion_guardian1}}</strong>, quien tendrá la responsabilidad de
+                                    supervisar a los tutores y garantizar el cumplimiento de mis deseos en relación con la
+                                    educación y bienestar de mis beneficiarios menores de edad.
+                                    
                                 </p>
                                 <p>
-                                    En caso de que el tutor designado no pueda asumir el cargo, nombro como sustituto a
-                                    <strong>#{{nombre_tutor_sustituto}}#</strong>.
-                                </p>
-                            </div>
-                        </section>
-
-                        <!-- Original Section: DESIGNACIÓN DE CUIDADOR Y RECURSOS PARA MASCOTAS -->
-                        <section id="section11">
-                            <div class="content">
-                                <h3 class="subsection-title">DESIGNACIÓN DE CUIDADOR Y RECURSOS PARA MASCOTAS</h3>
-                                <p>
-                                    Dispongo que mis mascotas sean cuidadas y protegidas conforme a lo siguiente:
-                                </p>
-                                <ol>
-                                    <li>
-                                        <strong>Mascota(s) beneficiada(s):</strong> #{{pets}}#
-                                    </li>
-                                    <li>
-                                        <strong>Persona designada como cuidador:</strong> #{{nombre_cuidador}}#, con
-                                        identificación #{{tipo_identificacion_cuidador}}#
-                                        #{{numero_identificacion_cuidador}}#.
-                                    </li>
-                                    <li>
-                                        <strong>Cuidador sustituto:</strong> En caso de que el cuidador principal no
-                                        pueda asumir la responsabilidad, designo como sustituto a
-                                        #{{nombre_cuidador_sustituto}}#, con identificación
-                                        #{{tipo_identificacion_cuidador_sustituto}}
-                                        #{{numero_identificacion_cuidador_sustituto}}#.
-                                    </li>
-                                    <li>
-                                        <strong>Recursos asignados para su manutención:</strong> Se establece un fondo
-                                        de #{{cantidad_fondo_mascotas}}# pesos destinado a la alimentación, atención
-                                        veterinaria y bienestar general de las mascotas, el cual será administrado por
-                                        #{{nombre_administrador_mascotas}}#.
-                                    </li>
-                                    <li>
-                                        <strong>Condiciones especiales:</strong> #{{detalles_cuidado_mascotas}}#.
-                                    </li>
-                                </ol>
-                                <p>
-                                    En caso de que ninguna de las personas designadas pueda hacerse cargo de mis
-                                    mascotas, solicito que sean entregadas a una organización de bienestar animal de
-                                    confianza, preferiblemente #{{nombre_organizacion_mascotas}}#.
+                                    En caso de que el guardian designado no pueda asumir el cargo, nombro como sustituto a
+                                    <strong>{{name_guardian2}}</strong> <strong>{{fatherLastName_guardian2}}</strong> <strong>{{motherLastName_guardian2}}</strong>, con
+                                    identificación <strong>{{tipo_identificacion_guardian}}
+                                        {{numero_identificacion_guardian2}}</strong>,
                                 </p>
                             </div>
                         </section>
@@ -802,7 +668,7 @@
                 { id: "section3", title: "DESIGNACIÓN DE ALBACEA" },
                 { id: "section4", title: "DESIGNACIÓN DE HEREDEROS" },
                 { id: "section5", title: "LEGADOS ESPECÍFICOS" },
-                { id: "section6", title: "DESIGNACIÓN DE HEREDEROS Y CONSTITUCIÓN DE FIDEICOMISO" },
+                { id: "section6", title: "DESIGNACIÓN DE HEREDEROS" },
                 { id: "section7", title: "DESIGNACIÓN DE HEREDEROS Y BIENES DIGITALES" },
                 { id: "section8", title: "INSTRUCCIONES PÓSTUMAS Y ÚLTIMOS DESEOS" },
                 { id: "section9", title: "EXCLUSIÓN DE HEREDEROS" },
