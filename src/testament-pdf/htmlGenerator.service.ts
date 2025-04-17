@@ -31,8 +31,17 @@ export class HtmlGeneratorService {
 
     let html = this.template;
 
+    try {
+      const logoPath = path.join(__dirname, 'templates', 'logo.png');
+      const logoBuffer = await fs.readFile(logoPath);
+      const logoBase64 = logoBuffer.toString('base64');
+      const logoDataUri = `data:image/png;base64,${logoBase64}`;
+      html = html.replace(/{{logo_base64}}/g, logoDataUri);
+    } catch (e) {
+      console.error('[generateHtml] Failed to embed logo:', e);
+    }
+
     // ================== 1) Header placeholders ==================
-    // html = html.replace(/{{folio_number}}/g, 'ABC123');
     html = html.replace(/{{print_folio}}/g, 'Folio-12345');
 
     // ================== 2) Document number y fecha/hora firma ==================
@@ -183,12 +192,12 @@ export class HtmlGeneratorService {
   //          MÉTODOS AUXILIARES
   // ===========================================
 
-  // TODO: REVISAR
   private generateDocumentNumber(testamentHeader: any): string {
-    if (!testamentHeader?.id) {
-      return 'No data yet';
-    }
-    return `DOC-${testamentHeader.id.slice(0, 8)}`;
+    const raw = testamentHeader?.documentNumber;
+    if (raw === null || raw === undefined) return 'No data yet';
+
+    const padded = raw.toString().padStart(6, '0');
+    return `DOC-${padded}`;
   }
 
   private getNowUTCString(): string {

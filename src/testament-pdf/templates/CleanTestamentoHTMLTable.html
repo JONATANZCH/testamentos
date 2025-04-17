@@ -239,7 +239,7 @@
     <!-- ================== FIXED HEADER (SCREEN VIEW) ================== -->
     <header>
         <div class="header-container">
-            <img src="https://public-srctestborrar.s3.us-east-2.amazonaws.com/images/image1.png" alt="Logo">
+            <img src="{{logo_base64}}" alt="Logo" />
             <div>{{folio_number}}</div>
         </div>
     </header>
@@ -257,7 +257,7 @@
                 <td>
                     <div class="header-container-print">
                         <!-- Logo repeated on every printed page -->
-                        <img src="https://public-srctestborrar.s3.us-east-2.amazonaws.com/images/image1.png" alt="Logo" style="height: 32px;">
+                        <img src="{{logo_base64}}" alt="Logo"  style="height: 32px;"/>
                         <span style="font-size: 12px; font-weight: bold;">{{print_folio}}</span>
                     </div>
                     <hr>
