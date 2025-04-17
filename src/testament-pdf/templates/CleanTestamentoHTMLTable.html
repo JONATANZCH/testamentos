@@ -225,7 +225,7 @@
                 }
 
                 @bottom-left {
-                    content: "UUID: {{uui}}";
+                    content: "UUID: {{uuid}}";
                     font-size: 10pt;
                     padding-left: 0.5cm;
                     padding-bottom: 1cm;
@@ -467,7 +467,7 @@
                                             {{numero_identificacion2_tutor}}</strong>.
                                     </li>
                                 </ol>
-                                <p>
+                                <p id="guardian-main-text">
                                     Asimismo, para garantizar su bienestar y cumplimiento de su legítima herencia,
                                     designo como <strong>guardian</strong> a <strong>{{name_guardian1}}</strong> <strong>{{fatherLastName_guardian1}}</strong> <strong>{{motherLastName_guardian1}}</strong>, con
                                     identificación <strong>{{tipo_identificacion_guardian}}
@@ -476,7 +476,7 @@
                                     educación y bienestar de mis beneficiarios menores de edad.
                                     
                                 </p>
-                                <p>
+                                <p id="guardian-sub-text">
                                     En caso de que el guardian designado no pueda asumir el cargo, nombro como sustituto a
                                     <strong>{{name_guardian2}}</strong> <strong>{{fatherLastName_guardian2}}</strong> <strong>{{motherLastName_guardian2}}</strong>, con
                                     identificación <strong>{{tipo_identificacion_guardian}}

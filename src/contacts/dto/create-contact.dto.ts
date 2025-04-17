@@ -34,12 +34,12 @@ export class CreateContactDto {
   @IsOptional()
   readonly motherLastName?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsEnum(RelationToUser, {
     message:
       'Invalid relation to user. Must be one of: sibling, child, spouse, friend, parent, none, albacea',
   })
-  relationToUser?: RelationToUser;
+  relationToUser: RelationToUser;
 
   @ValidateIf((o) => o.relationToUser === RelationToUser.CHILD)
   @IsNotEmpty({

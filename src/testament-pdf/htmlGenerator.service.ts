@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-
+import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class HtmlGeneratorService {
   private template: string | null = null;
@@ -185,6 +185,9 @@ export class HtmlGeneratorService {
       );
     }
 
+    const uuid = uuidv4();
+    html = html.replace(/{{uuid}}/g, uuid);
+
     return html;
   }
 
@@ -236,6 +239,14 @@ export class HtmlGeneratorService {
   private removeSectionById(html: string, sectionId: string): string {
     const regex = new RegExp(
       `<section id="${sectionId}"[\\s\\S]*?<\\/section>`,
+      'g',
+    );
+    return html.replace(regex, '');
+  }
+
+  private removeElementById(html: string, elementId: string): string {
+    const regex = new RegExp(
+      `<p[^>]*id="${elementId}"[^>]*>[\\s\\S]*?<\\/p>`,
       'g',
     );
     return html.replace(regex, '');
@@ -484,6 +495,13 @@ export class HtmlGeneratorService {
     const guardianSubContact = user?.contacts?.find(
       (c: any) => c.id === guardianSubId,
     );
+
+    if (!guardianMainContact) {
+      html = this.removeElementById(html, 'guardian-main-text');
+    }
+    if (!guardianSubContact) {
+      html = this.removeElementById(html, 'guardian-sub-text');
+    }
 
     // Tutor principal
     const parentescoTutor1 = tutorMainContact?.relationToUser ?? 'No data yet';
