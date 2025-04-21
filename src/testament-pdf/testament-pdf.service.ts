@@ -44,6 +44,17 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
+      const existUser = await this.prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+      });
+      if (!existUser) {
+        response.code = 404;
+        response.msg = `User with ID ${userId} not found.`;
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
       const existsVersion = await this.pdfProcessRepository.validateVersion(
         userId,
         version,

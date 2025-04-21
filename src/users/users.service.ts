@@ -124,6 +124,11 @@ export class UsersService {
       response.response = user;
       return response;
     } catch (error) {
+      if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+        response.code = 409;
+        response.msg = 'A user with this email already exists (from DB)';
+        throw new HttpException(response, HttpStatus.CONFLICT);
+      }
       processException(error);
     }
   }
