@@ -1148,13 +1148,13 @@ export class TestamentsService {
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
-      if (!['HP', 'HU'].includes(testament.inheritanceType)) {
-        console.log('testament is not of type HP or HU');
-        response.code = 400;
-        response.msg =
-          'Tutor/Guardian only valid for inheritance types HP or HU';
-        throw new HttpException(response, HttpStatus.BAD_REQUEST);
-      }
+      // if (!['HP', 'HU'].includes(testament.inheritanceType)) {
+      //   console.log('testament is not of type HP or HU');
+      //   response.code = 400;
+      //   response.msg =
+      //     'Tutor/Guardian only valid for inheritance types HP or HU';
+      //   throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      // }
 
       let hasMinor = false;
 
