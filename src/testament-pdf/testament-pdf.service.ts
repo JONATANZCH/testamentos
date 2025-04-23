@@ -58,10 +58,10 @@ export class TestamentPdfService {
     this.s3Client = new S3Client({ region: process.env.AWSREGION });
     this.getBucketWill = this.configService.getBucketWill();
     this.signer_base =
-      this.nestConfigService.get<string>('SIGNER_URL_BASE') ?? '';
+      this.nestConfigService.get<string>('signer_url_base') ?? '';
     this.signer_base_rest = (this.signer_base ?? '') + '/rest';
     this.signer_authorization =
-      this.nestConfigService.get<string>('SIGNER_AUTHORIZATION') ?? '';
+      this.nestConfigService.get<string>('signer_authorization') ?? '';
     this.signer_org = this.nestConfigService.get<string>('signer_org') ?? '';
     this.signer_org_string =
       this.nestConfigService.get<string>('signer_org_string') ?? '';
