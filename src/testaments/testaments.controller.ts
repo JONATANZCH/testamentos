@@ -235,7 +235,7 @@ export class TestamentsController {
     return this.testamentsService.deleteAssignment(testamentId);
   }
 
-  @Put('/testaments/mint/:testamentId')
+  @Put('/testaments/:testamentId/mint')
   async updateTestamentMint(
     @Param('testamentId', ParseUUIDPipe)
     testamentId: string,
