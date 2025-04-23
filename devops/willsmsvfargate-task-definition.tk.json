@@ -54,6 +54,66 @@
                 {
                     "name":"QUEUE_WILLS_COMMUNICATIONS",
                     "value":"#{QUEUE_WILLS_COMMUNICATIONS}#"
+                },
+                {
+                    "name":"EMAIL_FROM",
+                    "value":"#{EMAIL_FROM}#"
+                },
+                {
+                    "name":"SG_SEND_WILLS",
+                    "value":"#{SG_SEND_WILLS}#"
+                },
+                {
+                    "name":"SQSCOMM_NOWAIT_QUEUE",
+                    "value":"#{SQSCOMM_NOWAIT_QUEUE}#"
+                },
+                {
+                    "name":"signer_authorization",
+                    "value":"#{signer_authorization}#"
+                },
+                {
+                    "name":"signer_flujofirma",
+                    "value":"#{signer_flujofirma}#"
+                },
+                {
+                    "name":"signer_hd",
+                    "value":"#{signer_hd}#"
+                },
+                {
+                    "name":"signer_idcat",
+                    "value":"#{signer_idcat}#"
+                },
+                {
+                    "name":"signer_idsol",
+                    "value":"#{signer_idsol}#"
+                },
+                {
+                    "name":"signer_org",
+                    "value":"#{signer_org}#"
+                },
+                {
+                    "name":"signer_org_string",
+                    "value":"#{signer_org_string}#"
+                },
+                {
+                    "name":"signer_perfil",
+                    "value":"#{signer_perfil}#"
+                },
+                {
+                    "name":"signer_t003c002",
+                    "value":"#{signer_t003c002}#"
+                },
+                {
+                    "name":"signer_t003c004",
+                    "value":"#{signer_t003c004}#"
+                },
+                {
+                    "name":"signer_tipo",
+                    "value":"#{signer_tipo}#"
+                },
+                {
+                    "name":"signer_url_base",
+                    "value":"#{signer_url_base}#"
                 }
             ],
             "mountPoints": [],
