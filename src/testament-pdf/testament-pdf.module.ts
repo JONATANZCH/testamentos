@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 import { TestamentPdfService } from './testament-pdf.service';
 import { TestamentPdfController } from './testament-pdf.controller';
 import { PrismaProvider } from '../providers';
@@ -8,6 +9,7 @@ import { SqsService } from '../config/sqs-validate.service';
 import { HtmlGeneratorService } from './htmlGenerator.service';
 
 @Module({
+  imports: [HttpModule],
   controllers: [TestamentPdfController],
   providers: [
     TestamentPdfService,

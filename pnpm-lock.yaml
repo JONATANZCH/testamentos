@@ -29,6 +29,9 @@ importers:
       '@codegenie/serverless-express':
         specifier: ^4.16.0
         version: 4.16.0
+      '@nestjs/axios':
+        specifier: ^4.0.0
+        version: 4.0.0(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(axios@1.8.4)(rxjs@7.8.2)
       '@nestjs/common':
         specifier: ^10.4.15
         version: 10.4.15(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -68,9 +71,15 @@ importers:
       express:
         specifier: ^4.21.2
         version: 4.21.2
+      form-data:
+        specifier: ^4.0.2
+        version: 4.0.2
       joi:
         specifier: ^17.13.3
         version: 17.13.3
+      qs:
+        specifier: ^6.14.0
+        version: 6.14.0
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -78,8 +87,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
       testgetprismaclient:
-        specifier: 1.3.8
-        version: 1.3.8(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
+        specifier: 1.3.10
+        version: 1.3.10(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -833,6 +842,13 @@ packages:
     resolution: {integrity: sha1-Hj5L0Fwcx6Cy3b2KA/OfbktebP4=}
     engines: {node: '>=8'}
 
+  '@nestjs/axios@4.0.0':
+    resolution: {integrity: sha1-Ug/3xiOOY1ZY/jNO5i250bnFVG8=}
+    peerDependencies:
+      '@nestjs/common': ^10.0.0 || ^11.0.0
+      axios: ^1.3.1
+      rxjs: ^7.0.0
+
   '@nestjs/cli@10.4.9':
     resolution: {integrity: sha1-rDojCWpHJUZTYNjWCBDz6Ff0qAM=}
     engines: {node: '>= 16.14'}
@@ -1535,6 +1551,9 @@ packages:
     resolution: {integrity: sha1-naxfe/zFq0WCXMhZGxJ1OqfSkCw=}
     engines: {node: '>= 10.0.0'}
 
+  axios@1.8.4:
+    resolution: {integrity: sha1-eJkLtLxj0srgcpUtN0g1lQqC9Ec=}
+
   babel-jest@29.7.0:
     resolution: {integrity: sha1-9DaZGSJbaExWCFmYrGPb0FvgINU=}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -2138,6 +2157,15 @@ packages:
 
   flatted@3.3.3:
     resolution: {integrity: sha1-Z8j62VRUp8er6/dLt47nSkQCM1g=}
+
+  follow-redirects@1.15.9:
+    resolution: {integrity: sha1-pgT6EORDv5jKlCKNnuvMLoosjuE=}
+    engines: {node: '>=4.0'}
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
 
   for-each@0.3.5:
     resolution: {integrity: sha1-1lBogCeCaSD+6wr3R+57lCGkHUc=}
@@ -2982,6 +3010,9 @@ packages:
     resolution: {integrity: sha1-8Z/mnOqzEe65S0LnDowgcPm6ECU=}
     engines: {node: '>= 0.10'}
 
+  proxy-from-env@1.1.0:
+    resolution: {integrity: sha1-4QLxbKNVQkhldV0sno6k8k1Yw+I=}
+
   punycode@1.3.2:
     resolution: {integrity: sha1-llOgNvt8HuQjQvIyXM7v6jkmxI0=}
 
@@ -3319,8 +3350,8 @@ packages:
     resolution: {integrity: sha1-BKhphmHYBepvopO2y55jrARO8V4=}
     engines: {node: '>=8'}
 
-  testgetprismaclient@1.3.8:
-    resolution: {integrity: sha1-y924aeIHou2e/G1xDWqSD4xlx7U=}
+  testgetprismaclient@1.3.10:
+    resolution: {integrity: sha1-Z1OeXoODNza+rnS3qK5E4FTlnSI=}
 
   text-table@0.2.0:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
@@ -4845,6 +4876,12 @@ snapshots:
 
   '@lukeed/csprng@1.1.0': {}
 
+  '@nestjs/axios@4.0.0(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(axios@1.8.4)(rxjs@7.8.2)':
+    dependencies:
+      '@nestjs/common': 10.4.15(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      axios: 1.8.4
+      rxjs: 7.8.2
+
   '@nestjs/cli@10.4.9(esbuild@0.25.1)':
     dependencies:
       '@angular-devkit/core': 17.3.11(chokidar@3.6.0)
@@ -5775,6 +5812,14 @@ snapshots:
       uuid: 8.0.0
       xml2js: 0.6.2
 
+  axios@1.8.4:
+    dependencies:
+      follow-redirects: 1.15.9
+      form-data: 4.0.2
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+
   babel-jest@29.7.0(@babel/core@7.26.9):
     dependencies:
       '@babel/core': 7.26.9
@@ -6472,6 +6517,8 @@ snapshots:
       rimraf: 3.0.2
 
   flatted@3.3.3: {}
+
+  follow-redirects@1.15.9: {}
 
   for-each@0.3.5:
     dependencies:
@@ -7470,6 +7517,8 @@ snapshots:
       forwarded: 0.2.0
       ipaddr.js: 1.9.1
 
+  proxy-from-env@1.1.0: {}
+
   punycode@1.3.2: {}
 
   punycode@2.3.1: {}
@@ -7820,7 +7869,7 @@ snapshots:
       glob: 7.2.3
       minimatch: 3.1.2
 
-  testgetprismaclient@1.3.8(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2):
+  testgetprismaclient@1.3.10(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2):
     dependencies:
       '@prisma/client': 6.4.1(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
     transitivePeerDependencies:

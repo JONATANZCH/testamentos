@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param } from '@nestjs/common';
+import { Controller, Post, Body, Param, ParseUUIDPipe } from '@nestjs/common';
 import { TestamentPdfService } from './testament-pdf.service';
 import { GeneralResponseDto } from '../common/response.dto';
 import { ConfigService } from '../config/config.service';
@@ -41,5 +41,13 @@ export class TestamentPdfController {
   ): Promise<GeneralResponseDto> {
     console.log(`[getProcessStatus] processId=${processId}`);
     return this.testamentPdfService.getProcessStatus(processId, body);
+  }
+
+  @Post('/:testamentId/sign')
+  async signTestament(
+    @Param('testamentId', ParseUUIDPipe) testamentId: string,
+  ): Promise<GeneralResponseDto> {
+    console.log(`[signTestament] testamentId=${testamentId}`);
+    return this.testamentPdfService.signTestament(testamentId);
   }
 }

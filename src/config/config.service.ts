@@ -22,6 +22,7 @@ export class ConfigService {
       SQSCOMM_NOWAIT_QUEUE: Joi.string().required(),
       EMAIL_FROM: Joi.string().required(),
       SG_SEND_WILLS: Joi.string().required(),
+      BUCKET_WILL: Joi.string().required(),
     });
 
     const { error, value } = schema.validate(envVariables, {
@@ -87,5 +88,9 @@ export class ConfigService {
 
   getSgSendWills(): string {
     return this.get('SG_SEND_WILLS');
+  }
+
+  getBucketWill(): string {
+    return this.get('BUCKET_WILL');
   }
 }

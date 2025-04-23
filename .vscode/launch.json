@@ -22,9 +22,9 @@
         "PORT": "3000",
         "AWSREGION": "us-east-2",
         "AWS_SECRET_ID": "dev/testamentos/mysql",
-        "AWS_ACCESS_KEY_ID": "ASIAWNHTHSROCAQOH4S6",
-        "AWS_SECRET_ACCESS_KEY": "T0TxeGuFwNUQQ2/7gvu4qWJ8I8TDEl2aQlk99bYY",
-        "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEMf//////////wEaCXVzLWVhc3QtMiJGMEQCIDhi0GOsY/Khie8/Rx82fTrVyYGFTtFzyXf7n1WJjL+EAiAK+2xk0qDC5ajkyRKYoa7/dnkkS4Ep0HTcOjT53s2fiCrvAQhREAAaDDQ0MDc0NDI1MjUwOCIM+4RcPkU5VnHbckf8KswBIaqvI2L4BYbxKpb54j3WGmGZoMvGMKccA/k8QNqQburfn53fyuWSebyeb5RveLRHD55tLUJ/f1lQZZ9iJ/395yKf83NJavRhi+oWnyfjm2d96YRtZd2T9u94nUpFllIzfaKBDYi3Y2SNAF5wNxh1A3/VG0xLU7Hd4IeoS3jWXicqHoTzNo4yrG4tconv1PqTzLAZINWkG9C2j3ZUzbcDe1KdKlH6cVmpg4Avpk7Ax6yTCvfmTycwMaTYjLVacAz3fUyjV5g9B7mf9gMBMLz6gMAGOpkB7ucOgIdVnRfifhLTkjzRbTU7JJ6sLhtV0N3jFkitaxkjzrLt5R1cq5c7Esh8i3NZ/OGdu8S3an0ommytnijXab6Uy4gzP06692tMAHzlwfLQzWufO4VRa+ew8+6dmp/tJpQUkRc+mfNWVX96AIVFKvX/x8QtDQjjQpq34GxFAsKqwMZMacX4z5Erff9JJzJouOsJCvd3Wu3j",
+        "AWS_ACCESS_KEY_ID": "ASIAWNHTHSROAYEITLHO",
+        "AWS_SECRET_ACCESS_KEY": "rlXpRCQ/pFH6wesVg5WGvgzt+da9vH4DbNJrJ6uO",
+        "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEFEaCXVzLWVhc3QtMiJIMEYCIQDT7Vq8vx3LCGIaJoppYKxqfFNs1A/mb6qO4siCQQ5FYQIhAKWeVFzmbQz4qe06x133niV8orUeDbtcaTcXintaMQ4PKvgBCNr//////////wEQABoMNDQwNzQ0MjUyNTA4IgzloAQa/DYZ7NN1UYcqzAEINGh3LdgmVlzl2NzMML1F26KsK0lpfPixtnzbuAHTHHpAYKqRNsyIPVN25am3T6dFMuLvx8bwKuUIXLKOpXLvzKCySZTfDRGyWEkWRI4dXViXsi5PyobJujp7Cd8Q53hsMVDuI3J1fiNtS+fbeMOPSeoUK5VJtJsaHOE23gO3oERU3xvXJW5a42+TXQpBhsALcv5ZNx51hMpFec0zLFQcLmkjSc7ch2QHXw0LW1CjjbHYuNJKguRftEaUvPZ7gLMaQ3fSceAEoC1vb2owmJqfwAY6lwHnfTVB7xg1AD74jAKB1rs9nfiukHwYZEjH/yKRhjxPk5a32XzluX0h8S7LhlvIPshu8z9A830fnBOLlKifxiZtEB/DNWcXNnfKLuXyGVcOQE4+1A59BNa98Apo5PYEcRKhoHk+CTWneur9kdXGSLlpSbAdHOM2RX9g4Hn9JWSTCvgKY9wD1zEbkO4ROw6rb9P04/4wRHhP",
         "AWS_REGION": "us-east-2",
         "QUEUE_WILLS_COMMUNICATIONS": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_users_0.fifo",
         "BUCKET_WILL": "dev-testaments",
@@ -34,7 +34,19 @@
         "QUEUE_PDF_GENERATE": "https://sqs.us-east-2.amazonaws.com/440744252508/borrartesthebhookpdf.fifo",
         "SQSCOMM_NOWAIT_QUEUE": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_services_messaging_0.fifo",
         "SG_SEND_WILLS": "d-b5575cad947d4523bbbb5d1ee2351959",
-        "EMAIL_FROM": "Past Post <mensaje@pastpost.com>"
+        "EMAIL_FROM": "Past Post <mensaje@pastpost.com>",
+        "signer_url_base": "https://qa.resolve.com.mx:8443/resolve",
+        "signer_idcat": "1005",
+        "signer_tipo": "2340",
+        "signer_perfil": "1733",
+        "signer_org": "634",
+        "signer_org_string": "pastpost",
+        "signer_t003c002": "aSDHh123as",
+        "signer_t003c004": "PuWEas2530",
+        "signer_idsol": "75798",
+        "signer_authorization": "BASICclientbasic:vdsisdfixs*ssxtr131514tlsiosd",
+        "signer_flujofirma": "16",
+        "signer_hd": "1358"
       }
     }
   ]

@@ -42,7 +42,7 @@ export class HtmlGeneratorService {
     }
 
     // ================== 1) Header placeholders ==================
-    html = html.replace(/{{print_folio}}/g, 'Folio-12345');
+    html = html.replace(/{{print_folio}}/g, '000001');
 
     // ================== 2) Document number y fecha/hora firma ==================
     const documentNumber = this.generateDocumentNumber(testamentHeader);

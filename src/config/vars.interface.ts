@@ -9,4 +9,5 @@ export interface EnvConfig {
   SQSCOMM_NOWAIT_QUEUE: string;
   EMAIL_FROM: string;
   SG_SEND_WILLS: string;
+  BUCKET_WILL: string;
 }
