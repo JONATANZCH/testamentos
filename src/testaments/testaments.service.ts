@@ -1148,14 +1148,6 @@ export class TestamentsService {
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
-      // if (!['HP', 'HU'].includes(testament.inheritanceType)) {
-      //   console.log('testament is not of type HP or HU');
-      //   response.code = 400;
-      //   response.msg =
-      //     'Tutor/Guardian only valid for inheritance types HP or HU';
-      //   throw new HttpException(response, HttpStatus.BAD_REQUEST);
-      // }
-
       let hasMinor = false;
 
       // ⚠️ Validación de menor de edad según tipo de testamento
@@ -1215,6 +1207,36 @@ export class TestamentsService {
             (c) => c.birthDate && c.birthDate > eighteenYearsAgo,
           );
         }
+      }
+
+      if (!hasMinor) {
+        const legacyContacts = await this.prisma.legacy.findMany({
+          where: {
+            testamentId: testament.id,
+            contactId: { not: null },
+          },
+          select: {
+            contact: {
+              select: {
+                id: true,
+                birthDate: true,
+              },
+            },
+          },
+        });
+
+        const now = new Date();
+        const eighteenYearsAgo = new Date(
+          now.getFullYear() - 18,
+          now.getMonth(),
+          now.getDate(),
+        );
+
+        hasMinor = legacyContacts.some(
+          (entry) =>
+            entry.contact?.birthDate &&
+            entry.contact.birthDate > eighteenYearsAgo,
+        );
       }
 
       if (!hasMinor) {
