@@ -118,6 +118,7 @@ export class TestamentsService {
           status: true,
           version: true,
           terms: true,
+          inheritanceType: true,
         },
       });
 
@@ -125,13 +126,6 @@ export class TestamentsService {
         response.code = 404;
         response.msg = 'Testament not found';
         throw new HttpException(response, HttpStatus.NOT_FOUND);
-      }
-
-      if (
-        Array.isArray(testament.TestamentAssignment) &&
-        testament.TestamentAssignment.length === 0
-      ) {
-        delete testament.TestamentAssignment;
       }
 
       response.code = 200;
