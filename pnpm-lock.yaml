@@ -87,8 +87,11 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
       testgetprismaclient:
-        specifier: 1.3.10
-        version: 1.3.10(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
+        specifier: 1.3.11
+        version: 1.3.11(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
+      unzipper:
+        specifier: ^0.12.3
+        version: 0.12.3
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -1592,6 +1595,9 @@ packages:
   bl@4.1.0:
     resolution: {integrity: sha1-RRU1JkGCvsL7vIOmKrmM8R2fezo=}
 
+  bluebird@3.7.2:
+    resolution: {integrity: sha1-nyKcFb4nJFT/qXOs4NvueaGww28=}
+
   body-parser@1.20.3:
     resolution: {integrity: sha1-GVNDEiHG+1zWPEs21T+rCSjlSMY=}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
@@ -1902,6 +1908,9 @@ packages:
     resolution: {integrity: sha1-165mfh3INIL4tw/Q9u78UNow9Yo=}
     engines: {node: '>= 0.4'}
 
+  duplexer2@0.1.4:
+    resolution: {integrity: sha1-ixLauHjA1p4+eJEFFmKjL8a93ME=}
+
   eastasianwidth@0.2.0:
     resolution: {integrity: sha1-aWzi7Aqg5uqTo5f/zySqeEDIJ8s=}
 
@@ -2200,6 +2209,10 @@ packages:
   fs-extra@10.1.0:
     resolution: {integrity: sha1-Aoc8+8QITd4SfqpfmQXu8jJdGr8=}
     engines: {node: '>=12'}
+
+  fs-extra@11.3.0:
+    resolution: {integrity: sha1-DaztE2u69lpVWjJnGa+TGtx6MU0=}
+    engines: {node: '>=14.14'}
 
   fs-monkey@1.0.6:
     resolution: {integrity: sha1-jq0IKVPojZks8/+ET6qQeyZ1baI=}
@@ -3350,8 +3363,8 @@ packages:
     resolution: {integrity: sha1-BKhphmHYBepvopO2y55jrARO8V4=}
     engines: {node: '>=8'}
 
-  testgetprismaclient@1.3.10:
-    resolution: {integrity: sha1-Z1OeXoODNza+rnS3qK5E4FTlnSI=}
+  testgetprismaclient@1.3.11:
+    resolution: {integrity: sha1-WpdVKGqb9IrLLOGD9O0n+Wedjtk=}
 
   text-table@0.2.0:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
@@ -3490,6 +3503,9 @@ packages:
   unpipe@1.0.0:
     resolution: {integrity: sha1-sr9O6FFKrmFltIF4KdIbLvSZBOw=}
     engines: {node: '>= 0.8'}
+
+  unzipper@0.12.3:
+    resolution: {integrity: sha1-MZWPXu1zaO2PV96uVH5aZz6YT4c=}
 
   update-browserslist-db@1.1.3:
     resolution: {integrity: sha1-NIN33SRSFvnnBg/1CxWht0C3VCA=}
@@ -5887,6 +5903,8 @@ snapshots:
       inherits: 2.0.4
       readable-stream: 3.6.2
 
+  bluebird@3.7.2: {}
+
   body-parser@1.20.3:
     dependencies:
       bytes: 3.1.2
@@ -6185,6 +6203,10 @@ snapshots:
       call-bind-apply-helpers: 1.0.2
       es-errors: 1.3.0
       gopd: 1.2.0
+
+  duplexer2@0.1.4:
+    dependencies:
+      readable-stream: 2.3.8
 
   eastasianwidth@0.2.0: {}
 
@@ -6564,6 +6586,12 @@ snapshots:
   fresh@0.5.2: {}
 
   fs-extra@10.1.0:
+    dependencies:
+      graceful-fs: 4.2.11
+      jsonfile: 6.1.0
+      universalify: 2.0.1
+
+  fs-extra@11.3.0:
     dependencies:
       graceful-fs: 4.2.11
       jsonfile: 6.1.0
@@ -7869,7 +7897,7 @@ snapshots:
       glob: 7.2.3
       minimatch: 3.1.2
 
-  testgetprismaclient@1.3.10(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2):
+  testgetprismaclient@1.3.11(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2):
     dependencies:
       '@prisma/client': 6.4.1(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
     transitivePeerDependencies:
@@ -7993,6 +8021,14 @@ snapshots:
   universalify@2.0.1: {}
 
   unpipe@1.0.0: {}
+
+  unzipper@0.12.3:
+    dependencies:
+      bluebird: 3.7.2
+      duplexer2: 0.1.4
+      fs-extra: 11.3.0
+      graceful-fs: 4.2.11
+      node-int64: 0.4.0
 
   update-browserslist-db@1.1.3(browserslist@4.24.4):
     dependencies:

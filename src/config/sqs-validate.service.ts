@@ -13,7 +13,7 @@ export class SqsService {
     });
   }
 
-  async sendMessage(queueUrl: string, messageBody: any): Promise<void> {
+  async sendMessage(queueUrl: string, messageBody: any): Promise<any> {
     const params = {
       QueueUrl: queueUrl,
       MessageBody: JSON.stringify(messageBody),
@@ -24,5 +24,6 @@ export class SqsService {
     const command = new SendMessageCommand(params);
     const result = await this.sqsClient.send(command);
     console.log('SQS send result:', result);
+    return result;
   }
 }

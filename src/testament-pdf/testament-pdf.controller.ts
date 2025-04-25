@@ -2,6 +2,7 @@ import { Controller, Post, Body, Param, ParseUUIDPipe } from '@nestjs/common';
 import { TestamentPdfService } from './testament-pdf.service';
 import { GeneralResponseDto } from '../common/response.dto';
 import { ConfigService } from '../config/config.service';
+import { ValidateSeguridataProcessIdDto } from './dto/seguirdata.dto';
 
 @Controller('wills')
 export class TestamentPdfController {
@@ -49,5 +50,21 @@ export class TestamentPdfController {
   ): Promise<GeneralResponseDto> {
     console.log(`[signTestament] testamentId=${testamentId}`);
     return this.testamentPdfService.signTestament(testamentId);
+  }
+
+  @Post('/:seguridataprocessId/processsigned')
+  async processSigned(
+    @Param() params: ValidateSeguridataProcessIdDto,
+    @Body() body?: any,
+  ): Promise<GeneralResponseDto> {
+    const { seguridataprocessId } = params;
+    console.log(
+      '[TestamentController] Processing signed for seguridataprocessId:',
+      seguridataprocessId,
+    );
+    return await this.testamentPdfService.processSignedContract(
+      seguridataprocessId,
+      body ?? {},
+    );
   }
 }
