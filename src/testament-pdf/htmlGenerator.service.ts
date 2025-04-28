@@ -610,6 +610,6 @@ export class HtmlGeneratorService {
 
     if (!relation) return 'No especificado';
 
-    return relationMap[relation.toLowerCase()] || 'Relación desconocida';
+    return relationMap[relation.toLowerCase()] || 'Entidad Legal';
   }
 }
