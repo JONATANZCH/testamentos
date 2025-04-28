@@ -185,6 +185,26 @@ export class HtmlGeneratorService {
       );
     }
 
+    // ================== SECCIÓN 9-NEW: Ratificación y Validez ==================
+    const signatureDateTime = this.getNowUTCString();
+    const city = user?.addresses?.[0]?.city ?? 'No data yet';
+    const state = user?.addresses?.[0]?.state ?? 'No data yet';
+    const signerLocation = `${city}, ${state}`;
+    // Datos dummy
+    const signatureHash = 'HASHFIRMA1234567890';
+    const nftHash = 'NFT1234567890';
+    const renatCode = 'RENAT-000001';
+    const witnessCode = 'WITNESS-ABC123';
+    const nom151Status = 'Attach';
+
+    html = html.replace(/\[FECHA Y HORA\]/g, signatureDateTime);
+    html = html.replace(/\[CIUDAD Y ESTADO\]/g, signerLocation);
+    html = html.replace(/\[HASH DE FIRMA\]/g, signatureHash);
+    html = html.replace(/\[HASH NFT\]/g, nftHash);
+    html = html.replace(/\[CÓDIGO ÚNICO\]/g, renatCode);
+    html = html.replace(/\[CÓDIGO TESTIGO\]/g, witnessCode);
+    html = html.replace(/\[ADJUNTA\]/g, nom151Status);
+
     const uuid = uuidv4();
     html = html.replace(/{{uuid}}/g, uuid);
 
