@@ -504,7 +504,9 @@ export class HtmlGeneratorService {
     }
 
     // Tutor principal
-    const parentescoTutor1 = tutorMainContact?.relationToUser ?? 'No data yet';
+    const parentescoTutor1 = this.translateRelationToSpanish(
+      tutorMainContact?.relationToUser,
+    );
     const nombreTutor1 = tutorMainContact?.name ?? 'No data yet';
     const fatherTutor1 = tutorMainContact?.fatherLastName ?? 'No data yet';
     const motherTutor1 = tutorMainContact?.motherLastName ?? 'No data yet';
@@ -512,7 +514,9 @@ export class HtmlGeneratorService {
     const numeroIdTutor1 = tutorMainContact?.governmentId ?? 'No data yet';
 
     // Tutor suplente
-    const parentescoTutor2 = tutorSubContact?.relationToUser ?? 'No data yet';
+    const parentescoTutor2 = this.translateRelationToSpanish(
+      tutorSubContact?.relationToUser,
+    );
     const nombreTutor2 = tutorSubContact?.name ?? 'No data yet';
     const fatherTutor2 = tutorSubContact?.fatherLastName ?? 'No data yet';
     const motherTutor2 = tutorSubContact?.motherLastName ?? 'No data yet';
@@ -567,5 +571,21 @@ export class HtmlGeneratorService {
     );
 
     return html;
+  }
+
+  private translateRelationToSpanish(relation: string | undefined): string {
+    const relationMap: Record<string, string> = {
+      sibling: 'Hermano(a)',
+      child: 'Hijo(a)',
+      spouse: 'Esposo(a)',
+      friend: 'Amigo(a)',
+      parent: 'Padre/Madre',
+      none: 'Sin relación',
+      albacea: 'Albacea',
+    };
+
+    if (!relation) return 'No especificado';
+
+    return relationMap[relation.toLowerCase()] || 'Relación desconocida';
   }
 }
