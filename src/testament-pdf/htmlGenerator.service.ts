@@ -325,6 +325,8 @@ export class HtmlGeneratorService {
         idNumber,
       } = this.extractAssignmentBeneficiary(assignment, user);
 
+      const translatedRelation = this.translateRelationToSpanish(relation);
+
       const assetName = assignment.asset?.name ?? 'No data yet';
       const assetPercent = assignment.percentage
         ? assignment.percentage.toString() + '%'
@@ -332,7 +334,7 @@ export class HtmlGeneratorService {
 
       return `
       <li>
-        <strong>${relation}</strong>, 
+        <strong>${translatedRelation}</strong>, 
         <strong>${name} ${fatherLastName} ${motherLastName}</strong>,
         con identificación <strong>${idType} ${idNumber}</strong>, quien recibirá
         <strong>${assetPercent} ${assetName}</strong>.
@@ -475,6 +477,8 @@ export class HtmlGeneratorService {
         idNumber,
       } = this.extractAssignmentBeneficiary(assignment, user);
 
+      const translatedRelation = this.translateRelationToSpanish(relation);
+
       const assetName = assignment.asset?.name ?? 'No data yet';
       const assetPercent = assignment.percentage
         ? assignment.percentage.toString() + '%'
@@ -482,7 +486,7 @@ export class HtmlGeneratorService {
 
       return `
         <li>
-          <strong>${relation}</strong>,
+          <strong>${translatedRelation}</strong>,
           <strong>${name} ${fatherLastName} ${motherLastName}</strong>,
           con identificación <strong>${idType} ${idNumber}</strong>, 
           quien recibirá <strong>${assetPercent} ${assetName}</strong>.
