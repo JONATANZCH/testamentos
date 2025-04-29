@@ -1546,12 +1546,7 @@ export class TestamentPdfService {
           },
           'ok',
         );
-        const emailRes = await this.sendMailWithAttachments(
-          document,
-          sessionId,
-        );
-        console.log('Email sent with existing documents:', emailRes);
-        return emailRes;
+        return response;
       }
       if (!existsSeguridataPdf || !existsPastpostPDf) {
         const keyFile = document.userId + '_' + document.version;

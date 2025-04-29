@@ -23,6 +23,7 @@ export class ConfigService {
       EMAIL_FROM: Joi.string().required(),
       SG_SEND_WILLS: Joi.string().required(),
       BUCKET_WILL: Joi.string().required(),
+      SG_SEND_WELCOME: Joi.string().required(),
     });
 
     const { error, value } = schema.validate(envVariables, {
@@ -92,5 +93,9 @@ export class ConfigService {
 
   getBucketWill(): string {
     return this.get('BUCKET_WILL');
+  }
+
+  getSgSendWelcome(): string {
+    return this.get('SG_SEND_WELCOME');
   }
 }

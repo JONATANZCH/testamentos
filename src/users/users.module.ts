@@ -4,9 +4,10 @@ import { UsersController } from './users.controller';
 import { PrismaProvider } from '../providers';
 import { ConfigModule } from '@nestjs/config';
 import { ConfigService } from '../config';
+import { SqsModule } from '../config/sqs.module';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, SqsModule],
   controllers: [UsersController],
   providers: [UsersService, PrismaProvider, ConfigService],
 })

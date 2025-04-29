@@ -22,9 +22,9 @@
         "PORT": "3000",
         "AWSREGION": "us-east-2",
         "AWS_SECRET_ID": "dev/testamentos/mysql",
-        "AWS_ACCESS_KEY_ID": "ASIAWNHTHSROAYEITLHO",
-        "AWS_SECRET_ACCESS_KEY": "rlXpRCQ/pFH6wesVg5WGvgzt+da9vH4DbNJrJ6uO",
-        "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEFEaCXVzLWVhc3QtMiJIMEYCIQDT7Vq8vx3LCGIaJoppYKxqfFNs1A/mb6qO4siCQQ5FYQIhAKWeVFzmbQz4qe06x133niV8orUeDbtcaTcXintaMQ4PKvgBCNr//////////wEQABoMNDQwNzQ0MjUyNTA4IgzloAQa/DYZ7NN1UYcqzAEINGh3LdgmVlzl2NzMML1F26KsK0lpfPixtnzbuAHTHHpAYKqRNsyIPVN25am3T6dFMuLvx8bwKuUIXLKOpXLvzKCySZTfDRGyWEkWRI4dXViXsi5PyobJujp7Cd8Q53hsMVDuI3J1fiNtS+fbeMOPSeoUK5VJtJsaHOE23gO3oERU3xvXJW5a42+TXQpBhsALcv5ZNx51hMpFec0zLFQcLmkjSc7ch2QHXw0LW1CjjbHYuNJKguRftEaUvPZ7gLMaQ3fSceAEoC1vb2owmJqfwAY6lwHnfTVB7xg1AD74jAKB1rs9nfiukHwYZEjH/yKRhjxPk5a32XzluX0h8S7LhlvIPshu8z9A830fnBOLlKifxiZtEB/DNWcXNnfKLuXyGVcOQE4+1A59BNa98Apo5PYEcRKhoHk+CTWneur9kdXGSLlpSbAdHOM2RX9g4Hn9JWSTCvgKY9wD1zEbkO4ROw6rb9P04/4wRHhP",
+        "AWS_ACCESS_KEY_ID": "ASIAWNHTHSRONPQT73IK",
+        "AWS_SECRET_ACCESS_KEY": "JovWLfzzb9TQ17GhVFMiOTBQOR41UbNYVb+x3BlH",
+        "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEP3//////////wEaCXVzLWVhc3QtMiJIMEYCIQCAralZyzWxU/ZJsgGkh1sbjiYit8Dpf2wqiXKl28bqUwIhAM0ifvvPI3HlgEgOzIxbWco6euO+HGs4b1f5Ht2emU1KKvgBCJb//////////wEQABoMNDQwNzQ0MjUyNTA4IgxKq12QgRpfqAhSup0qzAFBYRg30oM/6eCbhAghEhMj7wiwM7niHUOTbAibjn1iYxM/1vWrdbTkp21xVXe5BXh46I1+oiCw3nN1drNXJ50g+XzM/DW0phBUnSUhajGc3T8YlHEoGb35FIbFRWYRleF9akX9lRZ8/1g0KGQiQUqYFplIsac3QMMvdXH+u9mIm7Dmo4YGboBGB6hnPilWkOTWAZo1wi1WOPXgw/gRB6uPMZqVceKmRMqXmBFH+OqQfC3KW7axlkS7kzYNGA4+MBopR2lrrOpQL2UvfT4wj/LEwAY6lwFZpDpZfMm5F/YSVuZ9YC3yaEnuLreXfRmDfYL58scyAp+zXFpIo1u4+vqOrwdtpt1q9XWvt72BmETAL1VaJ0iZqVHW9+hpQjIFjQzHlvSivOtd7ffDnGOosGMYehZzvl726TyBJp+CT0aHeESkb/MrjWXftTf9tkGe0h9SV1KbdO6Pz0MNb1o7XXN9WDAEIlAtUwdGa/zR",
         "AWS_REGION": "us-east-2",
         "QUEUE_WILLS_COMMUNICATIONS": "https://sqs.us-east-2.amazonaws.com/440744252508/devWillC_users_0.fifo",
         "BUCKET_WILL": "dev-testaments",
@@ -46,7 +46,8 @@
         "signer_idsol": "75798",
         "signer_authorization": "BASICclientbasic:vdsisdfixs*ssxtr131514tlsiosd",
         "signer_flujofirma": "8",
-        "signer_hd": "1360"
+        "signer_hd": "1360",
+        "SG_SEND_WELCOME": "d-b5575cad947d4523bbbb5d1ee2351959",
       }
     }
   ]

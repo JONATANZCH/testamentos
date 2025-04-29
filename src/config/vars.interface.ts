@@ -10,4 +10,5 @@ export interface EnvConfig {
   EMAIL_FROM: string;
   SG_SEND_WILLS: string;
   BUCKET_WILL: string;
+  SG_SEND_WELCOME: string;
 }

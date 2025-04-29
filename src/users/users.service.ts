@@ -1,9 +1,11 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import { CreateUserDto, UpdateUserDto } from './dto';
+import { ConfigService } from '../config';
 import { GeneralResponseDto } from '../common';
 import { reverseCountryPhoneCodeMap } from '../common/utils/reverseCountryPhoneCodeMap';
 import { processException } from '../common/utils/exception.helper';
+import { SqsService } from '../config/sqs-validate.service';
 interface CreateUserWithTokenData extends CreateUserDto {
   oauthId: string;
   authTool: string;
@@ -14,9 +16,19 @@ export class UsersService {
   private prisma: any = null;
   private _prismaprovider: PrismaProvider;
   private readonly environment: string;
+  private readonly getEmailFrom: any;
+  private readonly getSgSendWelcome: string;
+  private readonly getSqsCommNoWaitQueue: any;
 
-  constructor(private prismaprovider: PrismaProvider) {
+  constructor(
+    private prismaprovider: PrismaProvider,
+    private readonly configService: ConfigService,
+    private readonly sqsService: SqsService,
+  ) {
     this._prismaprovider = prismaprovider;
+    this.getEmailFrom = this.configService.getEmailFrom();
+    this.getSgSendWelcome = this.configService.getSgSendWelcome();
+    this.getSqsCommNoWaitQueue = this.configService.getSqsCommNoWaitQueue();
   }
 
   async getAllUsers(page: number, limit: number): Promise<GeneralResponseDto> {
@@ -118,6 +130,8 @@ export class UsersService {
         user.countryPhoneCode =
           reverseCountryPhoneCodeMap[user.countryPhoneCode];
       }
+
+      await this.sendWelcomeEmail(user);
 
       response.code = 201;
       response.msg = 'User created successfully';
@@ -372,6 +386,60 @@ export class UsersService {
       response.response = progressData;
       return response;
     } catch (error) {
+      processException(error);
+    }
+  }
+
+  async sendWelcomeEmail(user: any): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+
+    try {
+      if (!user || !user.email || !user.name) {
+        response.code = 404;
+        response.msg = 'User email or name not found';
+        return response;
+      }
+
+      const emailEvent = {
+        type: 'new',
+        metadata: {
+          body: {
+            provider: 'sendgrid',
+            commType: 'email',
+            data: [
+              {
+                msg: {
+                  to: user.email,
+                  from: this.getEmailFrom,
+                  templateId: this.getSgSendWelcome,
+                  dynamicTemplateData: {
+                    subject: '¡Bienvenido a Testamentos!',
+                    from: 'Equipo Testamentos',
+                    to: user.name,
+                    mensajeTitulo: '¡Gracias por registrarte!',
+                    mensajeDescripcion:
+                      'Comienza tu proceso testamentario cuando estés listo.',
+                  },
+                },
+              },
+            ],
+          },
+        },
+      };
+
+      const queueUrl = this.getSqsCommNoWaitQueue;
+
+      const sqsResponse = await this.sqsService.sendMessage(
+        queueUrl,
+        emailEvent,
+      );
+
+      console.log('Welcome email sent to SQS:', sqsResponse);
+      response.code = 200;
+      response.msg = 'Welcome email event created successfully';
+      return response;
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
       processException(error);
     }
   }
