@@ -1,18 +1,25 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
 import { GeneralResponseDto } from '../common';
+import { ConfigService } from '../config';
 import { processException } from '../common/utils/exception.helper';
 import { PPErrorManagementService } from '../config/ppErrorManagement.service';
+import { SqsService } from '../config/sqs-validate.service';
 
 @Injectable()
 export class SuscriptionsService {
   private readonly logger = new Logger(SuscriptionsService.name);
   private prisma: any = null;
+  private readonly getSqsCommNoWaitQueue: any;
 
   constructor(
     private readonly prismaProvider: PrismaProvider,
     private readonly ppErrorMgmtService: PPErrorManagementService,
-  ) {}
+    private readonly configService: ConfigService,
+    private readonly sqsService: SqsService,
+  ) {
+    this.getSqsCommNoWaitQueue = this.configService.getSqsCommNoWaitQueue();
+  }
 
   async getServices(
     page: number,
@@ -304,6 +311,7 @@ export class SuscriptionsService {
             detail: { itemsPaid, totalExpected },
           },
         });
+        await this.sendPaymentConfirmationEmail(userId, payment, false);
         throw new HttpException(
           {
             code: 400,
@@ -501,6 +509,8 @@ export class SuscriptionsService {
       //   `[processPayment] Estado actualizado a 'Processed' para paymentId=${paymentId}`,
       // );
 
+      await this.sendPaymentConfirmationEmail(userId, payment, true);
+
       response.code = 200;
       response.msg = 'Payment processed successfully';
       response.response = payment;
@@ -511,5 +521,47 @@ export class SuscriptionsService {
     } catch (error) {
       processException(error);
     }
+  }
+
+  async sendPaymentConfirmationEmail(
+    userId: string,
+    payment: any,
+    success: boolean,
+  ): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.email) return;
+
+    const emailPayload = {
+      type: 'new',
+      metadata: {
+        body: {
+          provider: 'sendgrid',
+          commType: 'email',
+          data: [
+            {
+              msg: {
+                to: user.email,
+                from: 'notificaciones@testamentos.com',
+                templateId: success
+                  ? process.env.SG_TEMPLATE_PAYMENT_SUCCESS
+                  : process.env.SG_TEMPLATE_PAYMENT_FAILED,
+                dynamicTemplateData: {
+                  subject: success ? '¡Pago exitoso!' : 'Error en tu pago',
+                  name: user.name,
+                  monto: payment.amount,
+                  fecha: new Date().toLocaleDateString(),
+                },
+              },
+            },
+          ],
+        },
+      },
+    };
+
+    const queueUrl = this.getSqsCommNoWaitQueue;
+    await this.sqsService.sendMessage(queueUrl, emailPayload);
+    console.log(
+      `[sendPaymentConfirmationEmail] Mail sent for userId=${userId}`,
+    );
   }
 }

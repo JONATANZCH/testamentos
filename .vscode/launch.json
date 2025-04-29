@@ -48,6 +48,8 @@
         "signer_flujofirma": "8",
         "signer_hd": "1360",
         "SG_SEND_WELCOME": "d-b5575cad947d4523bbbb5d1ee2351959",
+        "SG_TEMPLATE_PAYMENT_SUCCESS": "d-b5575cad947d4523bbbb5d1ee2351959",
+        "SG_TEMPLATE_PAYMENT_FAILED": "d-b5575cad947d4523bbbb5d1ee2351959"
       }
     }
   ]
