@@ -24,6 +24,7 @@ export class ConfigService {
       SG_SEND_WILLS: Joi.string().required(),
       BUCKET_WILL: Joi.string().required(),
       SG_SEND_WELCOME: Joi.string().required(),
+      MINT_API_URL: Joi.string().required(),
     });
 
     const { error, value } = schema.validate(envVariables, {
@@ -97,5 +98,9 @@ export class ConfigService {
 
   getSgSendWelcome(): string {
     return this.get('SG_SEND_WELCOME');
+  }
+
+  getMintApiUrl(): string {
+    return this.get('MINT_API_URL');
   }
 }

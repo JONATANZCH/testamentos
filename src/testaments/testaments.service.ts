@@ -11,12 +11,15 @@ import { processException } from '../common/utils/exception.helper';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { ConfigService } from '../config';
 import { SqsService } from '../config/sqs-validate.service';
+import { Prisma } from '@prisma/client';
 import { UpdateTestamentMintDto, UpdateMinorSupportDto } from './dto';
+import axios from 'axios';
 import { Response } from 'express';
 
 @Injectable()
 export class TestamentsService {
   private prisma: any = null;
+  private readonly mintApiUrl: string;
   private readonly getSqsCommNoWaitQueue: any;
   private s3 = new S3Client({
     region: process.env.AWSREGION,
@@ -31,6 +34,7 @@ export class TestamentsService {
     private readonly configService: ConfigService,
   ) {
     this.getSqsCommNoWaitQueue = this.configService.getSqsCommNoWaitQueue();
+    this.mintApiUrl = this.configService.getMintApiUrl();
   }
 
   async getUserTestaments(
@@ -989,113 +993,69 @@ export class TestamentsService {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
-      if (!this.prisma) {
-        console.log('Error-> db-connection-failed');
-        response.code = 500;
-        response.msg = 'Could not connect to the database';
-        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      if (!this.prisma) this.throwDbConnectionError(response);
+
+      const { user, status, alreadyMinted } = await this.prisma.$transaction(
+        async (tx) => {
+          const testament = await this.getDraftTestamentWithUser(
+            tx,
+            testamentId,
+          );
+
+          const credit = await this.consumeUserCredit(tx, testament.userId);
+          console.log('Credit ID used:', credit);
+
+          let user = testament.user;
+          let alreadyMinted = false;
+
+          if (user.walletIntId) {
+            alreadyMinted = true;
+          } else {
+            user = await this.assignWalletIntId(tx, user.id);
+          }
+
+          if (updateTestamentMintDto.status === 'ACTIVE') {
+            await this.deactivateOtherActiveTestaments(
+              tx,
+              user.id,
+              testamentId,
+            );
+          }
+
+          return { user, status: updateTestamentMintDto.status, alreadyMinted };
+        },
+      );
+
+      let updateData: any = { status };
+
+      if (!alreadyMinted) {
+        const mintData = await this.mintToCustodialWallet(user.walletIntId);
+        console.log('Mint data:', mintData);
+
+        updateData = {
+          ...updateData,
+          hash: mintData.txHash,
+          urlNft: mintData.urlNft,
+          chain: mintData.chain,
+          standard: mintData.standard,
+        };
       }
 
-      const updatedTestament = await this.prisma.$transaction(async (tx) => {
-        // Buscar el testamento por ID
-        const testament = await tx.testamentHeader.findUnique({
-          where: { id: testamentId },
-        });
-        if (!testament) {
-          throw new HttpException(
-            { code: 404, msg: 'Testament not found' },
-            HttpStatus.NOT_FOUND,
-          );
-        }
-        // Solo se permite actualizar el status si el testamento es DRAFT
-        if (testament.status !== 'DRAFT') {
-          throw new HttpException(
-            {
-              code: 400,
-              msg: 'Only draft testaments can have their status changed.',
-            },
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-
-        // primero un crédito de tipo 'subscription'
-        let creditToUse = await tx.userCredits.findFirst({
-          where: {
-            userId: testament.userId,
-            status: 'New',
-            type: 'subscription',
-            expirationDate: { gte: new Date() },
-          },
-          orderBy: { createdAt: 'asc' }, // Prioriza los más antiguos
-        });
-        console.log('Credit to use subscription:', creditToUse);
-
-        // Si no hay créditos de tipo 'subscription', usar un 'addon'
-        if (!creditToUse) {
-          creditToUse = await tx.userCredits.findFirst({
-            where: {
-              userId: testament.userId,
-              status: 'New',
-              type: 'addon',
-              expirationDate: { gte: new Date() },
-            },
-            orderBy: { createdAt: 'asc' }, // Prioriza los más antiguos
-          });
-        }
-
-        console.log('Credit to use addon:', creditToUse);
-
-        // Si no hay créditos disponibles
-        if (!creditToUse) {
-          throw new HttpException(
-            {
-              code: 400,
-              msg: 'User has no available credits to mint the testament.',
-            },
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-
-        // Consumir *solamente* ese crédito
-        await tx.userCredits.update({
-          where: { id: creditToUse.id },
-          data: { status: 'Used', usedDate: new Date() },
-        });
-
-        // validar que no exista otro testamento ACTIVE para el mismo usuario
-        if (updateTestamentMintDto.status === 'ACTIVE') {
-          const existingActiveTestaments = await tx.testamentHeader.findMany({
-            where: {
-              userId: testament.userId,
-              status: 'ACTIVE',
-              id: { not: testamentId },
-            },
-          });
-
-          if (existingActiveTestaments.length > 0) {
-            await tx.testamentHeader.updateMany({
-              where: {
-                id: { in: existingActiveTestaments.map((t) => t.id) },
-              },
-              data: { status: 'INACTIVE' },
-            });
-          }
-        }
-        // Actualizar el status del testamento
-        const updated = await tx.testamentHeader.update({
-          where: { id: testamentId },
-          data: { status: updateTestamentMintDto.status },
-        });
-        await this.notifyMintEmail(updated.userId, true);
-        return updated;
+      const updatedTestament = await this.prisma.testamentHeader.update({
+        where: { id: testamentId },
+        data: updateData,
       });
 
+      await this.notifyMintEmail(user, true);
+
       response.code = 200;
-      response.msg = 'Testament status updated successfully';
+      response.msg = alreadyMinted
+        ? 'Testament status updated (previous mint preserved)'
+        : 'Testament status updated and NFT minted successfully';
       response.response = updatedTestament;
       return response;
     } catch (error) {
-      await this.notifyMintEmail('Error', false);
+      console.log('Error updating testament mint:', error);
       processException(error);
     }
   }
@@ -1401,11 +1361,15 @@ export class TestamentsService {
     }
   }
 
-  async notifyMintEmail(userId: string, success: boolean): Promise<boolean> {
+  async notifyMintEmail(user: any, success: boolean): Promise<boolean> {
     try {
-      const user = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (!user || !user.email) {
-        console.warn(`[notifyMintEmail] No email found for userId=${userId}`);
+      const userInfo = await this.prisma.user.findUnique({
+        where: { id: user.id },
+      });
+      if (!userInfo || !userInfo.email) {
+        console.warn(
+          `[notifyMintEmail] No email found for userId=${userInfo?.id}`,
+        );
         return true;
       }
 
@@ -1418,7 +1382,7 @@ export class TestamentsService {
             data: [
               {
                 msg: {
-                  to: user.email,
+                  to: userInfo.email,
                   from: 'notificaciones@testamentos.com',
                   templateId: success
                     ? process.env.SG_TEMPLATE_MINT_CONFIRMATION
@@ -1427,7 +1391,7 @@ export class TestamentsService {
                     subject: success
                       ? '¡Tu testamento fue minteado con éxito!'
                       : 'Error al mintear tu testamento',
-                    name: user.name,
+                    name: userInfo.name,
                     fecha: new Date().toLocaleDateString(),
                   },
                 },
@@ -1440,15 +1404,184 @@ export class TestamentsService {
       const queueUrl = this.getSqsCommNoWaitQueue;
       await this.sqsService.sendMessage(queueUrl, emailPayload);
       console.log(
-        `[notifyMintEmail] Mint email (${success ? 'SUCCESS' : 'FAILED'}) sent for userId=${userId}`,
+        `[notifyMintEmail] Mint email (${success ? 'SUCCESS' : 'FAILED'}) sent for userId=${userInfo.id}`,
       );
       return true;
     } catch (error) {
       console.error(
-        `[notifyMintEmail] Error sending ${success ? 'success' : 'failure'} email for userId=${userId}:`,
+        `[notifyMintEmail] Error sending ${success ? 'success' : 'failure'} email for userId=${user.id}:`,
         error,
       );
       return false;
+    }
+  }
+
+  private throwDbConnectionError(response: GeneralResponseDto): never {
+    console.log('Error-> db-connection-failed');
+    response.code = 500;
+    response.msg = 'Could not connect to the database';
+    throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
+  private async getDraftTestamentWithUser(tx: any, testamentId: string) {
+    const testament = await tx.testamentHeader.findUnique({
+      where: { id: testamentId },
+      include: { user: true },
+    });
+    if (!testament) {
+      throw new HttpException(
+        { code: 404, msg: 'Testament not found' },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    if (testament.status !== 'DRAFT') {
+      throw new HttpException(
+        { code: 400, msg: 'Only draft testaments can be updated' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return testament;
+  }
+
+  private async consumeUserCredit(tx: any, userId: string) {
+    const now = new Date();
+    let credit = await tx.userCredits.findFirst({
+      where: {
+        userId,
+        status: 'New',
+        type: 'subscription',
+        expirationDate: { gte: now },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!credit) {
+      credit = await tx.userCredits.findFirst({
+        where: {
+          userId,
+          status: 'New',
+          type: 'addon',
+          expirationDate: { gte: now },
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+    }
+    if (!credit) {
+      throw new HttpException(
+        { code: 400, msg: 'User has no available credits' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await tx.userCredits.update({
+      where: { id: credit.id },
+      data: { status: 'Used', usedDate: now },
+    });
+    return credit;
+  }
+
+  private async assignWalletIntId(tx: any, userId: string) {
+    let assigned = false;
+    let retries = 0;
+    const MAX_RETRIES = 5;
+    let user;
+
+    while (!assigned && retries < MAX_RETRIES) {
+      try {
+        const max = await tx.user.aggregate({ _max: { walletIntId: true } });
+        const nextId = (max._max.walletIntId ?? 0) + 1;
+        user = await tx.user.update({
+          where: { id: userId },
+          data: { walletIntId: nextId },
+        });
+        assigned = true;
+      } catch (err: any) {
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2002'
+        ) {
+          const target = err.meta?.target as string[] | string;
+          if (
+            (Array.isArray(target) && target.includes('walletIntId')) ||
+            target === 'walletIntId'
+          ) {
+            retries++;
+            console.warn(
+              `[walletIntId] Unique constraint failed, retrying (${retries})...`,
+            );
+            await new Promise((r) => setTimeout(r, 100));
+          }
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (!assigned) {
+      throw new HttpException(
+        { code: 500, msg: 'Failed to assign walletIntId after retries' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+    return user;
+  }
+
+  private async deactivateOtherActiveTestaments(
+    tx: any,
+    userId: string,
+    excludeId: string,
+  ) {
+    await tx.testamentHeader.updateMany({
+      where: { userId, status: 'ACTIVE', id: { not: excludeId } },
+      data: { status: 'INACTIVE' },
+    });
+  }
+
+  private async mintToCustodialWallet(walletIntId: number) {
+    try {
+      const { data } = await axios.post(this.mintApiUrl, {
+        userId: walletIntId,
+        image: 'http://asdf',
+        product: 'testamentos',
+      });
+      console.log('[mintToCustodialWallet] Mint service response:', data);
+
+      if (!data || data.code !== 200 || !data.response) {
+        console.error('[mintToCustodialWallet] Invalid response:', data);
+        throw new HttpException(
+          {
+            code: 502,
+            msg: 'Unexpected response structure from mint fargate service',
+          },
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      console.log('[mintToCustodialWallet] Mint service msg:', data.msg);
+
+      const { txHash, urlNft, chain, standard } = data.response;
+
+      if (!txHash || !urlNft || !chain || !standard) {
+        throw new HttpException(
+          {
+            code: 502,
+            msg: 'Incomplete data received from mint service',
+          },
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      return { txHash, urlNft, chain, standard };
+    } catch (error) {
+      console.error(
+        '[mintToCustodialWallet] Error minting NFT:',
+        error.message || error,
+      );
+      throw new HttpException(
+        {
+          code: 502,
+          msg: 'Failed to mint NFT on blockchain',
+        },
+        HttpStatus.BAD_GATEWAY,
+      );
     }
   }
 }

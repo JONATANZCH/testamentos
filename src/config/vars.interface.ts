@@ -11,4 +11,5 @@ export interface EnvConfig {
   SG_SEND_WILLS: string;
   BUCKET_WILL: string;
   SG_SEND_WELCOME: string;
+  MINT_API_URL: string;
 }
