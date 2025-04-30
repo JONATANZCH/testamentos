@@ -1028,6 +1028,7 @@ export class TestamentsService {
           },
           orderBy: { createdAt: 'asc' }, // Prioriza los más antiguos
         });
+        console.log('Credit to use subscription:', creditToUse);
 
         // Si no hay créditos de tipo 'subscription', usar un 'addon'
         if (!creditToUse) {
@@ -1041,6 +1042,8 @@ export class TestamentsService {
             orderBy: { createdAt: 'asc' }, // Prioriza los más antiguos
           });
         }
+
+        console.log('Credit to use addon:', creditToUse);
 
         // Si no hay créditos disponibles
         if (!creditToUse) {
@@ -1059,24 +1062,6 @@ export class TestamentsService {
           data: { status: 'Used', usedDate: new Date() },
         });
 
-        // Verificar si el usuario tiene créditos disponibles para mintear
-        const availableCredits = await tx.userCredits.findMany({
-          where: {
-            userId: testament.userId,
-            status: 'New',
-            expirationDate: { gte: new Date() },
-          },
-        });
-
-        if (availableCredits.length === 0) {
-          throw new HttpException(
-            {
-              code: 400,
-              msg: 'User has no available credits to mint the testament.',
-            },
-            HttpStatus.BAD_REQUEST,
-          );
-        }
         // validar que no exista otro testamento ACTIVE para el mismo usuario
         if (updateTestamentMintDto.status === 'ACTIVE') {
           const existingActiveTestaments = await tx.testamentHeader.findMany({
