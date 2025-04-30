@@ -9,12 +9,15 @@ import {
 import { GeneralResponseDto, PaginationDto } from '../common';
 import { processException } from '../common/utils/exception.helper';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { ConfigService } from '../config';
+import { SqsService } from '../config/sqs-validate.service';
 import { UpdateTestamentMintDto, UpdateMinorSupportDto } from './dto';
 import { Response } from 'express';
 
 @Injectable()
 export class TestamentsService {
   private prisma: any = null;
+  private readonly getSqsCommNoWaitQueue: any;
   private s3 = new S3Client({
     region: process.env.AWSREGION,
   });
@@ -22,7 +25,13 @@ export class TestamentsService {
   // Validate valid state if provided
   private validStatuses = ['ACTIVE', 'INACTIVE', 'DRAFT'];
 
-  constructor(private readonly prismaProvider: PrismaProvider) {}
+  constructor(
+    private readonly prismaProvider: PrismaProvider,
+    private readonly sqsService: SqsService,
+    private readonly configService: ConfigService,
+  ) {
+    this.getSqsCommNoWaitQueue = this.configService.getSqsCommNoWaitQueue();
+  }
 
   async getUserTestaments(
     userId: string,
@@ -1092,6 +1101,7 @@ export class TestamentsService {
           where: { id: testamentId },
           data: { status: updateTestamentMintDto.status },
         });
+        await this.notifyMintEmail(updated.userId, true);
         return updated;
       });
 
@@ -1100,6 +1110,7 @@ export class TestamentsService {
       response.response = updatedTestament;
       return response;
     } catch (error) {
+      await this.notifyMintEmail('Error', false);
       processException(error);
     }
   }
@@ -1402,6 +1413,57 @@ export class TestamentsService {
     } catch (error) {
       console.log('Error retrieving minor support:', error);
       processException(error);
+    }
+  }
+
+  async notifyMintEmail(userId: string, success: boolean): Promise<boolean> {
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user || !user.email) {
+        console.warn(`[notifyMintEmail] No email found for userId=${userId}`);
+        return true;
+      }
+
+      const emailPayload = {
+        type: 'new',
+        metadata: {
+          body: {
+            provider: 'sendgrid',
+            commType: 'email',
+            data: [
+              {
+                msg: {
+                  to: user.email,
+                  from: 'notificaciones@testamentos.com',
+                  templateId: success
+                    ? process.env.SG_TEMPLATE_MINT_CONFIRMATION
+                    : process.env.SG_TEMPLATE_MINT_CONFIRMATION,
+                  dynamicTemplateData: {
+                    subject: success
+                      ? '¡Tu testamento fue minteado con éxito!'
+                      : 'Error al mintear tu testamento',
+                    name: user.name,
+                    fecha: new Date().toLocaleDateString(),
+                  },
+                },
+              },
+            ],
+          },
+        },
+      };
+
+      const queueUrl = this.getSqsCommNoWaitQueue;
+      await this.sqsService.sendMessage(queueUrl, emailPayload);
+      console.log(
+        `[notifyMintEmail] Mint email (${success ? 'SUCCESS' : 'FAILED'}) sent for userId=${userId}`,
+      );
+      return true;
+    } catch (error) {
+      console.error(
+        `[notifyMintEmail] Error sending ${success ? 'success' : 'failure'} email for userId=${userId}:`,
+        error,
+      );
+      return false;
     }
   }
 }
