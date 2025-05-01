@@ -1044,6 +1044,16 @@ export class TestamentsService {
       const updatedTestament = await this.prisma.testamentHeader.update({
         where: { id: testamentId },
         data: updateData,
+        select: {
+          id: true,
+          status: true,
+          version: true,
+          documentNumber: true,
+          hash: true,
+          urlNft: true,
+          chain: true,
+          standard: true,
+        },
       });
 
       await this.notifyMintEmail(user, true);
