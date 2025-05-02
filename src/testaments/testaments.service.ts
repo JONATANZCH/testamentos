@@ -268,6 +268,7 @@ export class TestamentsService {
                 testamentHeaderId: createdTestament.id,
                 type: executor.type,
                 contactId: executor.contactId,
+                priorityOrder: executor.priorityOrder ?? 1,
               },
             });
           }
@@ -1493,15 +1494,26 @@ export class TestamentsService {
     let retries = 0;
     const MAX_RETRIES = 5;
     let user;
+    let nextId: number | null = null;
 
     while (!assigned && retries < MAX_RETRIES) {
       try {
         const max = await tx.user.aggregate({ _max: { walletIntId: true } });
-        const nextId = (max._max.walletIntId ?? 0) + 1;
+        nextId = (max._max.walletIntId ?? 0) + 1;
+
+        console.log(
+          `[walletIntId] Attempting to assign walletIntId=${nextId} to userId=${userId} (retry=${retries})`,
+        );
+
         user = await tx.user.update({
           where: { id: userId },
           data: { walletIntId: nextId },
         });
+
+        console.log(
+          `[walletIntId] Successfully assigned walletIntId=${nextId} to userId=${userId}`,
+        );
+
         assigned = true;
       } catch (err: any) {
         if (
@@ -1515,22 +1527,27 @@ export class TestamentsService {
           ) {
             retries++;
             console.warn(
-              `[walletIntId] Unique constraint failed, retrying (${retries})...`,
+              `[walletIntId] Unique constraint failed (walletIntId=${nextId}). Retrying (${retries}/${MAX_RETRIES})...`,
             );
             await new Promise((r) => setTimeout(r, 100));
           }
         } else {
+          console.error('[walletIntId] Unexpected error:', err);
           throw err;
         }
       }
     }
 
     if (!assigned) {
+      console.error(
+        `[walletIntId] Failed to assign walletIntId after ${MAX_RETRIES} retries`,
+      );
       throw new HttpException(
         { code: 500, msg: 'Failed to assign walletIntId after retries' },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+
     return user;
   }
 
