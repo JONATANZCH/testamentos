@@ -114,6 +114,14 @@
                 {
                     "name":"signer_url_base",
                     "value":"#{signer_url_base}#"
+                },
+                {
+                    "name": "SG_SEND_WELCOME",
+                    "value": "#{SG_SEND_WELCOME}#"
+                },
+                {
+                    "name": "MINT_API_URL",
+                    "value": "#{MINT_API_URL}#"
                 }
             ],
             "mountPoints": [],
