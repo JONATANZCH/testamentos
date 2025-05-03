@@ -124,6 +124,7 @@ export class TestamentsService {
         response.msg = 'Could not connect to the database';
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
+
       const testament = await this.prisma.testamentHeader.findFirst({
         where: { id: testamentId },
         select: {
@@ -132,6 +133,7 @@ export class TestamentsService {
           version: true,
           terms: true,
           inheritanceType: true,
+          universalHeirId: true,
         },
       });
 
@@ -139,6 +141,10 @@ export class TestamentsService {
         response.code = 404;
         response.msg = 'Testament not found';
         throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      if (testament.inheritanceType !== 'HU') {
+        delete testament.universalHeirId;
       }
 
       response.code = 200;
