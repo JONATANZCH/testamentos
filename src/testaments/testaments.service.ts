@@ -1457,6 +1457,15 @@ export class TestamentsService {
         HttpStatus.BAD_REQUEST,
       );
     }
+    if (!testament.pdfStatus || testament.pdfStatus !== 'success') {
+      throw new HttpException(
+        {
+          code: 400,
+          msg: 'PDF must be generated before minting. Please wait until the PDF is available or generate it.',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     return testament;
   }
 
