@@ -148,7 +148,7 @@ export class TestamentsService {
       }
 
       response.code = 200;
-      response.msg = 'Testament retrieved successfully';
+      response.msg = 'Testament retrieved successfully!';
       response.response = testament;
       return res.status(200).json(response);
     } catch (error) {
