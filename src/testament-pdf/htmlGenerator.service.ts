@@ -93,18 +93,31 @@ export class HtmlGeneratorService {
       substituteMother,
     } = this.extractExecutorData(testamentHeader.Executor);
 
-    html = html.replace(/{{albacea_name}}/g, albaceaName);
-    html = html.replace(/{{albacea_fatherLastName}}/g, albaceaFather);
-    html = html.replace(/{{albacea_motherLastName}}/g, albaceaMother);
-    html = html.replace(/{{albacea_subtitue_name}}/g, substituteName);
-    html = html.replace(
-      /{{albacea_subtitue_fatherLastName}}/g,
+    const isAlbaceaEmpty = [
+      albaceaName,
+      albaceaFather,
+      albaceaMother,
+      substituteName,
       substituteFather,
-    );
-    html = html.replace(
-      /{{albacea_subtitue_motherLastName}}/g,
       substituteMother,
-    );
+    ].every((val) => !val || val === 'No data yet');
+
+    if (isAlbaceaEmpty) {
+      html = this.removeSectionById(html, 'section3');
+    } else {
+      html = html.replace(/{{albacea_name}}/g, albaceaName);
+      html = html.replace(/{{albacea_fatherLastName}}/g, albaceaFather);
+      html = html.replace(/{{albacea_motherLastName}}/g, albaceaMother);
+      html = html.replace(/{{albacea_subtitue_name}}/g, substituteName);
+      html = html.replace(
+        /{{albacea_subtitue_fatherLastName}}/g,
+        substituteFather,
+      );
+      html = html.replace(
+        /{{albacea_subtitue_motherLastName}}/g,
+        substituteMother,
+      );
+    }
 
     // ================== MÚLTIPLES ASIGNACIONES ==================
     if (testamentHeader.inheritanceType !== 'HP') {
@@ -120,8 +133,19 @@ export class HtmlGeneratorService {
       );
     }
 
-    const legaciesHtml = this.buildLegaciesList(testamentHeader.Legacy || []);
-    html = html.replace(/#\{\{legados_loop\}\}#/g, legaciesHtml);
+    // ================== LEGADOS ESPECIFICOS ==================
+    const legacies = testamentHeader.Legacy || [];
+    const legaciesHtml = this.buildLegaciesList(legacies);
+    const hasValidLegacies = Array.isArray(legacies) && legacies.length > 0;
+
+    if (
+      !hasValidLegacies ||
+      legaciesHtml.includes('No hay legados específicos')
+    ) {
+      html = this.removeSectionById(html, 'section5');
+    } else {
+      html = html.replace(/#\{\{legados_loop\}\}#/g, legaciesHtml);
+    }
 
     // ================== SECCIÓN 6: Heredero Universal ==================
     if (testamentHeader.inheritanceType !== 'HU') {
