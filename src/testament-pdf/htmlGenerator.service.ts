@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { translateNationality } from '../common/utils/translation.utils';
 import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class HtmlGeneratorService {
@@ -56,8 +57,8 @@ export class HtmlGeneratorService {
     const name = user?.name ?? 'No data yet';
     const fatherLastName = user?.fatherLastName ?? 'No data yet';
     const motherLastName = user?.motherLastName ?? 'No data yet';
-    const nationality = user?.nationality ?? 'No data yet';
-    const maritalStatus = user?.maritalstatus ?? 'No data yet';
+    const nationality = translateNationality(user?.nationality);
+    const maritalStatus = this.translateMaritalStatus(user?.maritalstatus);
 
     html = html.replace(/{{name}}/g, name);
     html = html.replace(/{{fatherLastName}}/g, fatherLastName);
@@ -219,7 +220,7 @@ export class HtmlGeneratorService {
     const nftHash = 'NFT1234567890';
     const renatCode = 'RENAT-000001';
     const witnessCode = 'WITNESS-ABC123';
-    const nom151Status = 'Attach';
+    const nom151Status = 'Adjunta';
 
     html = html.replace(/\[FECHA Y HORA\]/g, signatureDateTime);
     html = html.replace(/\[CIUDAD Y ESTADO\]/g, signerLocation);
@@ -635,5 +636,18 @@ export class HtmlGeneratorService {
     if (!relation) return 'No especificado';
 
     return relationMap[relation.toLowerCase()] || 'Entidad Legal';
+  }
+
+  private translateMaritalStatus(status: string | undefined): string {
+    const map: Record<string, string> = {
+      single: 'Soltero(a)',
+      married: 'Casado(a)',
+      divorced: 'Divorciado(a)',
+      widowed: 'Viudo(a)',
+      concubinage: 'Unión libre',
+    };
+
+    if (!status) return 'No especificado';
+    return map[status.toLowerCase()] ?? 'No especificado';
   }
 }
