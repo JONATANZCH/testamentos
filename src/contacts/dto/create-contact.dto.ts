@@ -16,22 +16,27 @@ import { RelationToUser } from '../../common/enums/relation-to-user.enum';
 import { countryPhoneCodeMap } from '../../common/utils/mapCountryPhoneCode';
 import { BadRequestException } from '@nestjs/common';
 import { Gender } from '../../common/enums/gender.enum';
+import { capitalizeFirstLetter } from '../../common/utils/transform-capitalize.util';
 
 export class CreateContactDto {
   @IsNotEmpty()
   @IsString()
+  @Transform(({ value }) => capitalizeFirstLetter(value))
   readonly name: string;
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => capitalizeFirstLetter(value))
   readonly middleName?: string;
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => capitalizeFirstLetter(value))
   readonly fatherLastName?: string;
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => capitalizeFirstLetter(value))
   readonly motherLastName?: string;
 
   @IsNotEmpty()

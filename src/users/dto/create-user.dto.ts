@@ -14,6 +14,7 @@ import { MaritalStatus } from '../../common/enums/marital-status.enum';
 import { CountryPhoneCode } from '../../common/enums/country-phone-code.enum';
 import { countryPhoneCodeMap } from '../../common/utils/mapCountryPhoneCode';
 import { BadRequestException } from '@nestjs/common';
+import { capitalizeFirstLetter } from '../../common/utils/transform-capitalize.util';
 
 export class CreateUserDto {
   @IsNotEmpty()
@@ -22,18 +23,22 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsString()
+  @Transform(({ value }) => capitalizeFirstLetter(value))
   readonly name: string;
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => capitalizeFirstLetter(value))
   readonly middleName?: string;
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => capitalizeFirstLetter(value))
   readonly fatherLastName?: string;
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => capitalizeFirstLetter(value))
   readonly motherLastName?: string;
 
   @IsString()
