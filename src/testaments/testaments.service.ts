@@ -7,23 +7,50 @@ import {
   UpdateTestamentDto,
 } from './dto';
 import { GeneralResponseDto, PaginationDto } from '../common';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { processException } from '../common/utils/exception.helper';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import * as unzipper from 'unzipper';
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+  HeadObjectCommand,
+} from '@aws-sdk/client-s3';
 import { ConfigService } from '../config';
+import { firstValueFrom } from 'rxjs';
+import * as qs from 'qs';
 import { SqsService } from '../config/sqs-validate.service';
 import { Prisma } from '@prisma/client';
 import { UpdateTestamentMintDto, UpdateMinorSupportDto } from './dto';
+import { ConfigService as NestConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { HttpService } from '@nestjs/axios';
 import { Response } from 'express';
 
 @Injectable()
 export class TestamentsService {
   private prisma: any = null;
+  private readonly environment: string;
   private readonly mintApiUrl: string;
   private readonly getSqsCommNoWaitQueue: any;
   private s3 = new S3Client({
     region: process.env.AWSREGION,
   });
+  private readonly getBucketWill: string;
+  private readonly signer_base_rest: string;
+  private readonly signer_base: string;
+  private readonly signer_authorization: string;
+  private readonly signer_org_string: string;
+  private readonly signer_t003c002: string;
+  private readonly signer_t003c004: string;
+  private readonly signer_idcat: string;
+  private readonly signer_idsol: string;
+  private readonly signer_org: string;
+  private readonly signer_tipo: string;
+  private readonly signer_perfil: string;
+  private readonly signer_flujofirma: string;
+  private readonly signer_hd: string;
+  private env_var_error: boolean = false;
 
   // Validate valid state if provided
   private validStatuses = ['ACTIVE', 'INACTIVE', 'DRAFT'];
@@ -32,9 +59,35 @@ export class TestamentsService {
     private readonly prismaProvider: PrismaProvider,
     private readonly sqsService: SqsService,
     private readonly configService: ConfigService,
+    private readonly nestConfigService: NestConfigService,
+    private readonly httpService: HttpService,
   ) {
+    this.environment = this.configService.getNodeEnv();
     this.getSqsCommNoWaitQueue = this.configService.getSqsCommNoWaitQueue();
     this.mintApiUrl = this.configService.getMintApiUrl();
+    this.getBucketWill = this.configService.getBucketWill();
+    this.signer_base =
+      this.nestConfigService.get<string>('signer_url_base') ?? '';
+    this.signer_base_rest = (this.signer_base ?? '') + '/rest';
+    this.signer_authorization =
+      this.nestConfigService.get<string>('signer_authorization') ?? '';
+    this.signer_org = this.nestConfigService.get<string>('signer_org') ?? '';
+    this.signer_org_string =
+      this.nestConfigService.get<string>('signer_org_string') ?? '';
+    this.signer_t003c002 =
+      this.nestConfigService.get<string>('signer_t003c002') ?? '';
+    this.signer_t003c004 =
+      this.nestConfigService.get<string>('signer_t003c004') ?? '';
+    this.signer_idcat =
+      this.nestConfigService.get<string>('signer_idcat') ?? '';
+    this.signer_idsol =
+      this.nestConfigService.get<string>('signer_idsol') ?? '';
+    this.signer_tipo = this.nestConfigService.get<string>('signer_tipo') ?? '';
+    this.signer_perfil =
+      this.nestConfigService.get<string>('signer_perfil') ?? '';
+    this.signer_flujofirma =
+      this.nestConfigService.get<string>('signer_flujofirma') ?? '';
+    this.signer_hd = this.nestConfigService.get<string>('signer_hd') ?? '';
   }
 
   async getUserTestaments(
@@ -890,103 +943,104 @@ export class TestamentsService {
 
   async streamTestamentPdf(testamentId: string, res: Response) {
     const response = new GeneralResponseDto();
+
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
       if (!this.prisma) {
-        console.error('[streamTestamentPdf] Could not connect to the database');
         response.code = 500;
         response.msg = 'Could not connect to the database';
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
-
-      console.log('[streamTestamentPdf] Connected to database.');
 
       const testament = await this.prisma.testamentHeader.findUnique({
         where: { id: testamentId },
       });
 
       if (!testament) {
-        console.log('[streamTestamentPdf] Testament not found.');
         response.code = 404;
         response.msg = 'Testament not found';
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
-      console.log(
-        `[streamTestamentPdf] Testament found - Status: ${testament.status}`,
-      );
-      const status = testament.pdfStatus;
-      if (!status) {
-        console.log('[streamTestamentPdf] PDF status not found.');
-        response.code = 404;
-        response.msg = 'PDF not found';
-        throw new HttpException(response, HttpStatus.NOT_FOUND);
-      }
+      const userId = testament.userId;
+      const version = testament.version;
+      const status = testament.signatureStatus;
 
-      if (status === 'PdfQueued' || status === 'GeneratingHtml') {
-        console.log('[streamTestamentPdf] PDF is still being generated.');
-        response.code = 202;
-        response.msg = 'PDF in process. Please check back later.';
-        response.response = { pdfProcessId: testamentId };
-        throw new HttpException(response, HttpStatus.ACCEPTED);
-      }
-      if (status === 'Failed') {
-        console.log('[streamTestamentPdf] PDF generation failed.');
-        response.code = 406;
-        response.msg =
-          'There was an error generating the PDF. Please contact support.';
-        response.response = { pdfProcessId: testamentId };
-        throw new HttpException(response, HttpStatus.NOT_ACCEPTABLE);
+      const folder = `${userId}_${version}/`;
+      const nomFile = `${folder}${userId}_${version}_RGCCNOM151.pdf`;
+      const pastpostFile = `${folder}${userId}_${version}_PASTPOST.pdf`;
+
+      if (status === 'Signed') {
+        const processId =
+          testament.metadata?.signprocessinfo?.[0]?.seguridataprocessid;
+        if (!processId) {
+          response.code = 400;
+          response.msg = 'Missing Seguridata process ID in metadata';
+          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
+
+        const getResponse = await this.getNomSignedPdf(testamentId, processId);
+        if (getResponse.code !== 200) {
+          throw new HttpException(
+            getResponse,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+
+        await this.prisma.testamentHeader.update({
+          where: { id: testamentId },
+          data: { pdfStatus: 'SignedPdfDownloaded' },
+        });
       }
 
       let bucket: string;
       let key: string;
 
-      try {
-        if (typeof testament.url === 'object' && testament.url.set) {
-          bucket = testament.url.set.bucket;
-          key = testament.url.set.key;
-        } else {
-          throw new Error('Invalid URL format in database.');
-        }
-      } catch (error) {
-        console.log('[streamTestamentPdf] Error parsing URL:', error);
-        response.code = 500;
-        response.msg = 'Invalid URL format in database.';
-        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
-      }
+      if (status === 'Signed' || status === 'SignedPdfDownloaded') {
+        // PDF firmado desde NOM151
+        const url = await this.getS3SignedUrl(this.getBucketWill, nomFile);
+        const url2 = await this.getS3SignedUrl(
+          this.getBucketWill,
+          pastpostFile,
+        );
 
-      console.log(
-        `[streamTestamentPdf] Fetching from S3: Bucket=${bucket}, Key=${key}`,
-      );
-
-      try {
-        const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-        const response = await this.s3.send(command);
-        console.log('[streamTestamentPdf] S3 response:', response);
-
-        if (!response.Body) {
-          console.log('[streamTestamentPdf] S3 response body is null');
-          throw new HttpException(
-            'Empty PDF response',
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
+        if (!url || !url2) {
+          response.code = 404;
+          response.msg = 'PDF not found, process contract first';
+          throw new HttpException(response, HttpStatus.NOT_FOUND);
         }
 
-        const buffer = Buffer.from(await response.Body.transformToByteArray());
+        bucket = this.getBucketWill;
+        key = nomFile;
+      } else {
+        bucket = testament.url?.set?.bucket;
+        key = testament.url?.set?.key;
 
-        res.set({
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `inline; filename="${testamentId}.pdf"`,
-        });
-
-        res.send(buffer);
-      } catch (error) {
-        console.log('Error reading from S3:', error);
-        response.code = 500;
-        response.msg = 'Error reading from S3';
-        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        if (!key || !bucket) {
+          response.code = 500;
+          response.msg = 'Invalid URL format in database.';
+          throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
       }
+
+      const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+      const s3Response = await this.s3.send(command);
+
+      if (!s3Response.Body) {
+        throw new HttpException(
+          'Empty PDF response',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      const buffer = Buffer.from(await s3Response.Body.transformToByteArray());
+
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="${testamentId}.pdf"`,
+      });
+
+      return res.send(buffer);
     } catch (error) {
       console.log('[streamTestamentPdf] Unexpected error =>', error);
       processException(error);
@@ -1433,7 +1487,7 @@ export class TestamentsService {
     }
   }
 
-  private throwDbConnectionError(response: GeneralResponseDto): never {
+  throwDbConnectionError(response: GeneralResponseDto): never {
     console.log('Error-> db-connection-failed');
     response.code = 500;
     response.msg = 'Could not connect to the database';
@@ -1624,6 +1678,314 @@ export class TestamentsService {
         },
         HttpStatus.BAD_GATEWAY,
       );
+    }
+  }
+
+  async getNomSignedPdf(keyFile: string, seguridataprocessId: string) {
+    let response = new GeneralResponseDto();
+    try {
+      console.log('Getting NOM signed pdf');
+      const url1 = this.signer_base_rest + '/log/in';
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: this.signer_authorization,
+      };
+      const body = {
+        org: this.signer_org_string, // 'pastpost',
+        t003c002: this.signer_t003c002, //'aSDHh123as',
+        t003c004: this.signer_t003c004, //'PuWEas2530',
+      };
+      const result = await this.makePostRequest(url1, body, headers, true);
+      if (
+        result.code != 200 ||
+        result.response !== 1 ||
+        (typeof result.response == 'string' &&
+          result.response.toLowerCase().includes('error'))
+      ) {
+        console.log('result ->' + result.response);
+        console.log('error loging to seguridata');
+        response.code = 500;
+        response.msg = 'Error loging to seguridata';
+        return response;
+      }
+
+      const headers2 = {
+        Authorization: this.signer_authorization,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      };
+      const url3 = this.signer_base_rest + '/process/getprcfiles';
+      //228447
+      response = await this.PostToGetFileAsFormData(
+        url3,
+        this.getBucketWill,
+        headers2,
+        seguridataprocessId,
+        keyFile,
+      );
+      return response;
+    } catch (error) {
+      console.log('Pastpost Error-> nb83h3s');
+      processException(error);
+    }
+  }
+
+  async makePostRequest(
+    url: string,
+    data: any,
+    headers: any,
+    isUrlEncoded: boolean = false,
+  ): Promise<any> {
+    const responseg = new GeneralResponseDto();
+    try {
+      if (isUrlEncoded) {
+        data = qs.stringify(data);
+        headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      }
+      const response = await firstValueFrom(
+        this.httpService.post(url, data, { headers }),
+      );
+      responseg.code = response.status;
+      responseg.msg = 'Request successful';
+      responseg.response = response.data;
+      return responseg;
+    } catch (error) {
+      console.log('Wills Error-> j20xk2y');
+      responseg.code = 500;
+      responseg.msg = 'Error making POST request';
+      responseg.response = error;
+      console.error('Error making POST request:', error);
+      return responseg;
+    }
+  }
+
+  async PostToGetFileAsFormData(
+    url: string,
+    bucketName: string,
+    headers: any,
+    seguridataprocessId: string,
+    keyFile: string,
+  ): Promise<GeneralResponseDto> {
+    const responseg = new GeneralResponseDto();
+    let response;
+    try {
+      // Preparar el archivo en form-data
+      const body = new URLSearchParams();
+      body.append('idprc', seguridataprocessId);
+
+      const postres = await this.httpService.post(url, body.toString(), {
+        headers,
+        responseType: 'arraybuffer',
+      });
+      response = await firstValueFrom(postres);
+      if (response.status === 200) {
+        // Recibir el archivo ZIP
+        const zipBuffer = Buffer.from(response.data);
+        console.log(
+          `ZIP file received from NOM Provider of size ${zipBuffer.length} bytes`,
+        );
+
+        // **Aquí guardamos el ZIP en S3 antes de descomprimirlo**
+        await this.PostFileToS3(bucketName, `${keyFile}.zip`, zipBuffer);
+        console.log(`ZIP file saved to S3 under the folder ${keyFile}`);
+
+        // Procesar el archivo ZIP
+        const handleZipFileResp = await this.handleZipFile(
+          zipBuffer,
+          bucketName,
+          keyFile,
+        );
+        if (handleZipFileResp.code !== 200) {
+          console.error('Error handling ZIP file:', handleZipFileResp.msg);
+          responseg.code = 500;
+          responseg.msg = 'Error handling ZIP file';
+          responseg.response = handleZipFileResp;
+          throw new HttpException(
+            handleZipFileResp,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+
+        responseg.code = 200;
+        responseg.msg =
+          'ZIP file received, processed, and files uploaded to S3';
+      } else {
+        responseg.code = 500;
+        responseg.msg = 'Error getting file as form-data';
+      }
+      responseg.response = response.data;
+
+      return responseg;
+    } catch (error) {
+      console.log('Pastpost Error-> ccnsu9hsfp');
+      let errorMessage = 'Unknown error';
+      if (error.response?.data) {
+        const zipBuffer = Buffer.from(error.response.data);
+        errorMessage = zipBuffer.toString('utf-8');
+      } else if (typeof error.message === 'string') {
+        errorMessage = error.message;
+      }
+
+      console.error('Error getting pdf from NOM Provider', errorMessage);
+      responseg.code = error.response?.status ?? 500;
+      responseg.msg = errorMessage;
+      responseg.response = {};
+      return responseg;
+    }
+  }
+
+  async PostFileToS3(
+    bucketName: string,
+    key: string,
+    buffer: Buffer,
+  ): Promise<string> {
+    try {
+      const putCommand = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+        Body: buffer,
+      });
+
+      await this.s3.send(putCommand);
+      return 'ok';
+    } catch (error) {
+      console.log('Wills Error-> 2s2z8w');
+      console.error('Error posting file to S3:', error);
+      throw error;
+    }
+  }
+
+  async getS3SignedUrl(
+    bucketName: string,
+    key: string,
+  ): Promise<string | null> {
+    try {
+      // Verificar si el archivo existe
+
+      const exists = await this.valididatifFileinS3(bucketName, key);
+      if (!exists) {
+        return null;
+      }
+      // El archivo existe, generar URL pre-firmada
+      const getObjectCommand = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      });
+      const s3Client = new S3Client();
+      // La URL pre-firmada expira después de 120 segundos
+      const signedUrl = await getSignedUrl(s3Client, getObjectCommand, {
+        expiresIn: 120,
+      });
+      return signedUrl;
+    } catch (error) {
+      console.error('Error getting signed URL', error);
+      console.log('Pastpost Error-> vn9jdss2');
+      throw error;
+    }
+  }
+
+  async valididatifFileinS3(bucketName: string, key: string) {
+    const headCommand = new HeadObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+
+    const s3Client = new S3Client();
+    try {
+      await s3Client.send(headCommand);
+      return true;
+    } catch (headError) {
+      if (headError.name === 'NotFound') {
+        console.log('File not found:', key);
+        return false;
+      } else {
+        console.error('Error checking if file exists:', headError);
+        throw headError;
+      }
+    }
+  }
+
+  async handleZipFile(
+    zipBuffer: Buffer,
+    bucketName: string,
+    keyFile: string,
+  ): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      // Descomprimir el archivo zip
+      const directory = await unzipper.Open.buffer(zipBuffer);
+      console.log(`Files found in ZIP: ${directory.files.length}`);
+
+      let files = '';
+      const filesuploaded: string[] = [];
+      let pdfCount = 0;
+
+      if (directory.files.length !== 3) {
+        for (const file of directory.files) {
+          files += file.path + '\n';
+        }
+
+        const errormsg = `Error in seguridata in ENVIRONMENT ${this.environment}
+    Handlezipfile: Files extracted from ZIP are not 3 
+    for will id: ${keyFile}
+    Files found in ZIP: ${files}`;
+
+        console.log('SNS message sent' + errormsg);
+        // await this.sendSnsMessage(errormsg, this.topicArnEnv);
+      }
+
+      for (let i = 0; i < directory.files.length; i++) {
+        const file = directory.files[i];
+        const fileContent = await file.buffer();
+        const isPdf = fileContent.slice(0, 4).toString() === '%PDF';
+
+        console.log(
+          `File ${file.path} found in ZIP size ${fileContent.length} bytes`,
+        );
+
+        if (!isPdf) {
+          console.log(`Archivo ${file.path} no es un PDF real, no se subirá`);
+          continue;
+        }
+
+        const filename =
+          pdfCount === 0
+            ? `${keyFile}_RGCCNOM151.pdf`
+            : `${keyFile}_PASTPOST.pdf`;
+        const s3Key = `${keyFile}/${filename}`;
+        try {
+          console.log(`Guardando archivo ${s3Key} en S3`);
+          await this.PostFileToS3(bucketName, s3Key, fileContent);
+          console.log(`File ${s3Key} uploaded to S3 successfully`);
+          filesuploaded.push(s3Key);
+          pdfCount++;
+        } catch (error) {
+          console.log(
+            `File ${s3Key} failed to be uploaded to S3 with error:`,
+            error,
+          );
+        }
+      }
+      if (pdfCount < 2) {
+        response.code = 500;
+        response.msg = 'Not all required PDF files were found and uploaded';
+        response.response = filesuploaded;
+        return response;
+      }
+
+      console.log(
+        `Archivos del ZIP guardados en S3 bajo la carpeta ${keyFile}`,
+      );
+      response.code = 200;
+      response.msg = 'Files extracted and uploaded to S3 successfully';
+      response.response = keyFile;
+      return response;
+    } catch (error) {
+      console.log('Pastpost Error-> 2asuidj20xks8');
+      console.error('Error unzipping and saving files to S3:', error);
+      response.code = 500;
+      response.msg = 'Error extracting and uploading files to S3';
+      response.response = error.message || error;
+      return response;
     }
   }
 }

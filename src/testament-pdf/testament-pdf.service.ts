@@ -1399,11 +1399,6 @@ export class TestamentPdfService {
       // crea un nuevo metodo que mande el mail con los attachments.
       const res = await this.sendMailWithAttachments(document, sessionId);
       console.log('RES sendMailWithAttachments: ', res);
-
-      // insertar a la tabla de dynamo
-      // const dynamoResponse = await this.insertDynamo(contractdb);
-      // console.log('dynamoResponse', dynamoResponse);
-
       return res;
     } catch (error) {
       console.log('Wills Error-> c83js9as', error);
