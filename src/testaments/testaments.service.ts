@@ -970,13 +970,17 @@ export class TestamentsService {
       const nomFile = `${folder}${userId}_${version}_RGCCNOM151.pdf`;
       const pastpostFile = `${folder}${userId}_${version}_PASTPOST.pdf`;
 
+      let bucket: string;
+      let key: string;
+
       if (status === 'Signed') {
         const processId =
           testament.metadata?.signprocessinfo?.[0]?.seguridataprocessid;
         if (!processId) {
-          response.code = 400;
-          response.msg = 'Missing Seguridata process ID in metadata';
-          throw new HttpException(response, HttpStatus.BAD_REQUEST);
+          throw new HttpException(
+            'Missing Seguridata process ID in metadata',
+            HttpStatus.BAD_REQUEST,
+          );
         }
 
         const getResponse = await this.getNomSignedPdf(testamentId, processId);
@@ -993,11 +997,7 @@ export class TestamentsService {
         });
       }
 
-      let bucket: string;
-      let key: string;
-
       if (status === 'Signed' || status === 'SignedPdfDownloaded') {
-        // PDF firmado desde NOM151
         const url = await this.getS3SignedUrl(this.getBucketWill, nomFile);
         const url2 = await this.getS3SignedUrl(
           this.getBucketWill,
@@ -1005,9 +1005,10 @@ export class TestamentsService {
         );
 
         if (!url || !url2) {
-          response.code = 404;
-          response.msg = 'PDF not found, process contract first';
-          throw new HttpException(response, HttpStatus.NOT_FOUND);
+          throw new HttpException(
+            'Signed PDF not found in S3',
+            HttpStatus.NOT_FOUND,
+          );
         }
 
         bucket = this.getBucketWill;
@@ -1022,8 +1023,8 @@ export class TestamentsService {
 
         if (!bucket || !key) {
           throw new HttpException(
-            'Invalid URL format in database.',
-            HttpStatus.INTERNAL_SERVER_ERROR,
+            'PDF process has not finished uploading',
+            HttpStatus.ACCEPTED,
           );
         }
 
@@ -1032,7 +1033,10 @@ export class TestamentsService {
             new HeadObjectCommand({ Bucket: bucket, Key: key }),
           );
         } catch (err) {
-          console.error('Error checking S3 object:', err);
+          console.warn(
+            '[streamTestamentPdf] PDF is still being generated in S3:',
+            err,
+          );
           throw new HttpException(
             'PDF is still being generated',
             HttpStatus.ACCEPTED,
