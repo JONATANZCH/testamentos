@@ -972,6 +972,7 @@ export class TestamentsService {
 
       let bucket: string;
       let key: string;
+      let isSignedPdf = false;
 
       if (status === 'Signed') {
         const processId =
@@ -995,16 +996,17 @@ export class TestamentsService {
           where: { id: testamentId },
           data: { pdfStatus: 'SignedPdfDownloaded' },
         });
+
+        isSignedPdf = true;
       }
 
-      if (status === 'Signed' || status === 'SignedPdfDownloaded') {
-        const url = await this.getS3SignedUrl(this.getBucketWill, nomFile);
-        const url2 = await this.getS3SignedUrl(
-          this.getBucketWill,
-          pastpostFile,
-        );
+      if (status === 'SignedPdfDownloaded' || isSignedPdf) {
+        const [url1, url2] = await Promise.all([
+          this.getS3SignedUrl(this.getBucketWill, nomFile),
+          this.getS3SignedUrl(this.getBucketWill, pastpostFile),
+        ]);
 
-        if (!url || !url2) {
+        if (!url1 || !url2) {
           throw new HttpException(
             'Signed PDF not found in S3',
             HttpStatus.NOT_FOUND,
@@ -1027,21 +1029,21 @@ export class TestamentsService {
             HttpStatus.ACCEPTED,
           );
         }
+      }
 
-        try {
-          await this.s3.send(
-            new HeadObjectCommand({ Bucket: bucket, Key: key }),
-          );
-        } catch (err) {
-          console.warn(
-            '[streamTestamentPdf] PDF is still being generated in S3:',
-            err,
-          );
-          throw new HttpException(
-            'PDF is still being generated',
-            HttpStatus.ACCEPTED,
-          );
-        }
+      const exists = await this.s3
+        .send(new HeadObjectCommand({ Bucket: bucket, Key: key }))
+        .then(() => true)
+        .catch(() => false);
+
+      if (!exists) {
+        console.warn(
+          '[streamTestamentPdf] PDF is still being generated (HeadObject failed)',
+        );
+        throw new HttpException(
+          'PDF is still being generated',
+          HttpStatus.ACCEPTED,
+        );
       }
 
       const command = new GetObjectCommand({ Bucket: bucket, Key: key });
