@@ -1013,13 +1013,30 @@ export class TestamentsService {
         bucket = this.getBucketWill;
         key = nomFile;
       } else {
-        bucket = testament.url?.set?.bucket;
-        key = testament.url?.set?.key;
+        const { bucket: b, key: k } = await this.getPdfProcessStatus(
+          userId,
+          version,
+        );
+        bucket = b;
+        key = k;
 
-        if (!key || !bucket) {
-          response.code = 500;
-          response.msg = 'Invalid URL format in database.';
-          throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        if (!bucket || !key) {
+          throw new HttpException(
+            'Invalid URL format in database.',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+
+        try {
+          await this.s3.send(
+            new HeadObjectCommand({ Bucket: bucket, Key: key }),
+          );
+        } catch (err) {
+          console.error('Error checking S3 object:', err);
+          throw new HttpException(
+            'PDF is still being generated',
+            HttpStatus.ACCEPTED,
+          );
         }
       }
 
@@ -1987,5 +2004,61 @@ export class TestamentsService {
       response.response = error.message || error;
       return response;
     }
+  }
+
+  async getPdfProcessStatus(userId: string, version: number) {
+    const response = new GeneralResponseDto();
+    this.prisma = await this.prismaProvider.getPrismaClient();
+    if (!this.prisma) {
+      response.code = 500;
+      response.msg = 'Could not connect to the database';
+      throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    const testament = await this.prisma.testamentHeader.findFirst({
+      where: { userId, version },
+    });
+
+    if (!testament) {
+      throw new HttpException('Testament not found', HttpStatus.NOT_FOUND);
+    }
+
+    const latestProcess = await this.prisma.pdfProcess.findFirst({
+      where: { userId, version },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const processStatus = latestProcess?.status ?? null;
+
+    if (!processStatus) {
+      if (!testament.pdfStatus) {
+        throw new HttpException(
+          'PDF has not been requested',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+    }
+
+    if (processStatus === 'PdfQueued' || processStatus === 'GeneratingHtml') {
+      throw new HttpException(
+        'PDF is still being generated',
+        HttpStatus.ACCEPTED,
+      );
+    }
+
+    if (processStatus === 'Failed') {
+      throw new HttpException(
+        'PDF generation failed',
+        HttpStatus.NOT_ACCEPTABLE,
+      );
+    }
+
+    return {
+      testament,
+      status: processStatus,
+      bucket: testament.url?.set?.bucket ?? null,
+      key: testament.url?.set?.key ?? null,
+      processId: latestProcess?.id,
+    };
   }
 }
