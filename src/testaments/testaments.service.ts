@@ -2013,12 +2013,12 @@ export class TestamentsService {
   }
 
   async getPdfProcessStatus(userId: string, version: number) {
-    const response = new GeneralResponseDto();
     this.prisma = await this.prismaProvider.getPrismaClient();
     if (!this.prisma) {
-      response.code = 500;
-      response.msg = 'Could not connect to the database';
-      throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Could not connect to the database',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
 
     const testament = await this.prisma.testamentHeader.findFirst({
@@ -2057,6 +2057,10 @@ export class TestamentsService {
         'PDF generation failed',
         HttpStatus.NOT_ACCEPTABLE,
       );
+    }
+
+    if (processStatus !== 'PdfOk') {
+      throw new HttpException('PDF is not ready yet', HttpStatus.ACCEPTED);
     }
 
     return {
