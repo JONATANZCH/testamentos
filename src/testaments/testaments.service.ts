@@ -2028,45 +2028,43 @@ export class TestamentsService {
       throw new HttpException('Testament not found', HttpStatus.NOT_FOUND);
     }
 
-    const latestProcess = await this.prisma.pdfProcess.findFirst({
-      where: { userId, version },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const processStatus = latestProcess?.status ?? null;
-
-    if (!processStatus) {
-      if (!testament.pdfStatus) {
-        throw new HttpException(
-          {
-            code: 404,
-            msg: 'PDF not requested yet. Please initiate the process first.',
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-    }
-
-    if (processStatus === 'PdfQueued' || processStatus === 'GeneratingHtml') {
+    const pdfStatus = testament.pdfStatus ?? null;
+    if (!pdfStatus) {
       throw new HttpException(
-        'PDF is still being generated',
-        HttpStatus.ACCEPTED,
+        {
+          code: 404,
+          msg: 'PDF not requested yet. Please initiate the process first.',
+        },
+        HttpStatus.NOT_FOUND,
       );
     }
 
-    if (processStatus === 'Failed') {
+    if (pdfStatus === 'Failed') {
       throw new HttpException(
         'PDF generation failed',
         HttpStatus.NOT_ACCEPTABLE,
       );
     }
 
+    if (pdfStatus !== 'success' && pdfStatus !== 'SignedPdfDownloaded') {
+      throw new HttpException(
+        'PDF is still being generated',
+        HttpStatus.ACCEPTED,
+      );
+    }
+
+    const hasSignedMetadata =
+      Array.isArray(testament.metadata?.signprocessinfo) &&
+      testament.metadata.signprocessinfo.length > 0 &&
+      testament.metadata.signprocessinfo[0].fileadded === true;
+
     return {
       testament,
-      status: processStatus,
+      status: pdfStatus,
       bucket: testament.url?.set?.bucket ?? null,
       key: testament.url?.set?.key ?? null,
-      processId: latestProcess?.id,
+      processId: testament.url?.set?.proccesId ?? null,
+      hasSignedMetadata,
     };
   }
 }
