@@ -2020,26 +2020,9 @@ export class TestamentsService {
       );
     }
 
-    let retries = 3;
-    let testament;
-
-    while (retries > 0) {
-      testament = await this.prisma.testamentHeader.findFirst({
-        where: { userId, version },
-      });
-
-      const status = testament?.pdfStatus ?? '';
-      if (status === 'success') {
-        break;
-      }
-
-      retries--;
-      if (retries > 0) {
-        console.log(`[getPdfProcessStatus] Retry: ${3 - retries}`);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
-    }
-
+    const testament = await this.prisma.testamentHeader.findFirst({
+      where: { userId, version },
+    });
     if (!testament) {
       throw new HttpException(
         {
