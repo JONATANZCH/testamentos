@@ -1001,7 +1001,7 @@ export class TestamentsService {
 
         await this.prisma.testamentHeader.update({
           where: { id: testamentId },
-          data: { pdfStatus: 'SignedPdfDownloaded' },
+          data: { signatureStatus: 'SignedPdfDownloaded' },
         });
 
         isSignedPdf = true;
@@ -2020,16 +2020,27 @@ export class TestamentsService {
       );
     }
 
-    const testament = await this.prisma.testamentHeader.findFirst({
-      where: { userId, version },
-    });
+    let retries = 3;
+    let testament;
 
-    if (!testament) {
-      throw new HttpException('Testament not found', HttpStatus.NOT_FOUND);
+    while (retries > 0) {
+      testament = await this.prisma.testamentHeader.findFirst({
+        where: { userId, version },
+      });
+
+      const status = testament?.pdfStatus ?? '';
+      if (status === 'success') {
+        break;
+      }
+
+      retries--;
+      if (retries > 0) {
+        console.log(`[getPdfProcessStatus] Retry: ${3 - retries}`);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
     }
 
-    const pdfStatus = testament.pdfStatus ?? null;
-    if (!pdfStatus) {
+    if (!testament) {
       throw new HttpException(
         {
           code: 404,
@@ -2039,6 +2050,7 @@ export class TestamentsService {
       );
     }
 
+    const pdfStatus = testament.pdfStatus ?? '';
     if (pdfStatus === 'Failed') {
       throw new HttpException(
         'PDF generation failed',
@@ -2046,7 +2058,7 @@ export class TestamentsService {
       );
     }
 
-    if (pdfStatus !== 'success' && pdfStatus !== 'SignedPdfDownloaded') {
+    if (pdfStatus !== 'success') {
       throw new HttpException(
         'PDF is still being generated',
         HttpStatus.ACCEPTED,
