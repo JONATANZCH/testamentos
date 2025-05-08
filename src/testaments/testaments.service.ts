@@ -945,6 +945,7 @@ export class TestamentsService {
     const response = new GeneralResponseDto();
 
     try {
+      console.log('[streamTestamentPdf] Called with testamentId:', testamentId);
       this.prisma = await this.prismaProvider.getPrismaClient();
       if (!this.prisma) {
         response.code = 500;
@@ -966,6 +967,11 @@ export class TestamentsService {
       const version = testament.version;
       const status = testament.signatureStatus;
 
+      console.log('[streamTestamentPdf] userId:', userId);
+      console.log('[streamTestamentPdf] version:', version);
+      console.log('[streamTestamentPdf] signatureStatus:', status);
+      console.log('[streamTestamentPdf] metadata:', testament.metadata);
+
       const folder = `${userId}_${version}/`;
       const nomFile = `${folder}${userId}_${version}_RGCCNOM151.pdf`;
       const pastpostFile = `${folder}${userId}_${version}_PASTPOST.pdf`;
@@ -984,7 +990,8 @@ export class TestamentsService {
           );
         }
 
-        const getResponse = await this.getNomSignedPdf(testamentId, processId);
+        const keyFile = userId + '_' + version;
+        const getResponse = await this.getNomSignedPdf(keyFile, processId);
         if (getResponse.code !== 200) {
           throw new HttpException(
             getResponse,
@@ -1014,7 +1021,7 @@ export class TestamentsService {
         }
 
         bucket = this.getBucketWill;
-        key = nomFile;
+        key = pastpostFile;
       } else {
         const { bucket: b, key: k } = await this.getPdfProcessStatus(
           userId,
@@ -1025,26 +1032,18 @@ export class TestamentsService {
 
         if (!bucket || !key) {
           throw new HttpException(
-            'PDF process has not finished uploading',
+            {
+              code: 202,
+              msg: 'PDF is ready but the storage link is not available yet. Please try again shortly.',
+            },
             HttpStatus.ACCEPTED,
           );
         }
       }
-
-      const exists = await this.s3
-        .send(new HeadObjectCommand({ Bucket: bucket, Key: key }))
-        .then(() => true)
-        .catch(() => false);
-
-      if (!exists) {
-        console.warn(
-          '[streamTestamentPdf] PDF is still being generated (HeadObject failed)',
-        );
-        throw new HttpException(
-          'PDF is still being generated',
-          HttpStatus.ACCEPTED,
-        );
-      }
+      console.log(
+        `[streamTestamentPdf] Waiting briefly before attempting to fetch: bucket=${bucket}, key=${key}`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       const command = new GetObjectCommand({ Bucket: bucket, Key: key });
       const s3Response = await this.s3.send(command);
@@ -2039,7 +2038,10 @@ export class TestamentsService {
     if (!processStatus) {
       if (!testament.pdfStatus) {
         throw new HttpException(
-          'PDF has not been requested',
+          {
+            code: 404,
+            msg: 'PDF not requested yet. Please initiate the process first.',
+          },
           HttpStatus.NOT_FOUND,
         );
       }
@@ -2057,10 +2059,6 @@ export class TestamentsService {
         'PDF generation failed',
         HttpStatus.NOT_ACCEPTABLE,
       );
-    }
-
-    if (processStatus !== 'PdfOk') {
-      throw new HttpException('PDF is not ready yet', HttpStatus.ACCEPTED);
     }
 
     return {
