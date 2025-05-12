@@ -19,9 +19,10 @@ export class CreateTestamentDto {
   notes?: string;
 
   @IsNotEmpty()
-  @IsIn(['HP', 'HL', 'HU'], {
+  @IsIn(['HP', 'HL', 'HU', 'HPG'], {
+    // Heredero porcentual, heredero legal, heredero universal, heredero porcentual global
     message:
-      "inheritanceType must be 'HP' (Heirs by Percentage), 'HL' (Legal Heirs) or 'HU' (Universal Heir)",
+      "inheritanceType must be 'HP' (Heirs by Percentage), 'HL' (Legal Heirs), 'HU' (Sole heir) or 'HPG' (Heirs by Percentage Global)",
   })
   @IsString()
   inheritanceType: string;

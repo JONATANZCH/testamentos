@@ -45,6 +45,13 @@ export class LegaciesService {
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
+      if (testament.inheritanceType === 'HPG') {
+        response.code = 400;
+        response.msg =
+          'Legacies are not allowed for "HPG" (Herederos Porcentaje Global) testaments.';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
       const contact = await this.prisma.contact.findUnique({
         where: { id: contactId },
       });
@@ -218,13 +225,23 @@ export class LegaciesService {
 
       const testament = await this.prisma.testamentHeader.findUnique({
         where: { id: existingLegacy.testamentId },
-        select: { status: true },
+        select: {
+          status: true,
+          inheritanceType: true,
+        },
       });
 
       if (testament.status !== 'DRAFT') {
         response.code = 400;
         response.msg =
           'Legacies can only be updated if the associated testament is in "DRAFT" status.';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
+      if (testament.inheritanceType === 'HPG') {
+        response.code = 400;
+        response.msg =
+          'Legacies cannot be updated for "HPG" (Herederos Porcentaje Global) testaments.';
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 

@@ -271,6 +271,31 @@ export class TestamentsService {
           }
         }
 
+        if (createTestamentDto.inheritanceType === 'HPG') {
+          const globalCategory = await tx.assetCategory.findFirst({
+            where: { name: 'Testamento Global' },
+          });
+
+          if (!globalCategory) {
+            throw new HttpException(
+              'Global category "Testamento Global" not found.',
+              HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+          }
+
+          await tx.asset.create({
+            data: {
+              userId,
+              name: 'global',
+              description: 'global',
+              categoryId: globalCategory.id,
+              value: 0,
+              currency: 'USD',
+              metadata: {},
+            },
+          });
+        }
+
         const activeTestament = await tx.testamentHeader.findFirst({
           where: { userId, status: 'ACTIVE' },
           orderBy: { creationDate: 'desc' },
@@ -289,6 +314,12 @@ export class TestamentsService {
               legalAdvisor:
                 createTestamentDto.legalAdvisor ?? activeTestament.legalAdvisor,
               notes: createTestamentDto.notes ?? activeTestament.notes,
+              inheritanceType:
+                createTestamentDto.inheritanceType ??
+                activeTestament.inheritanceType,
+              universalHeirId:
+                createTestamentDto.universalHeirId ??
+                activeTestament.universalHeirId,
             },
             select: {
               id: true,
@@ -396,7 +427,58 @@ export class TestamentsService {
           );
         }
 
-        if (updateTestamentDto.universalHeirId) {
+        if (testamentExists.inheritanceType === 'HPG') {
+          if (
+            updateTestamentDto.inheritanceType &&
+            updateTestamentDto.inheritanceType !== 'HPG'
+          ) {
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'Cannot change inheritance type from HPG to another type.',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+
+          if (updateTestamentDto.universalHeirId) {
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'universalHeirId is not allowed for HPG testaments.',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+
+          const globalCategory = await tx.assetCategory.findFirst({
+            where: { name: 'Testamento Global' },
+          });
+
+          const globalAsset = await tx.asset.findFirst({
+            where: {
+              userId: testamentExists.userId,
+              name: 'global',
+              categoryId: globalCategory?.id,
+            },
+          });
+
+          if (!globalAsset) {
+            throw new HttpException(
+              {
+                code: 500,
+                msg: 'Global asset missing for HPG testament. Please contact support.',
+              },
+              HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+          }
+        }
+
+        // Validación estándar si no es HPG
+        if (
+          updateTestamentDto.universalHeirId &&
+          testamentExists.inheritanceType !== 'HPG'
+        ) {
           const heirExists = await tx.contact.findUnique({
             where: { id: updateTestamentDto.universalHeirId },
           });
@@ -491,16 +573,6 @@ export class TestamentsService {
           );
         }
 
-        if (testament.inheritanceType !== 'HP') {
-          throw new HttpException(
-            {
-              code: 400,
-              msg: 'This testament is of type "HU" or "HL" and does not support assignments.',
-            },
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-
         if (testament.status !== 'DRAFT') {
           throw new HttpException(
             {
@@ -511,123 +583,138 @@ export class TestamentsService {
           );
         }
 
-        // 2) Validar que el asset exista y pertenezca al mismo userId
-        if (createAssignmentDto.assetId) {
+        let assetIdToUse = createAssignmentDto.assetId;
+        if (testament.inheritanceType === 'HPG') {
+          if (
+            createAssignmentDto.assetId !==
+            'ffffffff-ffff-ffff-ffff-ffffffffffff'
+          ) {
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'For HPG, you must use the global placeholder assetId',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+
+          if (createAssignmentDto.assignmentType !== 'c') {
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'Only contacts are allowed in HPG assignments',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+
+          const globalCategory = await tx.assetCategory.findFirst({
+            where: { name: 'Testamento Global' },
+          });
+          const globalAsset = await tx.asset.findFirst({
+            where: {
+              userId: testament.userId,
+              name: 'global',
+              categoryId: globalCategory?.id,
+            },
+          });
+
+          if (!globalAsset) {
+            throw new HttpException(
+              { code: 500, msg: 'Global asset not found for HPG testament' },
+              HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+          }
+
+          assetIdToUse = globalAsset.id;
+        } else if (testament.inheritanceType !== 'HP') {
+          throw new HttpException(
+            {
+              code: 400,
+              msg: 'This testament type does not support assignments',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        } else {
           const asset = await tx.asset.findUnique({
             where: { id: createAssignmentDto.assetId },
           });
-          if (!asset) {
+          if (!asset || asset.userId !== testament.userId) {
             throw new HttpException(
               {
                 code: 400,
-                msg: 'The provided assetId does not exist in the system',
-              },
-              HttpStatus.BAD_REQUEST,
-            );
-          }
-          if (asset.userId !== testament.userId) {
-            throw new HttpException(
-              {
-                code: 400,
-                msg: 'The provided asset does not belong to the same user as the testament',
+                msg: 'Invalid assetId or does not belong to the user',
               },
               HttpStatus.BAD_REQUEST,
             );
           }
         }
 
-        // 3) Validar assignmentId según assignmentType
-        if (createAssignmentDto.assignmentId) {
-          if (createAssignmentDto.assignmentType === 'c') {
-            // Buscar en Contact
-            const contact = await tx.contact.findUnique({
-              where: { id: createAssignmentDto.assignmentId },
-            });
-            if (!contact) {
-              throw new HttpException(
-                {
-                  code: 400,
-                  msg: 'The provided assignmentId does not exist in Contact.',
-                },
-                HttpStatus.BAD_REQUEST,
-              );
-            }
-            // Verificar que el contact pertenezca al mismo userId
-            if (contact.userId !== testament.userId) {
-              throw new HttpException(
-                {
-                  code: 400,
-                  msg: 'The provided assignmentId (Contact) does not belong to the same user as the testament.',
-                },
-                HttpStatus.BAD_REQUEST,
-              );
-            }
-          } else if (createAssignmentDto.assignmentType === 'le') {
-            const legalEntity = await tx.legalEntity.findUnique({
-              where: { id: createAssignmentDto.assignmentId },
-            });
-            if (!legalEntity) {
-              throw new HttpException(
-                {
-                  code: 400,
-                  msg: 'The provided assignmentId does not exist in LegalEntity.',
-                },
-                HttpStatus.BAD_REQUEST,
-              );
-            }
+        if (
+          createAssignmentDto.assignmentId &&
+          createAssignmentDto.assignmentType === 'c'
+        ) {
+          const contact = await tx.contact.findUnique({
+            where: { id: createAssignmentDto.assignmentId },
+          });
+          if (!contact || contact.userId !== testament.userId) {
+            throw new HttpException(
+              { code: 400, msg: 'Invalid contact or not owned by the user' },
+              HttpStatus.BAD_REQUEST,
+            );
           }
         }
 
-        // 4) Obtener todas las asignaciones para (testament + assetId)
-        //    con esto validamos si hay un duplicado Y calculamos porcentaje
+        if (createAssignmentDto.assignmentType === 'le') {
+          const legalEntity = await tx.legalEntity.findUnique({
+            where: { id: createAssignmentDto.assignmentId },
+          });
+          if (!legalEntity) {
+            throw new HttpException(
+              { code: 400, msg: 'Legal entity not found' },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+        }
+
         const existingAssignments = await tx.testamentAssignment.findMany({
           where: {
             testamentId,
-            assetId: createAssignmentDto.assetId,
+            assetId: assetIdToUse,
           },
-          // Obtenemos tanto el assignmentId como el percentage
           select: { assignmentId: true, percentage: true },
         });
 
-        // 4.1) Revisar si ya existe la misma combinación (testament + asset + assignmentId)
         if (
           existingAssignments.some(
             (a) => a.assignmentId === createAssignmentDto.assignmentId,
           )
         ) {
           throw new HttpException(
-            {
-              code: 400,
-              msg: 'An assignment already exists for this contact/legal entity with the same asset. Cannot create duplicates.',
-            },
+            { code: 400, msg: 'Duplicate assignment detected' },
             HttpStatus.BAD_REQUEST,
           );
         }
 
-        // 4.2) Verificar que al sumar el nuevo porcentaje no exceda el 100%
-        const currentPercentageSum = existingAssignments.reduce(
+        const currentPercentage = existingAssignments.reduce(
           (sum, a) => sum + a.percentage,
           0,
         );
-        if (currentPercentageSum + createAssignmentDto.percentage > 100) {
+        if (currentPercentage + createAssignmentDto.percentage > 100) {
           throw new HttpException(
-            {
-              code: 400,
-              msg: 'The sum of the percentages cannot exceed 100% for this asset.',
-            },
+            { code: 400, msg: 'Total percentage exceeds 100%' },
             HttpStatus.BAD_REQUEST,
           );
         }
 
-        // 5) Crear la asignación
         const newAssignment = await tx.testamentAssignment.create({
           data: {
-            testamentId,
             ...createAssignmentDto,
+            assetId: assetIdToUse,
+            testamentId,
           },
         });
 
-        console.log('New assignment from Prisma:', newAssignment);
         return newAssignment;
       });
 
