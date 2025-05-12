@@ -21,9 +21,9 @@ export class CreateLegacyDto {
   @IsString()
   description?: string;
 
-  @IsNotEmpty()
   @IsNumber()
-  value: number;
+  @IsOptional()
+  value?: number;
 
   @IsNotEmpty()
   @IsEnum(CurrencyCode, {
