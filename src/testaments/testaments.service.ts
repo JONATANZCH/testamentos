@@ -275,7 +275,6 @@ export class TestamentsService {
           const globalCategory = await tx.assetCategory.findFirst({
             where: { name: 'Testamento Global' },
           });
-
           if (!globalCategory) {
             throw new HttpException(
               'Global category "Testamento Global" not found.',
@@ -283,17 +282,27 @@ export class TestamentsService {
             );
           }
 
-          await tx.asset.create({
-            data: {
+          const existingGlobal = await tx.asset.findFirst({
+            where: {
               userId,
               name: 'global',
-              description: 'global',
               categoryId: globalCategory.id,
-              value: 0,
-              currency: 'USD',
-              metadata: {},
             },
           });
+
+          if (!existingGlobal) {
+            await tx.asset.create({
+              data: {
+                userId,
+                name: 'global',
+                description: 'global',
+                categoryId: globalCategory.id,
+                value: 0,
+                currency: 'USD',
+                metadata: {},
+              },
+            });
+          }
         }
 
         const activeTestament = await tx.testamentHeader.findFirst({
@@ -474,6 +483,9 @@ export class TestamentsService {
             updateDate: true,
           },
         });
+        if (updated.inheritanceType !== 'HU') {
+          delete updated.universalHeirId;
+        }
         return updated;
       });
 
@@ -580,7 +592,7 @@ export class TestamentsService {
           const globalCategory = await tx.assetCategory.findFirst({
             where: { name: 'Testamento Global' },
           });
-          const globalAsset = await tx.asset.findFirst({
+          const globalAsset = await tx.asset.findMany({
             where: {
               userId: testament.userId,
               name: 'global',
@@ -588,14 +600,27 @@ export class TestamentsService {
             },
           });
 
-          if (!globalAsset) {
+          if (globalAsset.length === 0) {
             throw new HttpException(
-              { code: 500, msg: 'Global asset not found for HPG testament' },
-              HttpStatus.INTERNAL_SERVER_ERROR,
+              {
+                code: 400,
+                msg: 'Global asset not found for this user.',
+              },
+              HttpStatus.BAD_REQUEST,
             );
           }
 
-          assetIdToUse = globalAsset.id;
+          if (globalAsset.length > 1) {
+            throw new HttpException(
+              {
+                code: 409,
+                msg: 'More than one global asset detected for this user. Please contact support.',
+              },
+              HttpStatus.CONFLICT,
+            );
+          }
+
+          assetIdToUse = globalAsset[0].id;
         } else if (testament.inheritanceType !== 'HP') {
           throw new HttpException(
             {
