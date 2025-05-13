@@ -45,10 +45,10 @@ export class LegaciesService {
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
-      if (testament.inheritanceType === 'HPG') {
+      if (testament.inheritanceType === 'HU') {
         response.code = 400;
         response.msg =
-          'Legacies are not allowed for "HPG" (Herederos Porcentaje Global) testaments.';
+          'Legacies are not allowed for "HU" (Heredero Único) testaments.';
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
@@ -238,10 +238,10 @@ export class LegaciesService {
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
-      if (testament.inheritanceType === 'HPG') {
+      if (testament.inheritanceType === 'HU') {
         response.code = 400;
         response.msg =
-          'Legacies cannot be updated for "HPG" (Herederos Porcentaje Global) testaments.';
+          'Legacies cannot be updated for "HU" (Heredero Único) testaments.';
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 

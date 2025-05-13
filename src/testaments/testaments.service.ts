@@ -427,58 +427,17 @@ export class TestamentsService {
           );
         }
 
-        if (testamentExists.inheritanceType === 'HPG') {
-          if (
-            updateTestamentDto.inheritanceType &&
-            updateTestamentDto.inheritanceType !== 'HPG'
-          ) {
+        if (updateTestamentDto.inheritanceType === 'HU') {
+          if (!updateTestamentDto.universalHeirId) {
             throw new HttpException(
               {
                 code: 400,
-                msg: 'Cannot change inheritance type from HPG to another type.',
+                msg: 'universalHeirId is required for HU (Heredero Único) testaments.',
               },
               HttpStatus.BAD_REQUEST,
             );
           }
 
-          if (updateTestamentDto.universalHeirId) {
-            throw new HttpException(
-              {
-                code: 400,
-                msg: 'universalHeirId is not allowed for HPG testaments.',
-              },
-              HttpStatus.BAD_REQUEST,
-            );
-          }
-
-          const globalCategory = await tx.assetCategory.findFirst({
-            where: { name: 'Testamento Global' },
-          });
-
-          const globalAsset = await tx.asset.findFirst({
-            where: {
-              userId: testamentExists.userId,
-              name: 'global',
-              categoryId: globalCategory?.id,
-            },
-          });
-
-          if (!globalAsset) {
-            throw new HttpException(
-              {
-                code: 500,
-                msg: 'Global asset missing for HPG testament. Please contact support.',
-              },
-              HttpStatus.INTERNAL_SERVER_ERROR,
-            );
-          }
-        }
-
-        // Validación estándar si no es HPG
-        if (
-          updateTestamentDto.universalHeirId &&
-          testamentExists.inheritanceType !== 'HPG'
-        ) {
           const heirExists = await tx.contact.findUnique({
             where: { id: updateTestamentDto.universalHeirId },
           });
@@ -487,6 +446,16 @@ export class TestamentsService {
               {
                 code: 400,
                 msg: 'The provided universalHeirId does not exist in Contact.',
+              },
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+        } else {
+          if (updateTestamentDto.universalHeirId) {
+            throw new HttpException(
+              {
+                code: 400,
+                msg: 'universalHeirId is only allowed for HU (Heredero Único) testaments.',
               },
               HttpStatus.BAD_REQUEST,
             );
