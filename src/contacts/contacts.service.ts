@@ -1,5 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaProvider } from '../providers';
+import { Prisma } from '@prisma/client';
 import { CreateContactDto, UpdateContactDto } from './dto';
 import { GeneralResponseDto } from '../common';
 import { reverseCountryPhoneCodeMap } from '../common/utils/reverseCountryPhoneCodeMap';
@@ -133,7 +134,7 @@ export class ContactsService {
         if (!createContactDto.otherParentId) {
           response.code = 400;
           response.msg =
-            'El campo otherParentId es obligatorio para contactos de tipo child';
+            'The otherParentId field is required for child contacts.';
           throw new HttpException(response, HttpStatus.BAD_REQUEST);
         }
         // Verificar que otherParentId corresponda a un contacto existente
@@ -143,12 +144,18 @@ export class ContactsService {
         if (!parentContact) {
           response.code = 400;
           response.msg =
-            'El otherParentId proporcionado no corresponde a un contacto existente';
+            'The otherParentId provided does not correspond to an existing contact.';
           throw new HttpException(response, HttpStatus.BAD_REQUEST);
         }
       }
 
-      const { legalEntityId, ...contactData } = createContactDto;
+      const { legalEntityId, maritalRegime, ...contactData } = createContactDto;
+      const dataToCreate: Prisma.ContactCreateInput = {
+        user: { connect: { id: userId } },
+        ...contactData,
+        relationToUser: createContactDto.relationToUser,
+      };
+
       if (legalEntityId) {
         const legalEntityExists = await this.prisma.legalEntity.findUnique({
           where: { id: legalEntityId },
@@ -158,6 +165,22 @@ export class ContactsService {
           response.code = 400;
           response.msg = 'The provided legalEntityId does not exist';
           throw new HttpException(response, HttpStatus.BAD_REQUEST);
+        }
+        dataToCreate.legalEntity = {
+          connect: {
+            id: legalEntityId,
+          },
+        };
+      }
+
+      if (createContactDto.relationToUser === RelationToUser.SPOUSE) {
+        dataToCreate.maritalRegime = maritalRegime;
+      } else {
+        dataToCreate.maritalRegime = null;
+        if (createContactDto.maritalRegime) {
+          console.warn(
+            `WARN: maritalRegime field was provided for a contact with relation '${createContactDto.relationToUser}' and will be ignored/set to null.`,
+          );
         }
       }
 
@@ -173,11 +196,7 @@ export class ContactsService {
       }
 
       const contact = await this.prisma.contact.create({
-        data: {
-          userId,
-          legalEntityId,
-          ...contactData,
-        },
+        data: dataToCreate,
       });
 
       if (contact.countryPhoneCode) {
@@ -208,14 +227,141 @@ export class ContactsService {
         return response;
       }
 
-      const contact = await this.prisma.contact.update({
+      const existingContact = await this.prisma.contact.findUnique({
         where: { id: contactId },
-        data: updateContactDto,
       });
+
+      if (!existingContact) {
+        response.code = 404;
+        response.msg = 'Contact not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      const dataToUpdate: Prisma.ContactUpdateInput = {};
+      const {
+        legalEntityId,
+        maritalRegime,
+        relationToUser,
+        otherParentId,
+        birthDate,
+        ...otherUpdateData
+      } = updateContactDto;
+
+      for (const key in otherUpdateData) {
+        if (
+          Object.prototype.hasOwnProperty.call(otherUpdateData, key) &&
+          otherUpdateData[key] !== undefined
+        ) {
+          dataToUpdate[key] = otherUpdateData[key];
+        }
+      }
+
+      if (birthDate === null) {
+        dataToUpdate.birthDate = null;
+      } else if (birthDate) {
+        const isoRegex =
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|([+-]\d{2}:\d{2}))$/;
+        if (!isoRegex.test(birthDate)) {
+          throw new HttpException(
+            'Invalid birthDate format. Expected ISO-8601 DateTime.',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        dataToUpdate.birthDate = new Date(birthDate);
+      }
+
+      if (legalEntityId === null) {
+        dataToUpdate.legalEntity = { disconnect: true };
+      } else if (legalEntityId) {
+        const legalEntityExists = await this.prisma.legalEntity.findUnique({
+          where: { id: legalEntityId },
+        });
+        if (!legalEntityExists) {
+          throw new HttpException(
+            'The provided legalEntityId does not exist',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        dataToUpdate.legalEntity = { connect: { id: legalEntityId } };
+      }
+
+      const finalRelationToUser =
+        relationToUser ?? existingContact.relationToUser;
+      if (relationToUser) {
+        dataToUpdate.relationToUser = relationToUser;
+      }
+
+      if (finalRelationToUser === RelationToUser.SPOUSE) {
+        if (maritalRegime !== undefined) {
+          dataToUpdate.maritalRegime = maritalRegime;
+        } else if (
+          !existingContact.maritalRegime &&
+          relationToUser === RelationToUser.SPOUSE
+        ) {
+          throw new HttpException(
+            'Marital regime is required when relation to user is spouse.',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      } else {
+        if (
+          existingContact.maritalRegime !== null ||
+          maritalRegime !== undefined
+        ) {
+          dataToUpdate.maritalRegime = null;
+        }
+      }
+
+      if (finalRelationToUser === RelationToUser.CHILD) {
+        const finalOtherParentId =
+          otherParentId ?? existingContact.otherParentId;
+        if (!finalOtherParentId) {
+          throw new HttpException(
+            'The otherParentId field is required for child contacts.',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        const parentContactExists = await this.prisma.contact.findUnique({
+          where: { id: finalOtherParentId },
+        });
+        if (!parentContactExists) {
+          throw new HttpException(
+            'The otherParentId provided does not correspond to an existing contact.',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        if (otherParentId !== undefined) {
+          dataToUpdate.otherParentId = otherParentId;
+        }
+      } else {
+        if (
+          existingContact.otherParentId !== null ||
+          otherParentId !== undefined
+        ) {
+          dataToUpdate.otherParentId = null;
+        }
+      }
+
+      if (Object.keys(dataToUpdate).length === 0) {
+        response.msg = 'No changes detected to update.';
+        response.response = existingContact;
+        return response;
+      }
+
+      const updatedContact = await this.prisma.contact.update({
+        where: { id: contactId },
+        data: dataToUpdate,
+      });
+
+      if (updatedContact.countryPhoneCode && reverseCountryPhoneCodeMap) {
+        updatedContact.countryPhoneCode =
+          reverseCountryPhoneCodeMap[updatedContact.countryPhoneCode] ??
+          updatedContact.countryPhoneCode;
+      }
 
       response.code = 200;
       response.msg = 'Contact updated successfully';
-      response.response = contact;
+      response.response = updatedContact;
       return response;
     } catch (error) {
       console.error('Error updating contact:', error);
@@ -226,7 +372,7 @@ export class ContactsService {
       }
       response.code = 500;
       response.msg = 'An unexpected error occurred while updating the contact';
-      return response;
+      processException(error);
     }
   }
 

@@ -90,8 +90,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
       testgetprismaclient:
-        specifier: 1.3.12
-        version: 1.3.12(prisma@6.7.0(typescript@5.8.3))(typescript@5.8.3)
+        specifier: 1.3.13
+        version: 1.3.13(prisma@6.7.0(typescript@5.8.3))(typescript@5.8.3)
       unzipper:
         specifier: ^0.12.3
         version: 0.12.3
@@ -966,7 +966,7 @@ packages:
     resolution: {integrity: sha1-f5E2TVO4niycueAujdDxKeg0RV8=}
 
   '@pkgjs/parseargs@0.11.0':
-    resolution: {integrity: sha1-p36nQvqyV3UUVDTrHSMoz1ATrDM=}
+    resolution: {integrity: sha1-p36nQvqyV3UUVDTrHSMoz1ATrDM=, tarball: https://pkgs.dev.azure.com/pastpostmx/Pastpost/_packaging/pastpostNpm/npm/registry/@pkgjs/parseargs/-/parseargs-0.11.0.tgz}
     engines: {node: '>=14'}
 
   '@pkgr/core@0.2.4':
@@ -2249,7 +2249,7 @@ packages:
     resolution: {integrity: sha1-FQStJSMVjKpA20onh8sBQRmU6k8=}
 
   fsevents@2.3.3:
-    resolution: {integrity: sha1-ysZAd4XQNnWipeGlMFxpezR9kNY=}
+    resolution: {integrity: sha1-ysZAd4XQNnWipeGlMFxpezR9kNY=, tarball: https://pkgs.dev.azure.com/pastpostmx/Pastpost/_packaging/pastpostNpm/npm/registry/fsevents/-/fsevents-2.3.3.tgz}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
@@ -3395,8 +3395,8 @@ packages:
     resolution: {integrity: sha1-BKhphmHYBepvopO2y55jrARO8V4=}
     engines: {node: '>=8'}
 
-  testgetprismaclient@1.3.12:
-    resolution: {integrity: sha1-o85wQ7Ig3tK9zFNOzoqeYpyEwLo=}
+  testgetprismaclient@1.3.13:
+    resolution: {integrity: sha1-zLP7Xm4NkG+dCyliIqg+cFvh3gw=}
 
   text-table@0.2.0:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
@@ -7981,7 +7981,7 @@ snapshots:
       glob: 7.2.3
       minimatch: 3.1.2
 
-  testgetprismaclient@1.3.12(prisma@6.7.0(typescript@5.8.3))(typescript@5.8.3):
+  testgetprismaclient@1.3.13(prisma@6.7.0(typescript@5.8.3))(typescript@5.8.3):
     dependencies:
       '@prisma/client': 6.7.0(prisma@6.7.0(typescript@5.8.3))(typescript@5.8.3)
     transitivePeerDependencies:

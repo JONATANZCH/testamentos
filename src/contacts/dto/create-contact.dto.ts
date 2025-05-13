@@ -17,6 +17,7 @@ import { countryPhoneCodeMap } from '../../common/utils/mapCountryPhoneCode';
 import { BadRequestException } from '@nestjs/common';
 import { Gender } from '../../common/enums/gender.enum';
 import { capitalizeFirstLetter } from '../../common/utils/transform-capitalize.util';
+import { MaritalRegime } from '../../common/enums/marital-regime.enum';
 
 export class CreateContactDto {
   @IsNotEmpty()
@@ -54,12 +55,22 @@ export class CreateContactDto {
   @IsUUID('4', { message: 'El otherParentId debe ser un UUID válido' })
   readonly otherParentId?: string;
 
+  @ValidateIf((o) => o.relationToUser === RelationToUser.SPOUSE) // Solo valida si es cónyuge
+  @IsNotEmpty({
+    message:
+      'The maritalRegime field is mandatory when the relationship is spouse.',
+  })
+  @IsEnum(MaritalRegime, {
+    message: `The marital regime must be one of the following: ${Object.values(MaritalRegime).join(', ')}`,
+  })
+  @IsOptional() // Es opcional en general, pero ValidateIf lo hace requerido para SPOUSE
+  readonly maritalRegime?: MaritalRegime;
+
   @IsOptional()
   @Transform(({ value }) => {
     if (!value) return undefined;
     const mapped = countryPhoneCodeMap[value];
     if (!mapped) {
-      // Si no existe ese código, lanza excepción 400
       throw new BadRequestException(`Invalid country phone code: ${value}`);
     }
     return mapped;
