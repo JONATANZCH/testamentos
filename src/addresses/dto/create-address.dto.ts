@@ -1,22 +1,26 @@
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { CountryCode } from '../../common';
 
 export class CreateAddressDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  street: string;
+  street?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  city: string;
+  city?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  state: string;
+  state?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  zipCode: string;
+  zipCode?: string;
+
+  @IsOptional()
+  @IsString()
+  suburb?: string;
 
   @IsNotEmpty()
   @IsEnum(CountryCode, {
