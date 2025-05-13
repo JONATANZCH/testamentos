@@ -47,11 +47,14 @@ export class CreateContactDto {
   })
   relationToUser: RelationToUser;
 
-  @ValidateIf((o) => o.relationToUser === RelationToUser.CHILD)
-  @IsNotEmpty({
-    message:
-      'El campo otherParentId es obligatorio cuando relationToUser es child',
-  })
+  // @ValidateIf((o) => o.relationToUser === RelationToUser.CHILD)
+  // @IsNotEmpty({
+  //   message:
+  //     'El campo otherParentId es obligatorio cuando relationToUser es child',
+  // })
+  // @IsUUID('4', { message: 'El otherParentId debe ser un UUID válido' })
+  // readonly otherParentId?: string;
+  @IsOptional()
   @IsUUID('4', { message: 'El otherParentId debe ser un UUID válido' })
   readonly otherParentId?: string;
 
