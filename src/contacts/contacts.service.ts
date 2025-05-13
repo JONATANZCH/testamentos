@@ -149,12 +149,35 @@ export class ContactsService {
         }
       }
 
-      const { legalEntityId, maritalRegime, ...contactData } = createContactDto;
+      const {
+        legalEntityId,
+        maritalRegime: maritalRegimeFromDto,
+        birthDate: birthDateString,
+        ...contactData
+      } = createContactDto;
+
       const dataToCreate: Prisma.ContactCreateInput = {
         user: { connect: { id: userId } },
         ...contactData,
         relationToUser: createContactDto.relationToUser,
       };
+
+      if (createContactDto.isLegallyIncapacitated !== undefined) {
+        dataToCreate.isLegallyIncapacitated =
+          createContactDto.isLegallyIncapacitated;
+      }
+
+      if (birthDateString) {
+        const isoRegex =
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|([+-]\d{2}:\d{2}))$/;
+        if (!isoRegex.test(birthDateString)) {
+          throw new HttpException(
+            'Invalid birthDate format. Expected ISO-8601 DateTime.',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        dataToCreate.birthDate = new Date(birthDateString);
+      }
 
       if (legalEntityId) {
         const legalEntityExists = await this.prisma.legalEntity.findUnique({
@@ -174,24 +197,13 @@ export class ContactsService {
       }
 
       if (createContactDto.relationToUser === RelationToUser.SPOUSE) {
-        dataToCreate.maritalRegime = maritalRegime;
+        dataToCreate.maritalRegime = maritalRegimeFromDto;
       } else {
         dataToCreate.maritalRegime = null;
-        if (createContactDto.maritalRegime) {
+        if (maritalRegimeFromDto) {
           console.warn(
             `WARN: maritalRegime field was provided for a contact with relation '${createContactDto.relationToUser}' and will be ignored/set to null.`,
           );
-        }
-      }
-
-      if (createContactDto.birthDate) {
-        const isoRegex =
-          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|([+-]\d{2}:\d{2}))$/;
-        if (!isoRegex.test(createContactDto.birthDate)) {
-          response.code = 400;
-          response.msg =
-            'Invalid birthDate format. Expected ISO-8601 DateTime.';
-          throw new HttpException(response, HttpStatus.BAD_REQUEST);
         }
       }
 
@@ -240,10 +252,11 @@ export class ContactsService {
       const dataToUpdate: Prisma.ContactUpdateInput = {};
       const {
         legalEntityId,
-        maritalRegime,
-        relationToUser,
-        otherParentId,
-        birthDate,
+        maritalRegime: maritalRegimeFromDto,
+        relationToUser: relationToUserFromDto,
+        otherParentId: otherParentIdFromDto,
+        birthDate: birthDateString,
+        isLegallyIncapacitated,
         ...otherUpdateData
       } = updateContactDto;
 
@@ -256,18 +269,22 @@ export class ContactsService {
         }
       }
 
-      if (birthDate === null) {
+      if (isLegallyIncapacitated !== undefined) {
+        dataToUpdate.isLegallyIncapacitated = isLegallyIncapacitated;
+      }
+
+      if (birthDateString === null) {
         dataToUpdate.birthDate = null;
-      } else if (birthDate) {
+      } else if (birthDateString) {
         const isoRegex =
           /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|([+-]\d{2}:\d{2}))$/;
-        if (!isoRegex.test(birthDate)) {
+        if (!isoRegex.test(birthDateString)) {
           throw new HttpException(
             'Invalid birthDate format. Expected ISO-8601 DateTime.',
             HttpStatus.BAD_REQUEST,
           );
         }
-        dataToUpdate.birthDate = new Date(birthDate);
+        dataToUpdate.birthDate = new Date(birthDateString);
       }
 
       if (legalEntityId === null) {
@@ -286,17 +303,17 @@ export class ContactsService {
       }
 
       const finalRelationToUser =
-        relationToUser ?? existingContact.relationToUser;
-      if (relationToUser) {
-        dataToUpdate.relationToUser = relationToUser;
+        relationToUserFromDto ?? existingContact.relationToUser;
+      if (relationToUserFromDto) {
+        dataToUpdate.relationToUser = relationToUserFromDto;
       }
 
       if (finalRelationToUser === RelationToUser.SPOUSE) {
-        if (maritalRegime !== undefined) {
-          dataToUpdate.maritalRegime = maritalRegime;
+        if (maritalRegimeFromDto !== undefined) {
+          dataToUpdate.maritalRegime = maritalRegimeFromDto;
         } else if (
           !existingContact.maritalRegime &&
-          relationToUser === RelationToUser.SPOUSE
+          relationToUserFromDto === RelationToUser.SPOUSE
         ) {
           throw new HttpException(
             'Marital regime is required when relation to user is spouse.',
@@ -306,7 +323,7 @@ export class ContactsService {
       } else {
         if (
           existingContact.maritalRegime !== null ||
-          maritalRegime !== undefined
+          maritalRegimeFromDto !== undefined
         ) {
           dataToUpdate.maritalRegime = null;
         }
@@ -314,38 +331,46 @@ export class ContactsService {
 
       if (finalRelationToUser === RelationToUser.CHILD) {
         const finalOtherParentId =
-          otherParentId ?? existingContact.otherParentId;
-        if (!finalOtherParentId) {
+          otherParentIdFromDto ?? existingContact.otherParentId;
+        if (
+          !finalOtherParentId &&
+          (relationToUserFromDto === RelationToUser.CHILD ||
+            !existingContact.otherParentId)
+        ) {
           throw new HttpException(
             'The otherParentId field is required for child contacts.',
             HttpStatus.BAD_REQUEST,
           );
         }
-        const parentContactExists = await this.prisma.contact.findUnique({
-          where: { id: finalOtherParentId },
-        });
-        if (!parentContactExists) {
-          throw new HttpException(
-            'The otherParentId provided does not correspond to an existing contact.',
-            HttpStatus.BAD_REQUEST,
-          );
+        if (finalOtherParentId) {
+          const parentContactExists = await this.prisma.contact.findUnique({
+            where: { id: finalOtherParentId },
+          });
+          if (!parentContactExists) {
+            throw new HttpException(
+              'The otherParentId provided does not correspond to an existing contact.',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
         }
-        if (otherParentId !== undefined) {
-          dataToUpdate.otherParentId = otherParentId;
+        if (otherParentIdFromDto !== undefined) {
+          dataToUpdate.otherParentId = otherParentIdFromDto;
         }
       } else {
         if (
           existingContact.otherParentId !== null ||
-          otherParentId !== undefined
+          otherParentIdFromDto !== undefined
         ) {
           dataToUpdate.otherParentId = null;
         }
       }
 
       if (Object.keys(dataToUpdate).length === 0) {
-        response.msg = 'No changes detected to update.';
-        response.response = existingContact;
-        return response;
+        const noChangeResponse = new GeneralResponseDto();
+        noChangeResponse.code = 200;
+        noChangeResponse.msg = 'No changes detected to update.';
+        noChangeResponse.response = existingContact;
+        return noChangeResponse;
       }
 
       const updatedContact = await this.prisma.contact.update({
@@ -353,7 +378,7 @@ export class ContactsService {
         data: dataToUpdate,
       });
 
-      if (updatedContact.countryPhoneCode && reverseCountryPhoneCodeMap) {
+      if (updatedContact.countryPhoneCode) {
         updatedContact.countryPhoneCode =
           reverseCountryPhoneCodeMap[updatedContact.countryPhoneCode] ??
           updatedContact.countryPhoneCode;

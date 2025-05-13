@@ -123,4 +123,10 @@ export class CreateContactDto {
   @IsOptional()
   @IsBoolean()
   trustedContact?: boolean;
+
+  @IsBoolean({
+    message: 'isLegallyIncapacitated must be a boolean value (true or false)',
+  })
+  @IsOptional()
+  readonly isLegallyIncapacitated?: boolean;
 }
