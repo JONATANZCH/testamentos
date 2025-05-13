@@ -43,6 +43,26 @@ export class ExecutorService {
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
 
+      if (createExecutorDto.accepted === false) {
+        const declined = await this.prisma.executor.create({
+          data: {
+            testamentHeaderId: testamentId,
+            accepted: false,
+            declinedAt: new Date(),
+          },
+          select: {
+            id: true,
+            accepted: true,
+            declinedAt: true,
+          },
+        });
+
+        response.code = 201;
+        response.msg = 'Executor creation declined by user';
+        response.response = declined;
+        return response;
+      }
+
       const contact = await this.prisma.contact.findUnique({
         where: { id: createExecutorDto.contactId },
         select: { userId: true },

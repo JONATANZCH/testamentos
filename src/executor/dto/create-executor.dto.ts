@@ -1,15 +1,9 @@
-import {
-  IsIn,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateExecutorDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsUUID()
-  contactId: string;
+  contactId?: string;
 
   @IsOptional()
   @IsString()
@@ -18,4 +12,8 @@ export class CreateExecutorDto {
       'type must be family, friend, professional, lawyer, accountant, other',
   })
   type?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  accepted?: boolean;
 }
