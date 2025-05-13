@@ -130,24 +130,24 @@ export class ContactsService {
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
-      if (createContactDto.relationToUser === RelationToUser.CHILD) {
-        if (!createContactDto.otherParentId) {
-          response.code = 400;
-          response.msg =
-            'The otherParentId field is required for child contacts.';
-          throw new HttpException(response, HttpStatus.BAD_REQUEST);
-        }
-        // Verificar que otherParentId corresponda a un contacto existente
-        const parentContact = await this.prisma.contact.findUnique({
-          where: { id: createContactDto.otherParentId },
-        });
-        if (!parentContact) {
-          response.code = 400;
-          response.msg =
-            'The otherParentId provided does not correspond to an existing contact.';
-          throw new HttpException(response, HttpStatus.BAD_REQUEST);
-        }
-      }
+      // if (createContactDto.relationToUser === RelationToUser.CHILD) {
+      //   if (!createContactDto.otherParentId) {
+      //     response.code = 400;
+      //     response.msg =
+      //       'The otherParentId field is required for child contacts.';
+      //     throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      //   }
+      //   // Verificar que otherParentId corresponda a un contacto existente
+      //   const parentContact = await this.prisma.contact.findUnique({
+      //     where: { id: createContactDto.otherParentId },
+      //   });
+      //   if (!parentContact) {
+      //     response.code = 400;
+      //     response.msg =
+      //       'The otherParentId provided does not correspond to an existing contact.';
+      //     throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      //   }
+      // }
 
       const {
         legalEntityId,
