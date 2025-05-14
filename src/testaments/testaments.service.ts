@@ -595,16 +595,6 @@ export class TestamentsService {
 
           assetIdToUse = globalAsset.id;
 
-          if (globalAsset.length > 1) {
-            throw new HttpException(
-              {
-                code: 409,
-                msg: 'More than one global asset detected for this user. Please contact support.',
-              },
-              HttpStatus.CONFLICT,
-            );
-          }
-
           assetIdToUse = globalAsset[0].id;
         } else if (testament.inheritanceType !== 'HP') {
           throw new HttpException(
