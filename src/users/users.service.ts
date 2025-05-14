@@ -354,14 +354,24 @@ export class UsersService {
        */
       let assetsCompletion = 0;
       const userAssetsCount = user.assets?.length || 0;
-      const userActiveTestamentsCount =
-        user.testamentHeaders?.filter((t) => t.status === 'DRAFT').length || 0;
+      const hasDraftTestament = user.testamentHeaders.some(
+        (t) => t.status === 'DRAFT',
+      );
 
-      if (userAssetsCount > 0) {
-        assetsCompletion += 50;
-      }
-      if (userActiveTestamentsCount > 0) {
-        assetsCompletion += 50;
+      const hasHPGTestament = user.testamentHeaders.some(
+        (t) => t.inheritanceType === 'HPG',
+      );
+
+      if (hasHPGTestament) {
+        // Si el testamento es tipo HPG y está en DRAFT, entonces el 100%
+        assetsCompletion = hasDraftTestament ? 100 : 0;
+      } else {
+        if (userAssetsCount > 0) {
+          assetsCompletion += 50;
+        }
+        if (hasDraftTestament) {
+          assetsCompletion += 50;
+        }
       }
 
       // STEP 3: ASSIGNMENTS If user has 1 or more assignments => 100% We'll gather all assignments from all testamentHeaders.
