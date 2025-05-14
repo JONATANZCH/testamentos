@@ -225,7 +225,7 @@
                 }
 
                 @bottom-left {
-                    content: "UUID: {{uui}}";
+                    content: "UUID: {{uuid}}";
                     font-size: 10pt;
                     padding-left: 0.5cm;
                     padding-bottom: 1cm;
@@ -239,7 +239,7 @@
     <!-- ================== FIXED HEADER (SCREEN VIEW) ================== -->
     <header>
         <div class="header-container">
-            <img src="images/image1.png" alt="Logo">
+            <img src="{{logo_base64}}" alt="Logo">
             <div>{{folio_number}}</div>
         </div>
     </header>
@@ -257,7 +257,7 @@
                 <td>
                     <div class="header-container-print">
                         <!-- Logo repeated on every printed page -->
-                        <img src="images/image1.png" alt="Logo" style="height: 32px;">
+                        <img src="{{logo_base64}}" alt="Logo" style="height: 32px;">
                         <span style="font-size: 12px; font-weight: bold;">{{print_folio}}</span>
                     </div>
                     <hr>
@@ -366,13 +366,7 @@
                                     personas, en las proporciones y condiciones que indico a continuación:
                                 </p>
                                 <ol>
-                                    <li>
-                                        <strong>{{relation_to_user}}</strong>, <strong>{{beneficiarie_name}}
-                                            {{beneficiarie_fatherLastName}} {{beneficiarie_motherLastName}}</strong>,
-                                        con identificación <strong>{{id_type_beneficiarie}}
-                                            {{id_number_beneficiarie}}</strong>, quien recibirá
-                                        <strong>{{asset_percentage_beneficiarie}}</strong>.
-                                    </li>
+                                    #{{designacion_herederos_loop}}#
                                 </ol>
                                 <p>
                                     Si alguno de los herederos designados no pudiera o no quisiera recibir su parte, su
