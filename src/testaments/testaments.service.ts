@@ -271,40 +271,6 @@ export class TestamentsService {
           }
         }
 
-        if (createTestamentDto.inheritanceType === 'HPG') {
-          const globalCategory = await tx.assetCategory.findFirst({
-            where: { name: 'Testamento Global' },
-          });
-          if (!globalCategory) {
-            throw new HttpException(
-              'Global category "Testamento Global" not found.',
-              HttpStatus.INTERNAL_SERVER_ERROR,
-            );
-          }
-
-          const existingGlobal = await tx.asset.findFirst({
-            where: {
-              userId,
-              name: 'global',
-              categoryId: globalCategory.id,
-            },
-          });
-
-          if (!existingGlobal) {
-            await tx.asset.create({
-              data: {
-                userId,
-                name: 'global',
-                description: 'global',
-                categoryId: globalCategory.id,
-                value: 0,
-                currency: 'USD',
-                metadata: {},
-              },
-            });
-          }
-        }
-
         const activeTestament = await tx.testamentHeader.findFirst({
           where: { userId, status: 'ACTIVE' },
           orderBy: { creationDate: 'desc' },
@@ -589,26 +555,45 @@ export class TestamentsService {
             );
           }
 
-          const globalCategory = await tx.assetCategory.findFirst({
-            where: { name: 'Testamento Global' },
+          // 1. Obtener o crear la categoría "Testamento Global"
+          let globalCategory = await tx.assetCategory.findFirst({
+            where: { id: 'ffffffff-ffff-ffff-ffff-ffffffffffff' },
           });
-          const globalAsset = await tx.asset.findMany({
+
+          if (!globalCategory) {
+            globalCategory = await tx.assetCategory.create({
+              data: {
+                id: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+                name: 'Testamento Global',
+                description: 'Categoría para asignaciones globales',
+              },
+            });
+          }
+
+          // 2. Obtener o crear el asset "global"
+          let globalAsset = await tx.asset.findFirst({
             where: {
               userId: testament.userId,
               name: 'global',
-              categoryId: globalCategory?.id,
+              categoryId: globalCategory.id,
             },
           });
 
-          if (globalAsset.length === 0) {
-            throw new HttpException(
-              {
-                code: 400,
-                msg: 'Global asset not found for this user.',
+          if (!globalAsset) {
+            globalAsset = await tx.asset.create({
+              data: {
+                userId: testament.userId,
+                name: 'global',
+                description: 'Activo global para asignaciones HPG',
+                categoryId: globalCategory.id,
+                value: 0,
+                currency: 'USD',
+                metadata: {},
               },
-              HttpStatus.BAD_REQUEST,
-            );
+            });
           }
+
+          assetIdToUse = globalAsset.id;
 
           if (globalAsset.length > 1) {
             throw new HttpException(
