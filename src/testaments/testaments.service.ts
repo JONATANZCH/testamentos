@@ -594,8 +594,6 @@ export class TestamentsService {
           }
 
           assetIdToUse = globalAsset.id;
-
-          assetIdToUse = globalAsset[0].id;
         } else if (testament.inheritanceType !== 'HP') {
           throw new HttpException(
             {
