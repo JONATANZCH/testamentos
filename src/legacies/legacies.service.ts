@@ -30,6 +30,7 @@ export class LegaciesService {
         select: {
           id: true,
           status: true,
+          inheritanceType: true,
         },
       });
       if (!testament) {
@@ -37,6 +38,7 @@ export class LegaciesService {
         response.msg = 'Testament not found';
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
+      console.log('testament', testament);
 
       if (testament.status !== 'DRAFT') {
         response.code = 400;
