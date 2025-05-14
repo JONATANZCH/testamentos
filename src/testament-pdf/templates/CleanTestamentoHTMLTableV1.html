@@ -225,7 +225,7 @@
                 }
 
                 @bottom-left {
-                    content: "UUID: {{uui}}";
+                    content: "UUID: {{uuid}}";
                     font-size: 10pt;
                     padding-left: 0.5cm;
                     padding-bottom: 1cm;
@@ -239,7 +239,7 @@
     <!-- ================== FIXED HEADER (SCREEN VIEW) ================== -->
     <header>
         <div class="header-container">
-            <img src="images/image1.png" alt="Logo">
+            <img src="{{logo_base64}}" alt="Logo" />
             <div>{{folio_number}}</div>
         </div>
     </header>
@@ -257,7 +257,7 @@
                 <td>
                     <div class="header-container-print">
                         <!-- Logo repeated on every printed page -->
-                        <img src="images/image1.png" alt="Logo" style="height: 32px;">
+                        <img src="{{logo_base64}}" alt="Logo"  style="height: 32px;"/>
                         <span style="font-size: 12px; font-weight: bold;">{{print_folio}}</span>
                     </div>
                     <hr>
@@ -285,19 +285,17 @@
                                 <p>
                                     Yo, <strong>{{name}} {{fatherLastName}} {{motherLastName}}</strong>, de nacionalidad
                                     <strong>{{nationality}}</strong>, de estado civil
-                                    <strong>{{martial_status}}</strong> - <strong>{{maritalRegime}}</strong> con
-                                    domicilio en <strong>{{address}}</strong>, de <strong>{{age}}</strong> años,
+                                    <strong>{{martial_status}}</strong>, con
+                                    domicilio en <strong>{{address}}</strong>, de <strong>{{age}}</strong> años, 
                                     identificándome con <strong>{{id_type}}
-                                        {{id_number}}</strong>,
+                                    {{id_number}}</strong>,
                                     en pleno uso de mis facultades mentales y sin estar condicionado, forzado o
                                     influenciado por
                                     ninguna persona, declaro libremente mi Última voluntad mediante este
-                                    <strong>Testamento Digital Certificado</strong>, conforme a lo dispuesto en los
-                                    artículos 1500 fracción V, 1564 Bis y siguientes del <strong>Código Civil
-                                        Federal</strong>, y las disposiciones complementarias del <strong> Código Civil
-                                        de la Ciudad de México</strong>r, así como lo establecido en el <strong>Código
-                                        de Comercio en materia de Firma Electrónica</strong> y demás normativa
-                                    aplicable.
+                                    <strong>Testamento Digital Certificado</strong>,
+                                    conforme a lo dispuesto en el <strong>Código Civil Federal de México</strong>, el
+                                    <strong>Código Civil de la Ciudad de México</strong>
+                                    y las disposiciones aplicables en materia de sucesión testamentaria digital.
                                 </p>
                             </div>
                         </section>
@@ -307,23 +305,22 @@
                             <div class="content">
                                 <h3 class="subsection-title">DECLARACIÓN DE VOLUNTAD</h3>
                                 <p>
-                                    Este testamento refleja mi Última Voluntad y tiene como finalidad establecer con
-                                    claridad y certeza jurídica la forma en que deberán ser transmitidos mis bienes,
-                                    derechos y obligaciones después de mi fallecimiento, de conformidad con la
-                                    legislación vigente.
+                                    Este testamento refleja mi <strong>Última voluntad</strong>, con la finalidad de
+                                    establecer la forma en que serán transmitidos mis <strong>bienes, derechos y
+                                        obligaciones</strong>
+                                    después de mi fallecimiento.
                                 </p>
                             </div>
                         </section>
+
+                        <!-- ================= NEW CLAUSE (will be CLÁUSULA TERCERA) ================= -->
                         <section id="section3-new">
                             <div class="content">
-                                <h3 class="subsection-title">DISPOSICIÓN SUBSIDIARIA DE HERENCIA</h3>
+                                <h3 class="subsection-title">DESIGNACIÓN DE HEREDEROS</h3>
                                 <p>
-                                    En caso de que, por cualquier causa, no puedan ejecutarse las disposiciones
-                                    particulares o universales de este testamento, o bien, si alguno de los herederos
-                                    designados no pudiera o no quisiera recibir su parte, declaro que mis bienes,
-                                    derechos y obligaciones se transmitirán conforme al orden de sucesión legítima
-                                    previsto en los artículos 1620 a 1635 del Código Civil Federal, conforme a la
-                                    siguiente prelación:
+                                    Declaro que todos mis bienes, derechos y obligaciones serán transmitidos a mis
+                                    herederos legales, conforme al orden de sucesión legítima establecido en los
+                                    artículos 1620 a 1635 del Código Civil Federal, de la siguiente manera:
                                 </p>
                                 <ol>
                                     <li><strong>Descendientes directos (hijos o nietos):</strong> En partes iguales, con
@@ -331,13 +328,15 @@
                                     <li><strong>Cónyuge:</strong> Si existe, tendrá derecho a recibir su porción
                                         hereditaria.</li>
                                     <li><strong>Ascendientes (padres o abuelos):</strong> En caso de no existir
-                                        descendientes ni cónyuge.</li>
-                                    <li><strong>Colaterales (hermanos o sobrinos):</strong> en ausencia de los
-                                        anteriores.</li>
-                                    <li><strong>Beneficencia pública:</strong> si no existen herederos legales, mis
-                                        bienes serán destinados al Estado, conforme a lo dispuesto por la ley.
+                                        descendientes ni cónyuge, los bienes pasarán a ellos.</li>
+                                    <li><strong>Colaterales (hermanos o sobrinos):</strong> En ausencia de los
+                                        anteriores, heredan mis hermanos y, en su caso, sobrinos.</li>
+                                    <li><strong>Beneficencia pública:</strong> Si no existen herederos legales, mis
+                                        bienes serán destinados al Estado según la ley.</li>
+                                </ol>
                             </div>
                         </section>
+
                         <!-- Now we insert ALL the original sections (which originally were clauses DÉCIMA to DÉCIMA OCTAVA) immediately after CLÁUSULA TERCERA -->
 
                         <!-- Original Section: DESIGNACIÓN DE ALBACEA -->
@@ -345,14 +344,13 @@
                             <div class="content">
                                 <h3 class="subsection-title">DESIGNACIÓN DE ALBACEA</h3>
                                 <p>
-                                    Para la administración, ejecución y cumplimiento de este testamento, designo como
-                                    <strong>Albacea
+                                    Para la administración y ejecución de este testamento, nombro como <strong>Albacea
                                         General</strong> a <strong>{{albacea_name}} {{albacea_fatherLastName}}
-                                        {{albacea_motherLastName}}</strong>, , quien contará con todas las facultades
-                                    necesarias para representar mis intereses, realizar actos de administración,
-                                    conservación y disposición conforme a lo previsto en la legislación aplicable. En
-                                    caso de que el Albacea designado no pueda o no desee aceptar el cargo, designo como
-                                    albacea sustituto a <strong>{{albacea_subtitue_name}} {{albacea_subtitue_fatherLastName}} {{albacea_subtitue_motherLastName}}</strong>.
+                                        {{albacea_motherLastName}}</strong>, con las facultades necesarias para
+                                    representar mis intereses y garantizar el cumplimiento de mi Última voluntad. En
+                                    caso de que el Albacea no pueda o no quiera asumir el cargo, designo como sustituto
+                                    a <strong>{{albacea_subtitue_name}} {{albacea_subtitue_fatherLastName}}
+                                        {{albacea_subtitue_motherLastName}}</strong>.
                                 </p>
                             </div>
                         </section>
@@ -362,22 +360,16 @@
                             <div class="content">
                                 <h3 class="subsection-title">DESIGNACIÓN DE HEREDEROS</h3>
                                 <p>
-                                    Designo como herederos de mis bienes, derechos y obligaciones a las siguientes
-                                    personas, en las proporciones y condiciones que indico a continuación:
+                                    Designo como herederos de todos mis bienes, derechos y obligaciones a
+                                    las siguientes personas:
                                 </p>
                                 <ol>
-                                    <li>
-                                        <strong>{{relation_to_user}}</strong>, <strong>{{beneficiarie_name}}
-                                            {{beneficiarie_fatherLastName}} {{beneficiarie_motherLastName}}</strong>,
-                                        con identificación <strong>{{id_type_beneficiarie}}
-                                            {{id_number_beneficiarie}}</strong>, quien recibirá
-                                        <strong>{{asset_percentage_beneficiarie}}</strong>.
-                                    </li>
+                                    #{{designacion_herederos_loop}}#
                                 </ol>
                                 <p>
-                                    Si alguno de los herederos designados no pudiera o no quisiera recibir su parte, su
-                                    participación será redistribuida proporcionalmente entre los demás herederos
-                                    designados.
+                                    En caso de que alguno de los herederos designados no pudiera o no quisiera recibir
+                                    su parte, su porcentaje será redistribuido equitativamente entre los herederos
+                                    restantes.
                                 </p>
                             </div>
                         </section>
@@ -387,31 +379,27 @@
                             <div class="content">
                                 <h3 class="subsection-title">LEGADOS ESPECÍFICOS</h3>
                                 <p>
-                                    Dispongo que los siguientes bienes y derechos sean entregados, como legados
-                                    particulares, a las personas que señalo a continuación:
+                                    Dispongo que los siguientes bienes y derechos sean entregados a las personas que
+                                    menciono a continuación:
                                 </p>
                                 <ol>
-                                    <li>
-                                        <strong>{{asset_notes}}</strong> será legado a <strong>{{legay_name}}
-                                            {{legay_fatherLastName}} {{legay_motherLastName}}</strong>, con
-                                        identificación <strong>{{id_type_legacy}} {{id_number_legacy}}</strong>.
-                                    </li>
+                                    #{{legados_loop}}#
                                 </ol>
                                 <p>
-                                    En caso de que el legatario no pudiera o no quisiera recibir el bien legado, éste se
-                                    integrará a la masa hereditaria y será adjudicado al heredero único o los herederos
-                                    designados
+                                    En caso de que alguno de los beneficiarios designados no pudiera o no quisiera
+                                    recibir su legado, dicho bien o derecho será transferido al heredero universal
+                                    designado en este testamento.
                                 </p>
                             </div>
                         </section>
 
-                        <!-- Original Section: DESIGNACIÓN DE HEREDERO UNIVERSALS -->
+                        <!-- Original Section: DESIGNACIÓN DE HEREDEROS -->
                         <section id="section6">
                             <div class="content">
-                                <h3 class="subsection-title">DESIGNACIÓN DE HEREDERO UNIVERSAL</h3>
+                                <h3 class="subsection-title">DESIGNACIÓN DE HEREDEROS</h3>
                                 <p>
-                                    Designo como heredero universal de la totalidad de mis bienes, derechos y
-                                    obligaciones a:
+                                    Designo como heredero universal de todos mis bienes, derechos y obligaciones a
+                                    la siguiente persona:
                                 </p>
                                 <ol>
                                     <li>
@@ -422,57 +410,80 @@
                                         <strong>{{universal_heir_id_type}}
                                             {{universal_heir_id_number}}</strong>
                                     </li>
-                                </ol>
-                                <p>
-                                    Este heredero será responsable de recibir lo no asignado expresamente a otros
-                                    beneficiarios, así como de responder por las cargas de la herencia en los términos
-                                    de ley.</p>
+                                </ol>                            
                             </div>
                         </section>
-                        <!-- Original Section: DESIGNACIÓN DE TUTORES -->
+
+                        <!-- Original Section: DESIGNACIÓN DE HEREDEROS Y BIENES DIGITALES -->
+                        <section id="section7">
+                            <div class="content">
+                                <h3 class="subsection-title">DESIGNACIÓN DE HEREDEROS Y BIENES DIGITALES</h3>
+                                <p>
+                                    Dispongo que los siguientes bienes digitales y derechos sean entregados a las personas que
+                                    menciono a continuación:
+                                </p>
+                                <ol>
+                                    #{{designacion_herederos_digital_loop}}#
+                                </ol>
+                                <p>
+                                    Para la entrega segura de estos bienes digitales, los accesos y claves
+                                    criptográficas se almacenarán bajo un protocolo de seguridad que garantice su acceso
+                                    exclusivo a los beneficiarios designados.
+                                </p>
+                                <p>
+                                    En caso de que alguno de los beneficiarios designados no pudiera o no quisiera
+                                    recibir su legado, dicho bien o derecho será transferido al heredero universal
+                                    designado en este testamento.
+                                </p>
+                            </div>
+                        </section>
+                        <!-- Original Section: DESIGNACIÓN DE HEREDEROS Y TUTORES -->
                         <section id="section10">
                             <div class="content">
-                                <h3 class="subsection-title">DESIGNACIÓN DE TUTORES</h3>
+                                <h3 class="subsection-title">DESIGNACIÓN DE HEREDEROS Y TUTORES</h3>
                                 <p>
-                                    Con la finalidad de garantizar el cuidado, protección y representación legal de los
-                                    beneficiarios de este testamento que sean menores de edad o personas con capacidad
-                                    jurídica restringida por resolución judicial, designo a las siguientes personas como
-                                    tutores testamentarios:
+                                    Designo como herederos tutores y guardianes de mis beneficiarios menores de edad a, 
+                                    las siguientes personas:
                                 </p>
                                 <ol>
                                     <li>
                                         Como tutor principal:
-                                        <strong>{{parentesco_tutor1}}</strong>,
+                                         <strong>{{parentesco_tutor1}}</strong>,
                                         <strong>{{nombre_heredero1_tutor}}</strong>
-                                        <strong>{{fatherLastName_heredero1_tutor}}</strong>
-                                        <strong>{{motherLastName_heredero1_tutor}}</strong>
+                                         <strong>{{fatherLastName_heredero1_tutor}}</strong>
+                                         <strong>{{motherLastName_heredero1_tutor}}</strong>
                                         , con identificación
                                         <strong>{{tipo_identificacion1_tutor}}
                                             {{numero_identificacion1_tutor}}</strong>,
                                     </li>
                                     <li>
-                                        Tutor suplente:
-                                        <strong>{{parentesco_tutor2}}</strong>,
+                                        Como tutor suplente:
+                                         <strong>{{parentesco_tutor2}}</strong>,
                                         <strong>{{nombre_heredero2_tutor}}</strong>
-                                        <strong>{{fatherLastName_heredero2_tutor}}</strong>
-                                        <strong>{{motherLastName_heredero2_tutor}}</strong>
+                                         <strong>{{fatherLastName_heredero2_tutor}}</strong>
+                                         <strong>{{motherLastName_heredero2_tutor}}</strong>
                                         , con identificación
                                         <strong>{{tipo_identificacion2_tutor}}
-                                            {{numero_identificacion2_tutor}}</strong>,
+                                            {{numero_identificacion2_tutor}}</strong>.
                                     </li>
-
                                 </ol>
-
-                                <p>
-                                    Si así se establece como apoyo para el cumplimiento de sus funciones.
-                                    Los tutores aquí designados deberán ejercer sus funciones conforme a las
-                                    disposiciones aplicables del Código Civil Federal, y su nombramiento quedará
-                                    sujeto a la ratificación o validación correspondiente por parte de la autoridad
-                                    judicial, en atención al interés superior del menor o de la persona protegida.
+                                <p id="guardian-main-text">
+                                    Asimismo, para garantizar su bienestar y cumplimiento de su legítima herencia,
+                                    designo como <strong>guardian</strong> a <strong>{{name_guardian1}}</strong> <strong>{{fatherLastName_guardian1}}</strong> <strong>{{motherLastName_guardian1}}</strong>, con
+                                    identificación <strong>{{tipo_identificacion_guardian}}
+                                        {{numero_identificacion_guardian1}}</strong>, quien tendrá la responsabilidad de
+                                    supervisar a los tutores y garantizar el cumplimiento de mis deseos en relación con la
+                                    educación y bienestar de mis beneficiarios menores de edad.
+                                    
+                                </p>
+                                <p id="guardian-sub-text">
+                                    En caso de que el guardian designado no pueda asumir el cargo, nombro como sustituto a
+                                    <strong>{{name_guardian2}}</strong> <strong>{{fatherLastName_guardian2}}</strong> <strong>{{motherLastName_guardian2}}</strong>, con
+                                    identificación <strong>{{tipo_identificacion_guardian}}
+                                        {{numero_identificacion_guardian2}}</strong>,
                                 </p>
                             </div>
                         </section>
-
 
                         <!-- Now the remaining new clauses follow -->
 
@@ -481,11 +492,9 @@
                             <div class="content">
                                 <h3 class="subsection-title">REVOCACIÓN DE TESTAMENTOS ANTERIORES</h3>
                                 <p>
-                                    Por medio del presente instrumento, revoco expresamente cualquier testamento o
-                                    disposición testamentaria previa que haya otorgado, ya sea de forma escrita, oral,
-                                    notarial, ológrafa o electrónica, ante cualquier persona o autoridad. Este
-                                    Testamento Digital Certificado prevalece como la única manifestación válida y
-                                    vigente de mi voluntad sucesoria.
+                                    Por medio del presente, revoco cualquier testamento anterior que haya otorgado en
+                                    cualquier tiempo y ante cualquier autoridad o persona, dejando sin efectos sus
+                                    disposiciones.
                                 </p>
                             </div>
                         </section>
@@ -495,27 +504,27 @@
                             <div class="content">
                                 <h3 class="subsection-title">AUTENTICACIÓN Y CERTIFICACIÓN</h3>
                                 <p>
-                                    Este testamento digital es legalmente válido y exigible conforme a los artículos
-                                    1500 fracción V y 1564 Bis y siguientes del Código Civil Federal, cumpliendo con los
-                                    requisitos tecnológicos y jurídicos aplicables. Su autenticidad, integridad y
-                                    autoría están garantizadas mediante los siguientes mecanismos:
+                                    Este testamento digital es válido y exigible legalmente, cumpliendo con todas las
+                                    formalidades establecidas en la legislación mexicana y gozando de la misma fuerza
+                                    probatoria que un testamento público abierto otorgado ante notario, conforme a lo
+                                    dispuesto en el Código Civil Federal y Código de Comercio. Para garantizar su
+                                    autenticidad e integridad, este documento ha sido certificado mediante:
                                 </p>
                                 <ol>
-                                    <li><strong>Verificación de identidad</strong> con documento oficial vigente y
+                                    <li><strong>Verificación de identidad</strong> mediante documento oficial y
                                         reconocimiento facial biométrico.</li>
-                                    <li><strong>Prueba de vida</strong> mediante grabación audiovisual del testador
-                                        declarando su voluntad.</li>
-                                    <li><strong>Firma Electrónica Avanzada (FEA)</strong> , emitida por un Prestador de
-                                        Servicios de Certificación (PSC) acreditado en México.</li>
-                                    <li><strong>Registro de integridad y conservación</strong> conforme a la
-                                        NOM-151-SCFI-2016, con generación de huella digital del documento.</li>
-                                    <li><strong>Emisión de un Token No Fungible (NFT)</strong> sobre tecnología
-                                        blockchain pública, garantizando la inmutabilidad del contenido y fecha de
-                                        emisión.</li>
+                                    <li><strong>Prueba de vida</strong> con video y voz confirmando la identidad y
+                                        voluntad del testador.</li>
+                                    <li><strong>Firma digital certificada</strong> por un Prestador de Servicios de
+                                        Certificación (PSC) registrado en México.</li>
+                                    <li><strong>Registro de autenticidad y conservación</strong> bajo la NOM
+                                        151-SCFI-2016.</li>
+                                    <li><strong>Emisión de un Token No Fungible (NFT)</strong> en blockchain,
+                                        garantizando la inmutabilidad del documento.</li>
                                     <li><strong>Registro en el Registro Nacional de Avisos de Testamentos
-                                            (RENAT). </strong></li>
-                                    <li>Cumplimiento de las disposiciones contenidas en el Código de Comercio y demás
-                                        normativas en materia de medios electrónicos y firma digital.</li>
+                                            (RENAT).</strong></li>
+                                    <li><strong>Cumplimiento del Código Civil Federal</strong>, Art. 1500, 1564 Bis y
+                                        siguientes, que regula la validez del testamento digital.</li>
                                 </ol>
                             </div>
                         </section>
@@ -525,9 +534,9 @@
                             <div class="content">
                                 <h3 class="subsection-title">TESTIGO DIGITAL</h3>
                                 <p>
-                                    Como medida de respaldo adicional, este testamento ha sido procesado mediante un
-                                    Testigo Digital, que actúa como garante de los protocolos de validación,
-                                    autenticación y resguardo del documento.
+                                    Como medida adicional de seguridad, este testamento ha sido verificado por un
+                                    Testigo Digital que certifica el proceso de otorgamiento conforme a la legislación
+                                    vigente.
                                 </p>
                                 <ol>
                                     <li><strong>Nombre del Sistema:</strong> Testamento.mx - Digital Witness v1.1</li>
@@ -540,142 +549,66 @@
                             </div>
                         </section>
 
-                        <!-- New Clause: CONSTANCIA DE EXISTENCIA DEL TESTAMENTO -->
+                        <!-- New Clause: NOTIFICACIÓN A BENEFICIARIOS -->
                         <section id="section7-new">
                             <div class="content">
-                                <h3 class="subsection-title">CONSTANCIA DE EXISTENCIA DEL TESTAMENTO</h3>
+                                <h3 class="subsection-title">NOTIFICACIÓN A BENEFICIARIOS</h3>
                                 <p>
-                                    Testamento.mx podrá generar un comprobante digital de existencia de este testamento,
-                                    sin revelar su contenido, con la finalidad de resguardar su validez y autenticidad
-                                    hasta el momento en que se verifique oficialmente mi defunción por medios
-                                    reconocidos.
-                                    Este comprobante servirá exclusivamente como constancia técnica y jurídica de que he
-                                    emitido un testamento digital, y su uso estará sujeto a los protocolos de seguridad,
-                                    confidencialidad y conservación establecidos por Testamento.mx y por la legislación
-                                    vigente.
+                                    Autorizo a Testamento.mx a notificar a mis herederos sobre la existencia de este
+                                    testamento al momento de mi fallecimiento, enviando una copia certificada mediante
+                                    correo electrónico, notificación digital y mensaje certificado con acuse de recibo.
+                                    Asimismo, Testamento.mx podrá proporcionar un comprobante digital de existencia de
+                                    este testamento a mis herederos, sin divulgar su contenido, hasta que se verifique
+                                    oficialmente mi defunción. Esta notificación se realizará conforme a los protocolos
+                                    de seguridad de Testamento.mx y la legislación vigente.
                                 </p>
                             </div>
                         </section>
 
-                        <!-- New Clause: JURISDICCIÓN, INTERPRETACIÓN Y DISPOSICIONES FINALES -->
+                        <!-- New Clause: JURISDICCIÓN Y DISPOSICIONES FINALES -->
                         <section id="section8-new">
                             <div class="content">
-                                <h3 class="subsection-title">JURISDICCIÓN, INTERPRETACIÓN Y DISPOSICIONES FINALES</h3>
+                                <h3 class="subsection-title">JURISDICCIÓN Y DISPOSICIONES FINALES</h3>
                                 <p>
-                                    Para todos los efectos legales, este testamento digital se regirá por las leyes de
-                                    los Estados Unidos Mexicanos, y en particular por lo establecido en el Código Civil
-                                    Federal, así como por las disposiciones aplicables del Código de Comercio, la
-                                    NOM-151-SCFI-2016, y demás normativa vigente en materia de firma electrónica,
-                                    conservación electrónica y sucesión testamentaria.
+                                    Para efectos legales, este testamento se regirá conforme a las leyes de los Estados
+                                    Unidos Mexicanos, y específicamente a las disposiciones del Código Civil de la
+                                    Ciudad de México. Cualquier controversia derivada de su interpretación será resuelta
+                                    exclusivamente en los tribunales civiles de la Ciudad de México, salvo disposición
+                                    en contrario de la legislación aplicable.
                                 </p>
                                 <p>
-                                    Dado que el Código Civil Federal es de aplicación directa en la Ciudad de México,
-                                    cualquier controversia relacionada con la interpretación, validez o ejecución de
-                                    este testamento será resuelta por los tribunales civiles competentes de la Ciudad de
-                                    México, salvo disposición legal en contrario.
+                                    En caso de controversias sobre la interpretación de este testamento, se aplicará el
+                                    principio de favor hereditatis, garantizando que mis bienes y derechos se
+                                    distribuyan conforme a la normativa de sucesión legítima prevista en el Código
+                                    Civil, priorizando la protección de mis herederos directos.
                                 </p>
                                 <p>
-                                    Este testamento digital se considerará otorgado en territorio mexicano,
-                                    independientemente de la ubicación física del testador al momento de su firma o
-                                    emisión, en cumplimiento de lo previsto por el artículo 1564 Bis del Código Civil
-                                    Federal.
-                                </p>
-                                <p>
-                                    Asimismo, será reconocido y exigible en todas las entidades federativas, conforme a
-                                    lo dispuesto en el artículo 121 de la Constitución Política de los Estados Unidos
-                                    Mexicanos, así como a los principios de equivalencia funcional y validez plena de
-                                    documentos electrónicos establecidos en el Código Nacional de Procedimientos Civiles
-                                    y Familiares, aun si la legislación estatal aplicable no ha sido armonizada con la
-                                    figura del testamento digital.
-                                </p>
-                                <p>
-                                    En caso de que el testador se encuentre fuera del territorio nacional, este
-                                    testamento podrá ser reconocido por autoridades consulares mexicanas en términos del
-                                    artículo 27 de la Ley del Servicio Exterior Mexicano y demás tratados
-                                    internacionales vigentes, sin menoscabo de su validez plena dentro del territorio
-                                    nacional.
-                                </p>
-                                <p>
-                                    En caso de ambigüedad, contradicción entre cláusulas, o diferencias de
-                                    interpretación, este testamento deberá analizarse en su conjunto, privilegiando
-                                    siempre la voluntad integral del testador, conforme al principio favor hereditatis y
-                                    a los principios de hermenéutica jurídica en materia sucesoria.
-                                </p>
-                                <p>
-                                    El testador podrá, si así lo desea, acudir a un notario público para protocolizar
-                                    este testamento digital en su protocolo, con el fin de registrarlo en el Archivo
-                                    General de Notarías o en el Registro Nacional de Testamentos (RENAT), sin que dicha
-                                    actuación notarial sea requisito para su validez ni afecte su autenticidad o fuerza
-                                    legal.
+                                    Declaro que este testamento es personalísimo, revocable y libre, conforme a derecho.
+                                    En caso de disputas, se interpretará este testamento en favor de la voluntad del
+                                    testador.
                                 </p>
                             </div>
                         </section>
 
-                        <!-- New Clause: RATIFICACIÓN, VALIDEZ Y BLINDAJE LEGAL -->
+                        <!-- New Clause: RATIFICACIÓN Y VALIDEZ -->
                         <section id="section9-new">
                             <div class="content">
-                                <h3 class="subsection-title">RATIFICACIÓN, VALIDEZ Y BLINDAJE LEGAL</h3>
+                                <h3 class="subsection-title">RATIFICACIÓN Y VALIDEZ</h3>
                                 <p>
-                                    Manifiesto, bajo protesta de decir verdad, que este documento expresa fielmente mi
-                                    última voluntad. Declaro que he leído, comprendido y aceptado su contenido, y que lo
-                                    otorgo libremente, con plena capacidad jurídica, sin error, dolo, violencia o
-                                    coacción de ninguna índole.
-                                </p>
-                                <p>
-                                    Este Testamento Digital Certificado ha sido emitido y autenticado conforme a los
-                                    requisitos legales, tecnológicos y formales establecidos en la legislación mexicana
-                                    vigente, cumpliendo con los artículos 1500 fracción V y 1564 Bis y siguientes del
-                                    Código Civil Federal, así como con la NOM-151, el Código de Comercio y los
-                                    principios de autenticidad y trazabilidad establecidos en tecnologías de firma
-                                    electrónica avanzada y blockchain.
-                                </p>
-                                <p>
-                                    Este testamento no podrá ser anulado, impugnado ni desconocido por forma, medio,
-                                    soporte, redacción, omisión formal ni por objeción tecnológica o procedimental
-                                    alguna, siempre que se verifique:
-                                </p>
-
-                                <ol>
-                                    <li>Que fue firmado por mí mediante Firma Electrónica Avanzada válida y vigente.
-                                    </li>
-                                    <li>Que su autenticidad se encuentra debidamente registrada mediante tecnología de
-                                        cadena de bloques.</li>
-                                    <li>Que cumple con la normativa de certificación y conservación electrónica
-                                        reconocida por la legislación mexicana.</li>
-
-                                </ol>
-                                <p>
-                                    Este documento constituye prueba plena de mi voluntad testamentaria, con la misma
-                                    fuerza legal y valor probatorio que cualquier testamento público otorgado ante
-                                    fedatario.
-                                </p>
-                                <p>
-                                    Evidencias y registros de autenticación:
+                                    Manifiesto bajo protesta de decir verdad que este testamento expresa fielmente mi
+                                    última voluntad, que he leído y comprendido su contenido, y que lo otorgo de manera
+                                    libre, consciente y sin coacción de ninguna índole.
                                 </p>
                                 <ol>
                                     <li><strong>Fecha y hora de emisión:</strong> [FECHA Y HORA]</li>
                                     <li><strong>Ubicación del testador:</strong> [CIUDAD Y ESTADO]</li>
                                     <li><strong>Firma Electrónica:</strong> [HASH DE FIRMA]</li>
                                     <li><strong>Registro Blockchain:</strong> [HASH NFT]</li>
+                                    <li><strong>Número de Registro RENAT:</strong> [CÓDIGO ÚNICO]</li>
                                     <li><strong>Código de autenticación del Testigo Digital:</strong> [CÓDIGO TESTIGO]
                                     </li>
                                     <li><strong>Bitácora NOM-151:</strong> [ADJUNTA]</li>
                                 </ol>
-                            </div>
-                        </section>
-                        <!-- New Clause: CLAUSULA DE NO IMPUGNACIÓN POR CAUSA DE MEDIO DIGITALCLÁUSULA DÉCIMA QUINTA: CLAUSULA DE NO IMPUGNACIÓN POR CAUSA DE MEDIO DIGITAL -->
-                        <section id="section13">
-                            <div class="content">
-                                <h3 class="subsection-title">CLAUSULA DE NO IMPUGNACIÓN POR CAUSA DE MEDIO DIGITAL</h3>
-                                <p>
-                                    Reconozco y declaro que este testamento digital ha sido emitido con pleno
-                                    conocimiento de su forma, medio y alcance legal. Renuncio expresamente a toda
-                                    objeción futura sobre su validez por el solo hecho de haberse realizado mediante
-                                    medios digitales y tecnológicos, conforme a los principios de equivalencia funcional
-                                    y legalidad reconocidos por la legislación mexicana.
-                                </p>
-
-
                             </div>
                         </section>
                         <!-- =================== END CLAUSES =================== -->
@@ -709,9 +642,7 @@
             section8: true,
             section9: true,
             section10: true,
-            section11: true,
-            section12: true,
-            section13: true
+            section11: true
         };
 
         Object.keys(sectionsData).forEach(id => {
@@ -737,20 +668,18 @@
                 { id: "section3", title: "DESIGNACIÓN DE ALBACEA" },
                 { id: "section4", title: "DESIGNACIÓN DE HEREDEROS" },
                 { id: "section5", title: "LEGADOS ESPECÍFICOS" },
-                { id: "section6", title: "DESIGNACIÓN DE HEREDERO UNIVERSAL" },
+                { id: "section6", title: "DESIGNACIÓN DE HEREDEROS" },
                 { id: "section7", title: "DESIGNACIÓN DE HEREDEROS Y BIENES DIGITALES" },
                 { id: "section8", title: "INSTRUCCIONES PÓSTUMAS Y ÚLTIMOS DESEOS" },
                 { id: "section9", title: "EXCLUSIÓN DE HEREDEROS" },
-                { id: "section10", title: "DESIGNACIÓN DE TUTORES" },
+                { id: "section10", title: "DESIGNACIÓN DE HEREDEROS Y TUTORES" },
                 { id: "section11", title: "DESIGNACIÓN DE CUIDADOR Y RECURSOS PARA MASCOTAS" },
-                { id: "section12", title: "DISPOSICIÓN SUBSIDIARIA DE HERENCIA" },
-                { id: "section13", title: "CLAUSULA DE NO IMPUGNACIÓN POR CAUSA DE MEDIO DIGITAL" },
                 { id: "section4-new", title: "REVOCACIÓN DE TESTAMENTOS ANTERIORES" },
                 { id: "section5-new", title: "AUTENTICACIÓN Y CERTIFICACIÓN" },
                 { id: "section6-new", title: "TESTIGO DIGITAL" },
-                { id: "section7-new", title: "CONSTANCIA DE EXISTENCIA DEL TESTAMENTO" },
-                { id: "section8-new", title: "JURISDICCIÓN, INTERPRETACIÓN Y DISPOSICIONES FINALES" },
-                { id: "section9-new", title: "RATIFICACIÓN, VALIDEZ Y BLINDAJE LEGAL" }
+                { id: "section7-new", title: "NOTIFICACIÓN A BENEFICIARIOS" },
+                { id: "section8-new", title: "JURISDICCIÓN Y DISPOSICIONES FINALES" },
+                { id: "section9-new", title: "RATIFICACIÓN Y VALIDEZ" }
             ];
 
             // Array with ordinal names in Spanish

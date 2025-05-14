@@ -58,13 +58,24 @@ export class HtmlGeneratorService {
     const fatherLastName = user?.fatherLastName ?? 'No data yet';
     const motherLastName = user?.motherLastName ?? 'No data yet';
     const nationality = translateNationality(user?.nationality);
-    const maritalStatus = this.translateMaritalStatus(user?.maritalstatus);
 
     html = html.replace(/{{name}}/g, name);
     html = html.replace(/{{fatherLastName}}/g, fatherLastName);
     html = html.replace(/{{motherLastName}}/g, motherLastName);
     html = html.replace(/{{nationality}}/g, nationality);
-    html = html.replace(/{{martial_status}}/g, maritalStatus);
+    const maritalStatus = this.translateMaritalStatus(user?.maritalstatus);
+    let maritalRegime = '';
+    const spouse = user.contacts?.find(
+      (c) => c.relationToUser === 'spouse' && !!c.maritalRegime,
+    );
+    if (user.maritalstatus?.toLowerCase() === 'married' && spouse) {
+      maritalRegime = spouse.maritalRegime;
+      html = html.replace(/{{martial_status}}/g, maritalStatus);
+      html = html.replace(/{{maritalRegime}}/g, maritalRegime);
+    } else {
+      html = html.replace(/{{martial_status}}/g, maritalStatus);
+      html = html.replace(/ - <strong>\{\{maritalRegime\}\}<\/strong>/g, '');
+    }
 
     // ================== 4) Dirección ==================
     const addressStr = this.formatAddress(user?.addresses);
@@ -121,7 +132,7 @@ export class HtmlGeneratorService {
     }
 
     // ================== MÚLTIPLES ASIGNACIONES ==================
-    if (testamentHeader.inheritanceType !== 'HP') {
+    if (!['HP', 'HPG'].includes(testamentHeader.inheritanceType)) {
       html = this.removeSectionById(html, 'section4');
     } else {
       const assignmentsHtml = this.buildAssignmentsList(
