@@ -330,7 +330,7 @@ export class UsersService {
         (profileFieldsCompleted / totalProfileFields) * 100;
 
       const hasNonHpTestament = user.testamentHeaders.some(
-        (t) => t.inheritanceType !== 'HP', // t.inheritanceType es HU o HL (o incluso null)
+        (t) => !['HP', 'HPG'].includes(t.inheritanceType),
       );
 
       if (hasNonHpTestament) {
