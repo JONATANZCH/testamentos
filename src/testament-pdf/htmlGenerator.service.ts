@@ -344,7 +344,12 @@ export class HtmlGeneratorService {
 
   private buildAssignmentsList(assignments: any[], user: any): string {
     const physicalAssignments = assignments.filter((assignment) => {
-      return assignment.asset?.type === 'physical';
+      const asset = assignment.asset;
+      return (
+        asset?.type === 'physical' ||
+        (asset?.categoryId === 'ffffffff-ffff-ffff-ffff-ffffffffffff' &&
+          asset?.name?.toLowerCase() === 'global')
+      );
     });
 
     if (!physicalAssignments || physicalAssignments.length === 0) {
