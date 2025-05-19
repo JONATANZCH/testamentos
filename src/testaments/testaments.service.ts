@@ -1195,7 +1195,7 @@ export class TestamentsService {
 
       await this.notifyMintEmail(user, true);
 
-      response.code = 200;
+      response.code = alreadyMinted ? 200 : 201;
       response.msg = alreadyMinted
         ? 'Testament status updated (previous mint preserved)'
         : 'Testament status updated and NFT minted successfully';
