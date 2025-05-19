@@ -54,6 +54,11 @@ export class CreateUserDto {
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => capitalizeFirstLetter(value))
+  readonly stateOfBirth?: string;
+
+  @IsString()
+  @IsOptional()
   @IsEnum(CountryCode, {
     message: 'Invalid country code',
   })
