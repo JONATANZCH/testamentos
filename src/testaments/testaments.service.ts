@@ -187,6 +187,10 @@ export class TestamentsService {
           terms: true,
           inheritanceType: true,
           universalHeirId: true,
+          hash: true,
+          urlNft: true,
+          chain: true,
+          standard: true,
         },
       });
 
@@ -198,6 +202,15 @@ export class TestamentsService {
 
       if (testament.inheritanceType !== 'HU') {
         delete testament.universalHeirId;
+      }
+
+      const isMinted = testament.hash && testament.urlNft;
+
+      if (!isMinted) {
+        delete testament.hash;
+        delete testament.urlNft;
+        delete testament.chain;
+        delete testament.standard;
       }
 
       response.code = 200;
