@@ -55,7 +55,7 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   @Transform(({ value }) => capitalizeFirstLetter(value))
-  readonly stateOfBirth?: string;
+  readonly birthState?: string;
 
   @IsString()
   @IsOptional()
