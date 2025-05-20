@@ -570,75 +570,86 @@ export class HtmlGeneratorService {
     const guardianMainId = minorSupport?.guardian?.main ?? null;
     const guardianSubId = minorSupport?.guardian?.substitute ?? null;
 
-    const tutorMainContact = user?.contacts?.find(
-      (c: any) => c.id === tutorMainId,
-    );
-    const tutorSubContact = user?.contacts?.find(
-      (c: any) => c.id === tutorSubId,
-    );
-    const guardianMainContact = user?.contacts?.find(
+    const tutorMain = user?.contacts?.find((c: any) => c.id === tutorMainId);
+    const tutorSub = user?.contacts?.find((c: any) => c.id === tutorSubId);
+    const guardianMain = user?.contacts?.find(
       (c: any) => c.id === guardianMainId,
     );
-    const guardianSubContact = user?.contacts?.find(
+    const guardianSub = user?.contacts?.find(
       (c: any) => c.id === guardianSubId,
     );
 
-    if (!guardianMainContact) {
+    if (!tutorMain) {
+      return this.removeSectionById(html, 'section10');
+    }
+
+    const tutorMainRelation = this.translateRelationToSpanish(
+      tutorMain?.relationToUser,
+    );
+    const tutorMainName = [
+      tutorMain?.name,
+      tutorMain?.fatherLastName,
+      tutorMain?.motherLastName,
+    ]
+      .filter((s) => s && s !== 'No data yet')
+      .join(' ');
+    const tutorMainIdType = 'CURP';
+    const tutorMainIdNumber = tutorMain?.governmentId;
+    const tutorMainIdText =
+      tutorMainIdNumber && tutorMainIdNumber !== 'No data yet'
+        ? `, con identificación <strong>${tutorMainIdType} ${tutorMainIdNumber}</strong>.`
+        : '.';
+
+    const tutorMainFinal = `Como tutor principal: <strong>${tutorMainRelation}</strong>, <strong>${tutorMainName}</strong>${tutorMainIdText}`;
+
+    html = html.replace(
+      /<li>[\s\S]*?{{parentesco_tutor1}}[\s\S]*?<\/li>/,
+      `<li>${tutorMainFinal}</li>`,
+    );
+
+    let tutorSubFinal = '';
+    if (tutorSub) {
+      const tutorSubRelation = this.translateRelationToSpanish(
+        tutorSub?.relationToUser,
+      );
+      const tutorSubName = [
+        tutorSub?.name,
+        tutorSub?.fatherLastName,
+        tutorSub?.motherLastName,
+      ]
+        .filter((s) => s && s !== 'No data yet')
+        .join(' ');
+      const tutorSubIdType = 'CURP';
+      const tutorSubIdNumber = tutorSub?.governmentId;
+      const tutorSubIdText =
+        tutorSubIdNumber && tutorSubIdNumber !== 'No data yet'
+          ? `, con identificación <strong>${tutorSubIdType} ${tutorSubIdNumber}</strong>.`
+          : '.';
+
+      tutorSubFinal = `Tutor suplente: <strong>${tutorSubRelation}</strong>, <strong>${tutorSubName}</strong>${tutorSubIdText}`;
+
+      html = html.replace(
+        /<li>[\s\S]*?{{parentesco_tutor2}}[\s\S]*?<\/li>/,
+        `<li>${tutorSubFinal}</li>`,
+      );
+    } else {
+      html = html.replace(/<li>\s*Tutor suplente:[\s\S]*?<\/li>/, '');
+    }
+
+    if (!guardianMain)
       html = this.removeElementById(html, 'guardian-main-text');
-    }
-    if (!guardianSubContact) {
-      html = this.removeElementById(html, 'guardian-sub-text');
-    }
+    if (!guardianSub) html = this.removeElementById(html, 'guardian-sub-text');
 
-    // Tutor principal
-    const parentescoTutor1 = this.translateRelationToSpanish(
-      tutorMainContact?.relationToUser,
-    );
-    const nombreTutor1 = tutorMainContact?.name ?? 'No data yet';
-    const fatherTutor1 = tutorMainContact?.fatherLastName ?? 'No data yet';
-    const motherTutor1 = tutorMainContact?.motherLastName ?? 'No data yet';
-    const tipoIdTutor1 = 'CURP';
-    const numeroIdTutor1 = tutorMainContact?.governmentId ?? 'No data yet';
-
-    // Tutor suplente
-    const parentescoTutor2 = this.translateRelationToSpanish(
-      tutorSubContact?.relationToUser,
-    );
-    const nombreTutor2 = tutorSubContact?.name ?? 'No data yet';
-    const fatherTutor2 = tutorSubContact?.fatherLastName ?? 'No data yet';
-    const motherTutor2 = tutorSubContact?.motherLastName ?? 'No data yet';
-    const tipoIdTutor2 = 'CURP';
-    const numeroIdTutor2 = tutorSubContact?.governmentId ?? 'No data yet';
-
-    // Guardian principal
-    const nameGuardian1 = guardianMainContact?.name ?? 'No data yet';
-    const fatherGuardian1 =
-      guardianMainContact?.fatherLastName ?? 'No data yet';
-    const motherGuardian1 =
-      guardianMainContact?.motherLastName ?? 'No data yet';
+    const nameGuardian1 = guardianMain?.name ?? '';
+    const fatherGuardian1 = guardianMain?.fatherLastName ?? '';
+    const motherGuardian1 = guardianMain?.motherLastName ?? '';
     const tipoIdGuardian = 'CURP';
-    const numeroIdGuardian1 =
-      guardianMainContact?.governmentId ?? 'No data yet';
+    const numeroIdGuardian1 = guardianMain?.governmentId ?? '';
 
-    // Guardian suplente
-    const nameGuardian2 = guardianSubContact?.name ?? 'No data yet';
-    const fatherGuardian2 = guardianSubContact?.fatherLastName ?? 'No data yet';
-    const motherGuardian2 = guardianSubContact?.motherLastName ?? 'No data yet';
-    const numeroIdGuardian2 = guardianSubContact?.governmentId ?? 'No data yet';
-
-    html = html.replace(/{{parentesco_tutor1}}/g, parentescoTutor1);
-    html = html.replace(/{{nombre_heredero1_tutor}}/g, nombreTutor1);
-    html = html.replace(/{{fatherLastName_heredero1_tutor}}/g, fatherTutor1);
-    html = html.replace(/{{motherLastName_heredero1_tutor}}/g, motherTutor1);
-    html = html.replace(/{{tipo_identificacion1_tutor}}/g, tipoIdTutor1);
-    html = html.replace(/{{numero_identificacion1_tutor}}/g, numeroIdTutor1);
-
-    html = html.replace(/{{parentesco_tutor2}}/g, parentescoTutor2);
-    html = html.replace(/{{nombre_heredero2_tutor}}/g, nombreTutor2);
-    html = html.replace(/{{fatherLastName_heredero2_tutor}}/g, fatherTutor2);
-    html = html.replace(/{{motherLastName_heredero2_tutor}}/g, motherTutor2);
-    html = html.replace(/{{tipo_identificacion2_tutor}}/g, tipoIdTutor2);
-    html = html.replace(/{{numero_identificacion2_tutor}}/g, numeroIdTutor2);
+    const nameGuardian2 = guardianSub?.name ?? '';
+    const fatherGuardian2 = guardianSub?.fatherLastName ?? '';
+    const motherGuardian2 = guardianSub?.motherLastName ?? '';
+    const numeroIdGuardian2 = guardianSub?.governmentId ?? '';
 
     html = html.replace(/{{name_guardian1}}/g, nameGuardian1);
     html = html.replace(/{{fatherLastName_guardian1}}/g, fatherGuardian1);
