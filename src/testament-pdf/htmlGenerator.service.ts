@@ -95,6 +95,20 @@ export class HtmlGeneratorService {
       html = this.removeSectionById(html, 'section3-new');
     }
 
+    // ================== MÚLTIPLES ASIGNACIONES ==================
+    if (!['HP', 'HPG'].includes(testamentHeader.inheritanceType)) {
+      html = this.removeSectionById(html, 'section3');
+    } else {
+      const assignmentsHtml = this.buildAssignmentsList(
+        testamentHeader.TestamentAssignment || [],
+        testamentHeader.user,
+      );
+      html = html.replace(
+        /#\{\{designacion_herederos_loop\}\}#/g,
+        assignmentsHtml,
+      );
+    }
+
     // ================== 8) DESIGNACIÓN DE ALBACEA (section3) ==================
     const {
       albaceaName,
@@ -105,44 +119,44 @@ export class HtmlGeneratorService {
       substituteMother,
     } = this.extractExecutorData(testamentHeader.Executor);
 
-    const isAlbaceaEmpty = [
+    const isAllEmpty = [
       albaceaName,
       albaceaFather,
       albaceaMother,
       substituteName,
       substituteFather,
       substituteMother,
-    ].every((val) => !val || val === 'No data yet');
+    ].every((val) => !val || val.trim() === '');
 
-    if (isAlbaceaEmpty) {
-      html = this.removeSectionById(html, 'section3');
+    if (isAllEmpty) {
+      html = this.removeSectionById(html, 'section4');
     } else {
       html = html.replace(/{{albacea_name}}/g, albaceaName);
       html = html.replace(/{{albacea_fatherLastName}}/g, albaceaFather);
       html = html.replace(/{{albacea_motherLastName}}/g, albaceaMother);
-      html = html.replace(/{{albacea_subtitue_name}}/g, substituteName);
-      html = html.replace(
-        /{{albacea_subtitue_fatherLastName}}/g,
-        substituteFather,
-      );
-      html = html.replace(
-        /{{albacea_subtitue_motherLastName}}/g,
-        substituteMother,
-      );
-    }
 
-    // ================== MÚLTIPLES ASIGNACIONES ==================
-    if (!['HP', 'HPG'].includes(testamentHeader.inheritanceType)) {
-      html = this.removeSectionById(html, 'section4');
-    } else {
-      const assignmentsHtml = this.buildAssignmentsList(
-        testamentHeader.TestamentAssignment || [],
-        testamentHeader.user,
-      );
-      html = html.replace(
-        /#\{\{designacion_herederos_loop\}\}#/g,
-        assignmentsHtml,
-      );
+      const isSubstituteEmpty = [
+        substituteName,
+        substituteFather,
+        substituteMother,
+      ].every((val) => !val || val.trim() === '');
+
+      if (isSubstituteEmpty) {
+        html = html.replace(
+          /En[\s\S]*?albacea sustituto a <strong>{{albacea_subtitue_name}} {{albacea_subtitue_fatherLastName}} {{albacea_subtitue_motherLastName}}<\/strong>\./,
+          '',
+        );
+      } else {
+        html = html.replace(/{{albacea_subtitue_name}}/g, substituteName);
+        html = html.replace(
+          /{{albacea_subtitue_fatherLastName}}/g,
+          substituteFather,
+        );
+        html = html.replace(
+          /{{albacea_subtitue_motherLastName}}/g,
+          substituteMother,
+        );
+      }
     }
 
     // ================== LEGADOS ESPECIFICOS ==================
@@ -315,26 +329,24 @@ export class HtmlGeneratorService {
   private extractExecutorData(executors?: any[]) {
     if (!executors || executors.length === 0) {
       return {
-        albaceaName: 'No data yet',
-        albaceaFather: 'No data yet',
-        albaceaMother: 'No data yet',
-        substituteName: 'No data yet',
-        substituteFather: 'No data yet',
-        substituteMother: 'No data yet',
+        albaceaName: '',
+        albaceaFather: '',
+        albaceaMother: '',
+        substituteName: '',
+        substituteFather: '',
+        substituteMother: '',
       };
     }
 
     const executorOne = executors.find((e) => e.priorityOrder === 1);
-    const albaceaName = executorOne?.contact?.name ?? 'No data yet';
-    const albaceaFather = executorOne?.contact?.fatherLastName ?? 'No data yet';
-    const albaceaMother = executorOne?.contact?.motherLastName ?? 'No data yet';
+    const albaceaName = executorOne?.contact?.name ?? '';
+    const albaceaFather = executorOne?.contact?.fatherLastName ?? '';
+    const albaceaMother = executorOne?.contact?.motherLastName ?? '';
 
     const executorTwo = executors.find((e) => e.priorityOrder === 2);
-    const substituteName = executorTwo?.contact?.name ?? 'No data yet';
-    const substituteFather =
-      executorTwo?.contact?.fatherLastName ?? 'No data yet';
-    const substituteMother =
-      executorTwo?.contact?.motherLastName ?? 'No data yet';
+    const substituteName = executorTwo?.contact?.name ?? '';
+    const substituteFather = executorTwo?.contact?.fatherLastName ?? '';
+    const substituteMother = executorTwo?.contact?.motherLastName ?? '';
 
     return {
       albaceaName,
