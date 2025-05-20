@@ -109,7 +109,7 @@ export class HtmlGeneratorService {
       );
     }
 
-    // ================== 8) DESIGNACIÓN DE ALBACEA (section3) ==================
+    // ================== 8) DESIGNACIÓN DE ALBACEA (section4) ==================
     const {
       albaceaName,
       albaceaFather,
@@ -119,16 +119,11 @@ export class HtmlGeneratorService {
       substituteMother,
     } = this.extractExecutorData(testamentHeader.Executor);
 
-    const isAllEmpty = [
-      albaceaName,
-      albaceaFather,
-      albaceaMother,
-      substituteName,
-      substituteFather,
-      substituteMother,
-    ].every((val) => !val || val.trim() === '');
+    const isAlbaceaEmpty = [albaceaName, albaceaFather, albaceaMother].every(
+      (val) => !val || val.trim() === '',
+    );
 
-    if (isAllEmpty) {
+    if (isAlbaceaEmpty) {
       html = this.removeSectionById(html, 'section4');
     } else {
       html = html.replace(/{{albacea_name}}/g, albaceaName);
