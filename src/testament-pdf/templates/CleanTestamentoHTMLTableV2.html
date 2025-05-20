@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Testamento Digital</title>
+    <title>Testamento Digital Certificado</title>
     <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
     <style>
         /* Reset */
@@ -292,10 +292,10 @@
                                     en pleno uso de mis facultades mentales y sin estar condicionado, forzado o
                                     influenciado por
                                     ninguna persona, declaro libremente mi Última voluntad mediante este
-                                    <strong>Testamento Digital</strong>, conforme a lo dispuesto en los
+                                    <strong>Testamento Digital Certificado</strong>, conforme a lo dispuesto en los
                                     artículos 1500 fracción V, 1564 Bis y siguientes del <strong>Código Civil
                                         Federal</strong>, y las disposiciones complementarias del <strong> Código Civil
-                                        de la Ciudad de México</strong>, así como lo establecido en el <strong>Código
+                                        de la Ciudad de México</strong>r, así como lo establecido en el <strong>Código
                                         de Comercio en materia de Firma Electrónica</strong> y demás normativa
                                     aplicable.
                                 </p>
@@ -340,6 +340,23 @@
                         </section>
                         <!-- Now we insert ALL the original sections (which originally were clauses DÉCIMA to DÉCIMA OCTAVA) immediately after CLÁUSULA TERCERA -->
 
+                        <!-- Original Section: DESIGNACIÓN DE ALBACEA -->
+                        <section id="section3">
+                            <div class="content">
+                                <h3 class="subsection-title">DESIGNACIÓN DE ALBACEA</h3>
+                                <p>
+                                    Para la administración, ejecución y cumplimiento de este testamento, designo como
+                                    <strong>Albacea
+                                        General</strong> a <strong>{{albacea_name}} {{albacea_fatherLastName}}
+                                        {{albacea_motherLastName}}</strong>, , quien contará con todas las facultades
+                                    necesarias para representar mis intereses, realizar actos de administración,
+                                    conservación y disposición conforme a lo previsto en la legislación aplicable. En
+                                    caso de que el Albacea designado no pueda o no desee aceptar el cargo, designo como
+                                    albacea sustituto a <strong>{{albacea_subtitue_name}} {{albacea_subtitue_fatherLastName}} {{albacea_subtitue_motherLastName}}</strong>.
+                                </p>
+                            </div>
+                        </section>
+
                         <!-- Original Section: DESIGNACIÓN DE HEREDEROS -->
                         <section id="section4">
                             <div class="content">
@@ -359,33 +376,20 @@
                             </div>
                         </section>
 
-                        <!-- Original Section: DESIGNACIÓN DE ALBACEA -->
-                        <section id="section3">
-                            <div class="content">
-                                <h3 class="subsection-title">DESIGNACIÓN DE ALBACEA</h3>
-                                <p>
-                                    Para la administración, ejecución y cumplimiento de este testamento, designo como
-                                    <strong>Albacea
-                                        General</strong> a <strong>{{albacea_name}} {{albacea_fatherLastName}}
-                                        {{albacea_motherLastName}}</strong>, quien contará con todas las facultades
-                                    necesarias para representar mis intereses, realizar actos de administración,
-                                    conservación y disposición conforme a lo previsto en la legislación aplicable. En
-                                    caso de que el Albacea designado no pueda o no desee aceptar el cargo, designo como
-                                    albacea sustituto a <strong>{{albacea_subtitue_name}} {{albacea_subtitue_fatherLastName}} {{albacea_subtitue_motherLastName}}</strong>.
-                                </p>
-                            </div>
-                        </section>
-
-                        <!-- Original Section: LEGADOS -->
+                        <!-- Original Section: LEGADOS ESPECÍFICOS -->
                         <section id="section5">
                             <div class="content">
-                                <h3 class="subsection-title">LEGADOS</h3>
+                                <h3 class="subsection-title">LEGADOS ESPECÍFICOS</h3>
                                 <p>
                                     Dispongo que los siguientes bienes y derechos sean entregados, como legados
                                     particulares, a las personas que señalo a continuación:
                                 </p>
                                 <ol>
-                                    #{{legados_loop}}#
+                                    <li>
+                                        <strong>{{asset_notes}}</strong> será legado a <strong>{{legay_name}}
+                                            {{legay_fatherLastName}} {{legay_motherLastName}}</strong>, con
+                                        identificación <strong>{{id_type_legacy}} {{id_number_legacy}}</strong>.
+                                    </li>
                                 </ol>
                                 <p>
                                     En caso de que el legatario no pudiera o no quisiera recibir el bien legado, éste se
@@ -474,7 +478,7 @@
                                     Por medio del presente instrumento, revoco expresamente cualquier testamento o
                                     disposición testamentaria previa que haya otorgado, ya sea de forma escrita, oral,
                                     notarial, ológrafa o electrónica, ante cualquier persona o autoridad. Este
-                                    Testamento Digital prevalece como la única manifestación válida y
+                                    Testamento Digital Certificado prevalece como la única manifestación válida y
                                     vigente de mi voluntad sucesoria.
                                 </p>
                             </div>
@@ -612,7 +616,7 @@
                                     coacción de ninguna índole.
                                 </p>
                                 <p>
-                                    Este Testamento Digital ha sido emitido y autenticado conforme a los
+                                    Este Testamento Digital Certificado ha sido emitido y autenticado conforme a los
                                     requisitos legales, tecnológicos y formales establecidos en la legislación mexicana
                                     vigente, cumpliendo con los artículos 1500 fracción V y 1564 Bis y siguientes del
                                     Código Civil Federal, así como con la NOM-151, el Código de Comercio y los
@@ -726,7 +730,7 @@
                 { id: "section3-new", title: "DESIGNACIÓN DE HEREDEROS" },
                 { id: "section3", title: "DESIGNACIÓN DE ALBACEA" },
                 { id: "section4", title: "DESIGNACIÓN DE HEREDEROS" },
-                { id: "section5", title: "LEGADOS" },
+                { id: "section5", title: "LEGADOS ESPECÍFICOS" },
                 { id: "section6", title: "DESIGNACIÓN DE HEREDERO UNIVERSAL" },
                 { id: "section7", title: "DESIGNACIÓN DE HEREDEROS Y BIENES DIGITALES" },
                 { id: "section8", title: "INSTRUCCIONES PÓSTUMAS Y ÚLTIMOS DESEOS" },

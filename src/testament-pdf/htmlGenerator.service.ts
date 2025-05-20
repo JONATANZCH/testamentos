@@ -282,14 +282,18 @@ export class HtmlGeneratorService {
     if (!addresses || addresses.length === 0) {
       return 'No data yet';
     }
+
     const addr = addresses[0];
     const street = addr.street ?? 'No data yet';
+    const suburb = addr.suburb ?? '';
     const city = addr.city ?? 'No data yet';
     const state = addr.state ?? 'No data yet';
     const zip = addr.zipCode ?? 'No data yet';
     const country = addr.country ?? 'No data yet';
 
-    return `${street}, ${city}, ${state}, ${zip}, ${country}`;
+    const streetWithSuburb = suburb ? `${street}, ${suburb}` : street;
+
+    return `${streetWithSuburb}, ${city}, ${state}, ${zip}, ${country}`;
   }
 
   private removeSectionById(html: string, sectionId: string): string {
@@ -367,19 +371,30 @@ export class HtmlGeneratorService {
       } = this.extractAssignmentBeneficiary(assignment, user);
 
       const translatedRelation = this.translateRelationToSpanish(relation);
-
       const assetName = assignment.asset?.name ?? 'No data yet';
       const assetPercent = assignment.percentage
         ? assignment.percentage.toString() + '%'
         : 'No data yet';
 
+      if (relation === 'Legal Entity') {
+        return `
+          <li>
+            <strong>${name}</strong>, entidad legal registrada con <strong>${idType} ${idNumber}</strong>,
+            recibirá el <strong>${assetPercent}</strong> del bien denominado <strong>${assetName}</strong>.
+          </li>`;
+      }
+
+      const identificationText =
+        idNumber && idNumber !== 'No data yet'
+          ? ` con <strong>${idType} ${idNumber}</strong>`
+          : '';
+
       return `
-      <li>
-        <strong>${translatedRelation}</strong>, 
-        <strong>${name} ${fatherLastName} ${motherLastName}</strong>,
-        con identificación <strong>${idType} ${idNumber}</strong>, quien recibirá
-        <strong>${assetPercent} ${assetName}</strong>.
-      </li>`;
+        <li>
+          <strong>${name} ${fatherLastName} ${motherLastName}</strong>, quien se identifica como
+          <strong>${translatedRelation} del testador</strong>${identificationText},
+          recibirá el <strong>${assetPercent}</strong> del bien denominado <strong>${assetName}</strong>.
+        </li>`;
     });
 
     return listItems.join('\n');
