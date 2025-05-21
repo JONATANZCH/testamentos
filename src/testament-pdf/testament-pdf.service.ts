@@ -268,6 +268,7 @@ export class TestamentPdfService {
           },
         },
       });
+      console.log('testamentHeader', testamentHeader);
 
       if (!testamentHeader) {
         response.code = 404;

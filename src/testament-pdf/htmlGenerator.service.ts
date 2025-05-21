@@ -6,9 +6,10 @@ import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class HtmlGeneratorService {
   private template: string | null = null;
+  private templateLoadPromise: Promise<void>;
 
   constructor() {
-    this.loadTemplateInMemory();
+    this.templateLoadPromise = this.loadTemplateInMemory();
   }
 
   private async loadTemplateInMemory(): Promise<void> {
@@ -18,6 +19,7 @@ export class HtmlGeneratorService {
         'templates',
         'CleanTestamentoHTMLTable.html',
       );
+      console.log('Loading template from path:', templatePath);
       this.template = await fs.readFile(templatePath, 'utf8');
     } catch (error) {
       console.error('Error loading HTML template:', error);
@@ -26,6 +28,7 @@ export class HtmlGeneratorService {
   }
 
   async generateHtml(testamentHeader: any): Promise<string> {
+    await this.templateLoadPromise;
     if (!this.template) {
       return '<h1>Template not loaded</h1>';
     }
