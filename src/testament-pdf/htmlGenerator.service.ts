@@ -6,11 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class HtmlGeneratorService {
   private template: string | null = null;
-  private templateLoadPromise: Promise<void>;
 
-  constructor() {
-    this.templateLoadPromise = this.loadTemplateInMemory();
-  }
+  constructor() {}
 
   private async loadTemplateInMemory(): Promise<void> {
     try {
@@ -33,7 +30,10 @@ export class HtmlGeneratorService {
   }
 
   async generateHtml(testamentHeader: any): Promise<string> {
-    await this.templateLoadPromise;
+    if (!this.template) {
+      await this.loadTemplateInMemory();
+    }
+
     if (!this.template) {
       console.error(
         '[HtmlGeneratorService] generateHtml: La plantilla no está disponible incluso después de esperar. Contenido de this.template:',
