@@ -14,6 +14,7 @@ import { SuscriptionsModule } from './suscriptions/suscriptions.module';
 import { TestamentPdfModule } from './testament-pdf/testament-pdf.module';
 import { LegaciesModule } from './legacies/legacies.module';
 import { SendMessagesModule } from './send-messages/send-messages.module';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SendMessagesModule } from './send-messages/send-messages.module';
     TestamentPdfModule,
     LegaciesModule,
     SendMessagesModule,
+    ProductsModule,
   ],
   providers: [ConfigService, PrismaProvider],
   exports: [ConfigService],
