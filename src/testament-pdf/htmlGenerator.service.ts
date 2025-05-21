@@ -6,9 +6,10 @@ import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class HtmlGeneratorService {
   private template: string | null = null;
+  private templateLoadPromise: Promise<void>;
 
   constructor() {
-    this.loadTemplateInMemory();
+    this.templateLoadPromise = this.loadTemplateInMemory();
   }
 
   private async loadTemplateInMemory(): Promise<void> {
@@ -18,8 +19,13 @@ export class HtmlGeneratorService {
         'templates',
         'CleanTestamentoHTMLTable.html',
       );
-      console.log('Loading template from path:', templatePath);
+      console.log(
+        `[HtmlGeneratorService] Intentando cargar plantilla desde: ${templatePath}`,
+      );
       this.template = await fs.readFile(templatePath, 'utf8');
+      console.log(
+        `[HtmlGeneratorService] Plantilla cargada correctamente. Longitud: ${this.template.length}. Primeros 100 caracteres: ${this.template.substring(0, 100)}`,
+      );
     } catch (error) {
       console.error('Error loading HTML template:', error);
       this.template = '';
@@ -27,11 +33,20 @@ export class HtmlGeneratorService {
   }
 
   async generateHtml(testamentHeader: any): Promise<string> {
+    await this.templateLoadPromise;
     if (!this.template) {
+      console.error(
+        '[HtmlGeneratorService] generateHtml: La plantilla no está disponible incluso después de esperar. Contenido de this.template:',
+        this.template,
+      );
       return '<h1>Template not loaded</h1>';
     }
 
     let html = this.template;
+    console.log(
+      '[HtmlGeneratorService] generateHtml: Iniciando con plantilla cargada (primeros 100 caracteres):',
+      html.substring(0, 100),
+    );
 
     try {
       const logoPath = path.join(__dirname, 'templates', 'logo.png');
@@ -131,7 +146,7 @@ export class HtmlGeneratorService {
     console.log('[generateHtml] isAlbaceaEmpty for section4:', isAllEmpty);
 
     if (isAllEmpty) {
-      html = this.removeSectionById(html, 'section3');
+      html = this.removeSectionById(html, 'section4');
     } else {
       html = html.replace(/{{albacea_name}}/g, albaceaName);
       html = html.replace(/{{albacea_fatherLastName}}/g, albaceaFather);
