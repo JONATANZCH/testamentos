@@ -11,6 +11,7 @@ export class HtmlGeneratorService {
 
   private async loadTemplateInMemory(): Promise<void> {
     try {
+      console.log(`[HtmlGeneratorService] __dirname = ${__dirname}`);
       const templatePath = path.join(
         __dirname,
         'templates',
