@@ -6,10 +6,9 @@ import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class HtmlGeneratorService {
   private template: string | null = null;
-  private templateLoadPromise: Promise<void>;
 
   constructor() {
-    this.templateLoadPromise = this.loadTemplateInMemory();
+    this.loadTemplateInMemory();
   }
 
   private async loadTemplateInMemory(): Promise<void> {
@@ -28,7 +27,6 @@ export class HtmlGeneratorService {
   }
 
   async generateHtml(testamentHeader: any): Promise<string> {
-    await this.templateLoadPromise;
     if (!this.template) {
       return '<h1>Template not loaded</h1>';
     }
@@ -122,39 +120,31 @@ export class HtmlGeneratorService {
       substituteMother,
     } = this.extractExecutorData(testamentHeader.Executor);
 
-    const isAlbaceaEmpty = [albaceaName, albaceaFather, albaceaMother].every(
-      (val) => !val || val.trim() === '',
-    );
+    const isAllEmpty = [
+      albaceaName,
+      albaceaFather,
+      albaceaMother,
+      substituteName,
+      substituteFather,
+      substituteMother,
+    ].every((val) => !val || val.trim() === '');
+    console.log('[generateHtml] isAlbaceaEmpty for section4:', isAllEmpty);
 
-    if (isAlbaceaEmpty) {
-      html = this.removeSectionById(html, 'section4');
+    if (isAllEmpty) {
+      html = this.removeSectionById(html, 'section3');
     } else {
       html = html.replace(/{{albacea_name}}/g, albaceaName);
       html = html.replace(/{{albacea_fatherLastName}}/g, albaceaFather);
       html = html.replace(/{{albacea_motherLastName}}/g, albaceaMother);
-
-      const isSubstituteEmpty = [
-        substituteName,
+      html = html.replace(/{{albacea_subtitue_name}}/g, substituteName);
+      html = html.replace(
+        /{{albacea_subtitue_fatherLastName}}/g,
         substituteFather,
+      );
+      html = html.replace(
+        /{{albacea_subtitue_motherLastName}}/g,
         substituteMother,
-      ].every((val) => !val || val.trim() === '');
-
-      if (isSubstituteEmpty) {
-        html = html.replace(
-          /En[\s\S]*?albacea sustituto a <strong>{{albacea_subtitue_name}} {{albacea_subtitue_fatherLastName}} {{albacea_subtitue_motherLastName}}<\/strong>\./,
-          '',
-        );
-      } else {
-        html = html.replace(/{{albacea_subtitue_name}}/g, substituteName);
-        html = html.replace(
-          /{{albacea_subtitue_fatherLastName}}/g,
-          substituteFather,
-        );
-        html = html.replace(
-          /{{albacea_subtitue_motherLastName}}/g,
-          substituteMother,
-        );
-      }
+      );
     }
 
     // ================== LEGADOS ESPECIFICOS ==================
