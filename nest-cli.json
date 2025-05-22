@@ -7,7 +7,7 @@
     "assets": [
       {
         "include": "testament-pdf/templates/**/*",
-        "outDir": "dist/src"
+        "watchAssets": true
       }
     ]
   }
