@@ -1,7 +1,6 @@
 import {
   Controller,
   Post,
-  Get,
   Patch,
   Param,
   Body,
@@ -33,12 +32,6 @@ export class ProductsController {
   ) {
     console.log(`[createUserProductSubscription] userId=${userId}`);
     return this.productsService.createUserProductSubscription(userId, dto);
-  }
-
-  @Get('/:userId/products')
-  getUserProductsSubscriptions(@Param('userId', ParseUUIDPipe) userId: string) {
-    console.log(`[getUserProductsSubscriptions] userId=${userId}`);
-    return this.productsService.getUserProductsSubscriptions(userId);
   }
 
   @Patch('/:productId/products')

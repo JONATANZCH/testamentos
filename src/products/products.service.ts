@@ -61,28 +61,6 @@ export class ProductsService {
     }
   }
 
-  async getUserProductsSubscriptions(
-    userId: string,
-  ): Promise<GeneralResponseDto> {
-    const response = new GeneralResponseDto();
-    try {
-      this.prisma = await this.prismaProvider.getPrismaClient();
-      if (!this.prisma) throw new Error('DB connection error wills -> dnkd28');
-
-      const records = await this.prisma.userPartnerProductContract.findMany({
-        where: { userId },
-        include: { service: true },
-      });
-
-      response.code = 200;
-      response.msg = 'User subscriptions retrieved';
-      response.response = records;
-      return response;
-    } catch (err) {
-      processException(err);
-    }
-  }
-
   async updateUserProductsSubscription(
     productId: string,
     dto: UpdateUserPartnerProductDto,

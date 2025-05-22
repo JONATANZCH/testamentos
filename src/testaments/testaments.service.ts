@@ -2050,4 +2050,164 @@ export class TestamentsService {
       hasSignedMetadata,
     };
   }
+
+  async getProductContractById(userId: string, res: Response) {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Error-> db-connection-failed -> xemkl8');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const records = await this.prisma.userPartnerProductContract.findFirst({
+        where: { userId },
+        include: { service: true },
+      });
+
+      if (!records || records.length === 0) {
+        response.code = 404;
+        response.msg = 'No subscriptions found for this user';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      response.code = 200;
+      response.msg = 'User subscriptions retrieved';
+      console.log('User subscriptions retrieved');
+      response.response = records;
+      return res.status(200).json(response);
+    } catch (err) {
+      console.log('Error getting contract -> xsemkl8');
+      processException(err);
+    }
+  }
+
+  async streamProductContractPdf(userId: string, res: Response) {
+    const response = new GeneralResponseDto();
+    try {
+      console.log('[streamTestamentPdf] Called with userID:', userId);
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        response.code = 404;
+        response.msg = 'User not found';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      const contract = await this.prisma.userPartnerProductContract.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        include: { service: true },
+      });
+
+      if (!contract) {
+        response.code = 404;
+        response.msg = 'No subscriptions found for this user';
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      const status = contract.signatureStatus;
+
+      const folder = `Parner-product${contract.id}/`;
+      const nomFile = `${folder}${contract.id}_RGCCNOM151.pdf`;
+      const pastpostFile = `${folder}${contract.id}_PASTPOST.pdf`;
+
+      let bucket: string;
+      let key: string;
+      let isSignedPdf = false;
+
+      if (status === 'Signed') {
+        const processId =
+          contract.signatureStatus?.signprocessinfo?.[0]?.seguridataprocessid;
+        if (!processId) {
+          throw new HttpException(
+            'Missing Seguridata process ID in metadata',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        const keyFile = 'Parner-product' + contract.id + '/' + contract.id;
+        const getResponse = await this.getNomSignedPdf(keyFile, processId);
+        if (getResponse.code !== 200) {
+          throw new HttpException(
+            getResponse,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+
+        await this.prisma.userPartnerProductContract.update({
+          where: { userId },
+          data: { signatureStatus: 'SignedPdfDownloaded' },
+        });
+
+        isSignedPdf = true;
+      }
+
+      if (status === 'SignedPdfDownloaded' || isSignedPdf) {
+        const [url1, url2] = await Promise.all([
+          this.getS3SignedUrl(this.getBucketWill, nomFile),
+          this.getS3SignedUrl(this.getBucketWill, pastpostFile),
+        ]);
+
+        if (!url1 || !url2) {
+          throw new HttpException(
+            'Signed PDF not found in S3',
+            HttpStatus.NOT_FOUND,
+          );
+        }
+
+        bucket = this.getBucketWill;
+        key = pastpostFile;
+      } else {
+        if (contract.status !== 'Processed') {
+          throw new HttpException(
+            {
+              code: 202,
+              msg: 'PDF is ready but the storage link is not available yet. Please try again shortly.',
+            },
+            HttpStatus.ACCEPTED,
+          );
+        }
+
+        bucket = this.getBucketWill;
+        key = `${folder}${contract.id}.pdf`;
+      }
+      console.log(
+        `[streamTestamentPdf] Waiting briefly before attempting to fetch: bucket=${bucket}, key=${key}`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+      const s3Response = await this.s3.send(command);
+
+      if (!s3Response.Body) {
+        throw new HttpException(
+          'Empty PDF response',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      const buffer = Buffer.from(await s3Response.Body.transformToByteArray());
+
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="${contract}.pdf"`,
+      });
+
+      return res.send(buffer);
+    } catch (err) {
+      console.log('Error streaming PDF -> xsemkl8', err);
+      processException(err);
+    }
+  }
 }

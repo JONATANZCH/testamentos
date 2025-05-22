@@ -2287,6 +2287,10 @@ export class TestamentPdfService {
         },
       });
       console.log('We responded with ' + JSON.stringify(response));
+      response.code = 201;
+      response.msg = 'Datos procesados y encolados para conversión PDF.';
+      response.response = { response };
+      console.log('[handlePdfProcess] Response =>', response);
       return response;
     } catch (error) {
       console.log('Error -> bck3d', error);

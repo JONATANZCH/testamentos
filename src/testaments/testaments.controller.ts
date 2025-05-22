@@ -70,6 +70,21 @@ export class TestamentsController {
     }
   }
 
+  @Get('/:userId/products')
+  async getProductContractByIdOrFile(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Query('type') type: 'metadata' | 'pdf' = 'metadata', // por defecto 'metadata'
+    @Res() res: Response,
+  ) {
+    if (type === 'pdf') {
+      console.log('streaming pdf');
+      return this.testamentsService.streamProductContractPdf(userId, res);
+    } else {
+      console.log('getting metadata');
+      return this.testamentsService.getProductContractById(userId, res);
+    }
+  }
+
   @Post('/users/:userId/testaments')
   async createTestament(
     @Param('userId', ParseUUIDPipe) userId: string,
