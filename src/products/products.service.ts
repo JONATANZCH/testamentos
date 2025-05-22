@@ -111,4 +111,30 @@ export class ProductsService {
       processException(err);
     }
   }
+
+  async processContract(userId: string): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) throw new Error('DB connection error wills -> dsvbo8');
+
+      const exists = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!exists)
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      const updated = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          status: 'active',
+        },
+      });
+      response.code = 200;
+      response.msg = 'User status updated to active';
+      response.response = updated;
+      return response;
+    } catch (err) {
+      processException(err);
+    }
+  }
 }

@@ -31,11 +31,13 @@ export class ProductsController {
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() dto: CreateUserPartnerProductDto,
   ) {
+    console.log(`[createUserProductSubscription] userId=${userId}`);
     return this.productsService.createUserProductSubscription(userId, dto);
   }
 
   @Get('/:userId/products')
   getUserProductsSubscriptions(@Param('userId', ParseUUIDPipe) userId: string) {
+    console.log(`[getUserProductsSubscriptions] userId=${userId}`);
     return this.productsService.getUserProductsSubscriptions(userId);
   }
 
@@ -44,6 +46,7 @@ export class ProductsController {
     @Param('productId', ParseUUIDPipe) productId: string,
     @Body() dto: UpdateUserPartnerProductDto,
   ) {
+    console.log(`[updateUserProductsSubscription] productId=${productId}`);
     return this.productsService.updateUserProductsSubscription(productId, dto);
   }
 }

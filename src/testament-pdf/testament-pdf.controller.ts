@@ -35,6 +35,14 @@ export class TestamentPdfController {
     return this.testamentPdfService.handlePdfProcess(body.pdfProcessId);
   }
 
+  @Post('/products/:contractId/processcontract')
+  processContractProducts(
+    @Param('contractId', ParseUUIDPipe) contractId: string,
+  ) {
+    console.log(`[processContract] contractId=${contractId}`);
+    return this.testamentPdfService.processContractProducts(contractId);
+  }
+
   @Post('/status/pdfGenerate/:processId')
   async getProcessStatus(
     @Param('processId') processId: string,

@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VICO-735</title>
+    <style>
+
+footer {
+  text-align: center;
+  padding: 3px;
+  background-color: DarkSalmon;
+  color: white;
+}
+
+        * {
+            margin: 0px;
+            padding: 0px;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .logo {
+            width: 160px;
+            margin-bottom: 8px;
+            margin-left: 30px;
+        }
+
+        .first_section-top-left {
+            width: 300px;
+            margin: 2px 0px 0px 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+
+        .info {
+            line-height: 12px;
+            font-size: 12px;
+            text-align: justify;
+        }
+
+        .signature {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .signature-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    height: 100px; /* Adjust this height to ensure alignment */
+  }
+  .signature-img {
+    max-width: 100%;
+    max-height: 100%;
+  }
+  .signature-line {
+    width: 170px;
+    margin: 0;
+  }
+  .text-11 {
+    margin-top: 5px; /* Adjust this margin to ensure alignment with the line */
+    text-align: center;
+  }
+        .heading {
+            margin: 4px 0px 4px;
+        }
+
+        /* ------------- Table styles ------------- */
+        table,
+        td,
+        th {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            font-size: 10px;
+        }
+
+
+        .header_table-td {
+            border: .5px solid #000000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            text-align: left;
+            padding: 2px 1px;
+            width: 150px;
+        }
+
+        .form_table-td {
+            border-top: .5px solid #000000;
+            border-left: .5px solid #000000;
+            border-right: .5px solid #000000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            text-align: left;
+        }
+
+        .form_table-header {
+            text-align: center;
+            font-weight: 600;
+            padding: 3px 0px 2px 0px;
+        }
+
+        .form-text {
+            font-size: 15px;
+            font-weight: 100;
+            background-color: #e7e8e8;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            padding: 2px 5px 2px 3px;
+            height: auto;
+            display: inline-block;
+        }
+
+        .section {
+            margin-top: 5px;
+        }
+
+        /* ------------- Section styles ------------- */
+
+        .section_one-form {
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        .fifth_section {
+            border: .5px solid #000000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            padding: 2px 3px;
+            border-radius: 5px;
+        }
+
+        .seventh_section {
+            /* border: .5px solid #000000; */
+            border-radius: 5px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            padding: 2px 3px;
+        }
+
+        .eighth_section {
+            border: .5px solid #000000;
+            border-radius: 5px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .ninth_section {
+            margin-top: 6px;
+        }
+
+
+        /* ------------- Utility classes ------------- */
+
+        .color-gray {
+            background-color: #e7e8e8;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .bg-transparent {
+            background-color: transparent !important;
+        }
+
+        .bg-gray {
+            background-color: #e7e8e8;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+
+        .br-black {
+            border-right: .5px solid #000000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .bb-black {
+            border-bottom: .5px solid #000000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .bb-gray {
+            border-bottom: .5px solid #777B7E;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+
+        .b-black {
+            border: .5px solid #000000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+
+        .bl-none {
+            border-left: 0px;
+        }
+
+        .br-none {
+            border-right: 0px;
+        }
+
+
+        .bb-none {
+            border-bottom: 0px;
+        }
+
+        .bt-none {
+            border-top: none;
+        }
+
+
+        .text-bold {
+            font-weight: 600;
+        }
+
+        .text-center {
+            text-align: center !important;
+        }
+
+        .text-justify {
+            text-align: justify;
+        }
+
+        .d-block {
+            display: block !important;
+        }
+
+        .ml-5 {
+            margin-left: 50px;
+        }
+
+        .letter-space {
+            letter-spacing: 7px;
+        }
+
+        .text-7 {
+            font-size: 7px !important;
+        }
+
+        .text-8 {
+            font-size: 8px !important;
+        }
+
+        .text-9 {
+            font-size: 9px !important;
+        }
+
+        .text-10 {
+            font-size: 10px !important;
+        }
+
+        .text-11 {
+            font-size: 11px !important;
+        }
+
+        .text-12 {
+            font-size: 12px !important;
+        }
+
+        .text-13 {
+            font-size: 12px !important;
+        }
+
+        .text-14 {
+            font-size: 14px !important;
+        }
+
+        .h-13 {
+            height: 13px !important;
+        }
+
+        .ml-3 {
+            margin-left: 3px !important;
+        }
+
+        .btl-radius {
+            border-top-left-radius: 5px !important;
+        }
+
+        .btr-radius {
+            border-top-right-radius: 5px !important;
+        }
+
+        .bbl-radius {
+            border-bottom-left-radius: 5px !important;
+        }
+
+        .bbr-radius {
+            border-bottom-right-radius: 5px !important;
+        }
+
+        .border-left-fixer {
+            border-bottom-left-radius: 4.5px
+        }
+
+      
+
+        .text-white {
+            color: #ffffff;
+        }
+
+        .dynamic{
+            font-size: 10px;
+        }
+
+        
+
+         .text-13 {
+    font-size: 1.3em; /* Adjust based on your specific requirements */
+    font-weight: bold; /* Example font weight, adjust as needed */
+  }
+  .text-center {
+    text-align: center;
+  }
+
+  .height {
+    height: 21px;
+  }
+
+  .form-text{
+    font-size: 10px;
+  }
+    </style>
+</head>
+
+<body>
+    
+    <!--     
+        For 100% width and height remove the style from the below div style 
+        Or can adjust the size by changing the width
+
+        1. Use tags with dynamic classes to add dynamic data
+    -->
+    <div style="width: 100%; margin: 4px auto">
+        <div class="first_section">
+            <div style="display: flex; justify-content: space-between">
+                <div class="first_section-top-left">
+                    <img src="https://ndev-public-assests.s3.us-east-2.amazonaws.com/mapfre.svg" class="logo" />
+                    <p class="text-center text-8">
+                        MAPFRE México, S.A.<br />
+                        Av. Revolución No. 507, Colonia San Pedro de los Pinos,<br /> Deleg, Benito Juárez, C.P 03800,
+                        Ciudad de México <br />
+                        Teléfono: 6592 9000, R.F.C. MTE440316E54.
+                    </p>
+                </div>
+            </div>
+            <div>
+                <h1 class="heading text-center text-13">CONSENTIMIENTO PARA EL SEGURO DE VIDA GRUPO DIVERSOS</h1>
+                <table> 
+                    <colgroup>
+                        <col span="20" width="5%" />
+                    </colgroup>
+                    <tr>
+                        <td class="form_table-td color-gray form_table-header text-10 btl-radius btr-radius text-13 text-center"
+                            colspan="20">
+                            DATOS DEL CONTRATANTE
+                        </td>
+                      </tr>
+                    <tr>
+                        <td class="form_table-td" colspan="20">
+                            <span class="form-text">Denominación y/o Razón Social: </span>
+                            <span class="dynamic">J4PP SA DE CV</span>
+                        </td>
+
+                    </tr>
+                    <tr class="height 10 height">
+                        <td class="form_table-td br-none" colspan="6">
+                            <span class="form-text">Nacionalidad: </span>
+                            <span class="dynamic">Mexicana</span>
+                        </td>
+                        <td class="form_table-td br-none" colspan="6">
+                            <span class="form-text">R.F.C.: </span>
+                            <span class="dynamic">JPP220607K22</span>
+                        </td>
+                        <td class="form_table-td" colspan="8">
+                            <span class="form-text">Relación con el solicitante: </span>
+                            <span class="dynamic">Cliente</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="form_table-td br-none" colspan="7">
+                            <span class="form-text">Calle y número: </span>
+                            <span class="dynamic">MONTES URALES 754</span>
+                        </td>
+                        <td class="form_table-td br-none" colspan="6">
+                            <span class="form-text">Colonia: </span>
+                            <span class="dynamic">LOMAS CHAPULTEPEC</span>
+                        </td>
+                        <td s class="form_table-td" colspan="8">
+                            <span class="form-text">Municipio o delegación:</span>
+                            <span class="dynamic">MIGUEL HIDALGO</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="form_table-td br-none" colspan="8">
+                            <span class="form-text">Ciudad o población: </span>
+                            <span class="dynamic">CDMX</span>
+                        </td>
+                        <td class="form_table-td br-black br-none" colspan="4">
+                            <span class="form-text">Estado: </span>
+                            <span class="dynamic">CDMX</span>
+                        </td>
+                        <td class="form_table-td br-none" colspan="4">
+                            <span class="form-text">País: </span>
+                            <span class="dynamic">México</span>
+                        </td>
+                        <td class="form_table-td" colspan="4">
+                            <span class="form-text">C.P.: </span>
+                            <span class="dynamic">11000</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="form_table-td br-none" colspan="6">
+                            <span class="form-text">Teléfonos: </span>
+                            <span class="dynamic">+525518275265</span>
+                        </td>
+                        <td class="form_table-td br-black br-none" colspan="4">
+                            <span class="form-text">Clave de país: </span>
+                            <span class="dynamic">MX</span>
+                        </td>
+                        <td class="form_table-td br-none" colspan="4">
+                            <span class="form-text">Código de ciudad: </span>
+                            <span class="dynamic">55</span>
+                        </td>
+                        <td class="form_table-td " colspan="6">
+                            <span class="form-text">e-mail: </span>
+                            <span class="dynamic"> HOLA@PASTPOST.COM</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="form_table-td  bb-black bbl-radius bbr-radius" colspan="20">
+                            <span class="form-text border-left-fixer">Giro del
+                                negocio: </span>
+                            <span class="dynamic"> PLANIFICACIÓN ANTICIPADA</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="second_section section">
+            <table>
+                <colgroup>
+                    <col span="20" width="5%" />
+                </colgroup>
+                <tr>
+                    <td class="form_table-td color-gray form_table-header text-10 btl-radius btr-radius text-13 text-center" colspan="20">
+                        DATOS DE LA PÓLIZA
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="11">
+                        <span class="form-text">Número de Póliza: </span>
+                        <span class="dynamic">#{{policy_number}}#</span>
+                    </td>
+                    <td class="form_table-td" colspan="10">
+                        <span class="form-text">Número de Subgrupo: </span>
+                        <span class="dynamic"> #{{subgroup}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="11">
+                        <span class="form-text">Vigencia de la póliza desde las 12:00 hrs. de: </span>
+                        <span class="dynamic">#{{policy_expedition_date}}#</span>
+                    </td>
+                    <td class="form_table-td" colspan="10">
+                        <span class="form-text">hasta las 12:00 hrs. de: </span>
+                        <span class="dynamic">#{{policy_expiry_date}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="11">
+                        <span class="form-text">Vigencia del certificado desde las 12:00 hrs. de: </span>
+                        <span class="dynamic">#{{certificate_expedition_date}}#</span>
+                    </td>
+                    <td class="form_table-td" colspan="10">
+                        <span class="form-text">hasta las 12:00 hrs. de: </span>
+                        <span class="dynamic">#{{certificate_expiry_date}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td" colspan="20">
+                        <span class="form-text">Regla para determinar suma asegurada por cobertura: </span>
+                        <span class="dynamic">#{{insurance_plan_selected}}#</span>
+                    </td>
+                </tr>
+                <!-- <tr>
+                    <td class="form_table-td h-21 height" colspan="20">
+                        <span class="dynamic ml"></span>
+                    </td>
+                </tr> -->
+                <tr>
+                    <td class="form_table-td h-21 height bb-black bbl-radius bbr-radius" colspan="20">
+                        <span class="dynamic ml-3"></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="third_section section">
+            <table>
+                <colgroup>
+                    <col span="20" width="5%" />
+                </colgroup>
+                <tr>
+                    <td class="form_table-td color-gray form_table-header text-10 btl-radius btr-radius text-13 text-center" colspan="20">
+                        DATOS DEL SOLICITANTE
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="10">
+                        <span class="form-text">Apellido Paterno: </span>
+                        <span class="dynamic">#{{user_fatherLastName}}#</span>
+                    </td>
+                    <td class="form_table-td bl-none" colspan="10">
+                        <span class="form-text" style="margin-left: -30px">Apellido Materno: </span>
+                        <span class="dynamic">#{{user_motherLastName}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td" colspan="20">
+                        <span class="form-text">Nombre(s): </span>
+                        <span class="dynamic">#{{user_name}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="10">
+                        <span class="form-text">Nacionalidad (es):</span>
+                        <span class="dynamic"> #{{user_country}}#</span>
+                    </td>
+                    <td class="form_table-td br-none" colspan="5">
+                        <span class="form-text">R.F.C.:</span>
+                        <span class="dynamic">#{{user_TaxRegistrationNumber}}#</span>
+                    </td>
+                    <td class="form_table-td" colspan="5">
+                        <span class="form-text">Fecha de Nacimiento:</span>
+                        <span class="dynamic ">#{{user_birth_date}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="5">
+                        <span class="form-text">Tipo, número y emisor da la identificación oficial: </span>
+                        <span class="dynamic">-</span>
+                    </td>
+                    <td class="form_table-td br-none" colspan="2">
+                        <span class="dynamic">-</span>
+              
+                    </td>
+                    <td class="form_table-td br-none" colspan="4">
+                        <span class="form-text">Vigencia:</span>
+                        <span class="dynamic "></span>
+                    </td>
+                    <td class="form_table-td" colspan="9">
+                        <span class="form-text">Número de serie de la Firma Electrónica Avanzada: </span>
+                        <span class="dynamic">-</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="13">
+                        <span class="form-text">País y lugar de nacimiento: </span>
+                        <span class="dynamic">-</span>
+                    </td>
+                    <td class="form_table-td br-none" colspan="2">
+                        <span class="form-text">Sexo: </span>
+                    </td>
+                    <td class="form_table-td bl-none br-none" colspan="2">
+                        <span class="dynamic ">#{{user_sex}}#</span>
+                    </td>
+                    <td class="form_table-td bl-none" colspan="3">
+                       
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td" colspan="20">
+                        <span class="form-text">Domicilo: </span>
+                        <span class="dynamic">#{{user_address}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="3">
+                        <span class="form-text">Estado Civil:</span>
+                    </td>
+                    <td class="form_table-td bl-none br-none" colspan="3">
+                        <span class="dynamic "> #{{user_civil_state}}#</span>
+                    </td>
+                    <td class="form_table-td bl-none br-none" colspan="3">
+                       
+                    </td>
+                    <td class="form_table-td bl-none br-none" colspan="3">
+                       
+                    </td>
+                    <td class="form_table-td bl-none" colspan="9">
+                      
+                        <!-- Remove the inline style while working with dynamic data -->
+                        <!-- <span class="dynamic bb-gray" style="width: 70px; display: inline-block;"></span> -->
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td" colspan="20">
+                        <span class="form-text">Ocupación actual: </span>
+                        <span class="dynamic">-</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="12">
+                        <span class="form-text">¿En qué consiste? </span>
+                        <span class="dynamic">-</span>
+                    </td>
+                    <td class="form_table-td" colspan="8">
+                        <span class="form-text">Ingreso Mensual: </span>
+                        <span class="dynamic">-</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="11">
+                        <span class="form-text">Fecha de ingreso a la Empresa: </span>
+                        <span class="dynamic ">-</span>
+                    </td>
+                    <td class="form_table-td" colspan="9">
+                        <span class="form-text">Fecha de alta de la póliza: </span>
+                        <span class="dynamic">#{{certificate_expedition_date}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="16">
+                        <span class="form-text border-left-fixer  bg-transparent">¿Ocupa o ha ocupado en los últimos dos
+                            años algún cargo o función pública? </span>
+                    </td>
+                    <td class="form_table-td bl-none br-none" colspan="2">
+                      
+                    </td>
+                    <td class="form_table-td bl-none" colspan="8">
+                       
+                    </td>
+
+                </tr>
+                <tr>
+                    <td class="form_table-td bt-none bb-black bbl-radius bbr-radius" colspan="20" style="padding: 0px">
+                        <span class="form-text border-left-fixer  bg-transparent"
+                            style="padding: 0px 5px 2px 3px">Especifique cargo: - </span>
+                    </td>
+
+                </tr>
+            </table>
+        </div>
+        <div class="fourth_section section">
+            <table>
+                <colgroup>
+                    <col span="20" width="5%" />
+                </colgroup>
+                <tr>
+                    <td class="form_table-td color-gray form_table-header text-10 btl-radius btr-radius text-13 "
+                        style="text-align: left; padding-left: 3px;" colspan="20">
+                        DESIGNACION DE BENEFICIARIOS:
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td" colspan="12">
+                        <span class="form-text bg-transparent text-center d-block">Nombre Completo</span>
+                    </td>
+                    <td class="form_table-td br-none bl-none" colspan="4">
+                        <span class="form-text bg-transparent">Parentesco</span>
+                    </td>
+                    <td class="form_table-td" colspan="4">
+                        <span class="form-text bg-transparent">Porcentaje</span>
+                    </td>
+                </tr>
+                <tr>
+                    <!-- Can add dynamic data on span tag directly here -->
+                    <td class="form_table-td br-none" colspan="2">
+                        <span class="form-text bg-transparent">1.</span>
+                    </td>
+                    <td class="form_table-td bl-none" colspan="10">
+                        <span class="form-text bg-transparent">#{{dependant_name_1}}#</span>
+                    </td>
+                    <td class="form_table-td br-none bl-none" colspan="4">
+                        <span class="form-text bg-transparent">	#{{dependant_relationship_1}}#</span>
+                    </td>
+                    <td class="form_table-td" colspan="4">
+                        <span class="form-text bg-transparent">#{{dependant_percentage_1}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="2">
+                        <span class="form-text bg-transparent ">2.</span>
+                    </td>
+                    <!-- Can add dynamic data on span tag directly here -->
+                    <td class="form_table-td bl-none" colspan="10">
+                        <span class="form-text bg-transparent">#{{dependant_name_2}}#</span>
+                    </td>
+                    <td class="form_table-td br-none bl-none" colspan="4">
+                        <span class="form-text bg-transparent">	#{{dependant_relationship_2}}#</span>
+                    </td>
+                    <td class="form_table-td" colspan="4">
+                        <span class="form-text bg-transparent">#{{dependant_percentage_2}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="2">
+                        <span class="form-text bg-transparent">3.</span>
+                    </td>
+                    <!-- Can add dynamic data on span tag directly here -->
+                    <td class="form_table-td bl-none" colspan="10">
+                        <span class="form-text bg-transparent">#{{dependant_name_3}}#</span>
+                    </td>
+                    <td class="form_table-td br-none bl-none" colspan="4">
+                        <span class="form-text bg-transparent">	#{{dependant_relationship_3}}#</span>
+                    </td>
+                    <td class="form_table-td" colspan="4">
+                        <span class="form-text bg-transparent">#{{dependant_percentage_3}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none bb-black bbl-radius" colspan="2">
+                        <span class="form-text bg-transparent ">4.</span>
+                    </td>
+                    <!-- Can add dynamic data on span tag directly here -->
+                    <td class="form_table-td bl-none bb-black" colspan="10">
+                        <span class="form-text bg-transparent">#{{dependant_name_4}}#</span>
+                    </td>
+                    <td class="form_table-td br-none bl-none bb-black" colspan="4">
+                        <span class="form-text bg-transparent">	#{{dependant_relationship_4}}#</span>
+                    </td>
+                    <td class="form_table-td bb-black bbr-radius" colspan="4">
+                        <span class="form-text bg-transparent">#{{dependant_percentage_4}}#</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="fourth_section-new section">
+            <table>
+                <colgroup>
+                    <col span="20" width="5%" />
+                </colgroup>
+                <tr>
+                    <td class="form_table-td color-gray form_table-header text-10 btl-radius btr-radius text-13 "
+                        style="text-align: left; padding-left: 3px;" colspan="20">
+                        DATOS DE BENEFICIARIOS:
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td br-none" colspan="15">
+                        <span class="form-text bg-transparent text-center d-block">Domicilio completo</span>
+                    </td>
+                    <td class="form_table-td" colspan="5">
+                        <span class="form-text bg-transparent">Fecha de nacimiento</span>
+                    </td>
+                </tr>
+                <tr>
+                    <!-- Can add dynamic data on span tag directly here -->
+                    <td class="form_table-td br-none" colspan="2">
+                        <span class="form-text bg-transparent ">1.</span>
+                    </td>
+                    <td class="form_table-td br-none bl-none" colspan="13">
+                        <span class="form-text bg-transparent">#{{beneficiaries_adress_1}}#</span>
+                    </td>
+                    <td class="form_table-td" colspan="5">
+                        <span class="form-text bg-transparent">#{{dependant_birthday_1}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <!-- Can add dynamic data on span tag directly here -->
+                    <td class="form_table-td br-none" colspan="2">
+                        <span class="form-text bg-transparent ">2.</span>
+                    </td>
+                    <td class="form_table-td br-none bl-none" colspan="13">
+                        <span class="form-text bg-transparent">#{{beneficiaries_adress_2}}#</span>
+                    </td>
+                    <td class="form_table-td" colspan="5">
+                        <span class="form-text bg-transparent">#{{dependant_birthday_2}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <!-- Can add dynamic data on span tag directly here -->
+                    <td class="form_table-td br-none" colspan="2">
+                        <span class="form-text bg-transparent ">3. </span>
+                    </td>
+                    <td class="form_table-td br-none bl-none" colspan="13">
+                        <span class="form-text bg-transparent">#{{beneficiaries_adress_3}}#</span>
+                    </td>
+                    <td class="form_table-td" colspan="5">
+                        <span class="form-text bg-transparent">#{{dependant_birthday_3}}#</span>
+                    </td>
+                </tr>
+                <tr>
+                    <!-- Can add dynamic data on span tag directly here -->
+                    <td class="form_table-td br-none bb-black bbl-radius" colspan="2">
+                        <span class="form-text bg-transparent">4.</span>
+                    </td>
+                    <td class="form_table-td br-none bl-none bb-black" colspan="13">
+                        <span class="form-text bg-transparent">#{{beneficiaries_adress_4}}#</span>
+                    </td>
+                    <td class="form_table-td bb-black bbr-radius" colspan="5">
+                        <span class="form-text bg-transparent">#{{dependant_birthday_4}}#</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="fifth_section section bg-gray">
+            <p class="info d-block text-bold text-17"><span>ADVERTENCIA:</span> En el caso de que se desee nombrar
+                beneficiarios a
+                menores de
+                edad, no se
+                debe señalar a un
+                mayor de edad como representante de los menores para efectos de que en su
+                representación, cobre la indemnización. Lo anterior porque las legislaciones civiles previenen la forma
+                en que debe designarse tutores, albaceas, representantes de herederos u otros cargos
+                similares y no consideran al contrato de seguro como el instrumento adecuado para tales designaciones.
+                La designación que se hiciera de un mayor de edad como representante de menores
+                beneficiarios, durante la minoría de edad de ellos, legalmente puede implicar que se nombra beneficiario
+                al mayor de edad, quién en todo caso sólo tendría una obligación moral, pues la
+                designación que se hace de beneficiarios en un contrato de seguro le concede el derecho incondicionado
+                de disponer de la suma asegurada.</p>
+        </div>
+        <div class="sixth_section section">
+            <table>
+                <tr>
+                    <td class="form_table-td text-10 btl-radius btr-radius color-gray text-13 ">
+                        <span class="form-text bg-transparent text-bold">OBSERVACIONES</span>
+                    </td>
+                </tr>
+                <!-- Can add dynamic data on span tag directly here -->
+                <tr>
+                    <td class="form_table-td h-21 height">
+                        <span class="form-text bg-transparent"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td h-21 height">
+                        <span class="form-text bg-transparent"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td h-21 height">
+                        <span class="form-text bg-transparent"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="form_table-td h-21 height bb-black bbl-radius bbr-radius">
+                        <span class="form-text bg-transparent"></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="seventh_section section">
+            <p class="info d-block text-10">MAPFRE México, S.A., hace de su conocimiento que los datos recabados, se
+                trataran para todos los fines vinculados con la relación jurídica celebrada. Consulte el aviso integro
+                en www.mapfre.com.mx<br>
+                Declaro bajo protesta de decir verdad, que actúo a nombre y por cuenta propia o con las facultades
+                suficientes que mi representado<br>
+                (a) me ha otorgado; y que los recursos utilizados en este acto comercial provienen de actividades
+                lícitas.<br><br>
+                Manifiesto que conozco y acepto lo establecido en el Aviso de Privacidad de <b>MAPFRE México, S.A.</b>
+            </p>
+        </div>
+        <div class="eighth_section section">
+            <table>
+                <tr>
+                    <td class="form_table-td bl-none br-none bt-none text-10 bb-black">
+                        <p class="form-text bg-transparent btl-radius"
+                            style="border-bottom: 3px solid #fff; margin-bottom: -2px;">
+                            Lugar y
+                            Fecha:</p>
+                    </td>
+                </tr>
+            </table>
+            <div style="display: flex; flex-wrap: nowrap; justify-content: space-between; margin: 0px 10px;">
+                <div class="signature">
+                  <div class="signature-wrapper">
+                    <img src="https://ndev-public-assests.s3.us-east-2.amazonaws.com/firma_2.png" alt="Signature" class="signature-img">
+                  </div>
+                  <hr class="signature-line">
+                  <p class="text-11">Firma del Representante Legal y/o Contratante</p>
+                </div>
+                <div class="signature">
+                  <div class="signature-wrapper">
+                    <!-- <img src="firma_3.png" alt="Signature" class="signature-img"> -->
+                  </div>
+                  <hr class="signature-line">
+                  <p class="text-11">Firma del solicitante</p>
+                </div>
+                <div class="signature">
+                  <div class="signature-wrapper">
+                    <img src="https://ndev-public-assests.s3.us-east-2.amazonaws.com/firma_1.png" alt="Signature" class="signature-img">
+                  </div>
+                  <hr class="signature-line">
+                  <p class="text-11">Firma del Funcionario autorizado</p>
+                </div>
+              </div>
+
+        </div>
+    </div>
+</body>
+
+</html>
