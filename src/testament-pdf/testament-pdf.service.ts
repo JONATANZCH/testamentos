@@ -2034,7 +2034,7 @@ export class TestamentPdfService {
   }
 
   async processContractProducts(contractId: string) {
-    let response = new GeneralResponseDto();
+    const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaprovider.getPrismaClient();
       if (this.prisma == null) {
@@ -2046,8 +2046,12 @@ export class TestamentPdfService {
         );
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
+
       const contract = await this.prisma.userPartnerProductContract.findUnique({
         where: { id: contractId },
+        include: {
+          service: true,
+        },
       });
       if (!contract) {
         response.code = 404;
@@ -2056,88 +2060,90 @@ export class TestamentPdfService {
       }
       console.log('contract', contract);
 
-      if (contract.status !== 'created') {
+      if (contract.status !== 'Created' && contract.status !== 'Processed') {
         response.code = 400;
-        response.msg =
-          'Contract can not be proccess as it is not in the correct status, current status is ' +
-          contract.status;
+        response.msg = 'Contract can not be proccess' + contract.status;
         console.log('we responded with ' + JSON.stringify(response));
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
-      let metadata = contract.metadata;
-      if (metadata === null || Object.keys(metadata).length === 0) {
-        console.log('metadata not found or it was requested.. processing');
-        response = await this.processMetadata(contract);
-        if (response.code !== 200) {
-          console.log('we responded with ' + JSON.stringify(response));
-          throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        } else {
-          metadata = response.response;
-          await this.prisma.userPartnerProductContract.update({
-            where: { id: contractId },
-            data: {
-              metadata: metadata,
-            },
-          });
-        }
+
+      const metadata = contract.metadata;
+      if (!metadata || !Array.isArray(metadata) || metadata.length === 0) {
+        response.code = 400;
+        response.msg =
+          'Missing metadata: please provide contact list with percentages';
+        console.log('we responded with ' + JSON.stringify(response));
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
+
+      const contactIds = metadata.map((item) => item.contactId);
+      const contacts = await this.prisma.contact.findMany({
+        where: {
+          id: { in: contactIds },
+          userId: contract.userId,
+        },
+      });
+
       const user = await this.prisma.user.findUnique({
         where: { id: contract.userId },
         include: {
           addresses: true,
         },
       });
+
       if (!user.addresses || user.addresses.length === 0) {
-        response.code = 500;
+        await this.prisma.userPartnerProductContract.update({
+          where: { id: contractId },
+          data: { signatureStatus: 'Failed' },
+        });
+        response.code = 400;
         response.msg = 'User address not found, please update user info';
-        delete response.response;
         console.log('we responded with ' + JSON.stringify(response));
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
-      const addr = user.addresses[0];
+
       const address = [
-        addr.street,
-        addr.suburb,
-        addr.city,
-        addr.state,
-        addr.country,
-        addr.zipCode,
+        user.addresses[0].street,
+        user.addresses[0].suburb,
+        user.addresses[0].city,
+        user.addresses[0].state,
+        user.addresses[0].country,
+        user.addresses[0].zipCode,
       ]
         .filter(Boolean)
         .join(', ');
       console.log('metadata ready');
-      //vamos a crear el pdf
 
-      const filePath = this.getCorrectedTemplatePath('IndexMapfre.html'); // Línea modificada
+      const filePath = this.getCorrectedTemplatePath('IndexMapfre.html');
       console.log(
         '[processContractProducts] Intentando cargar plantilla desde:',
         filePath,
       );
+      const pdfbaseRaw = await fs.readFile(filePath, 'utf8');
+      let pdfbase = pdfbaseRaw;
 
-      let pdfbase = await fs.readFile(filePath, 'utf8');
       const signedDate = new Date(contract.createdAt);
       const expireDate = new Date(contract.expireDate);
       const userBirthDate = new Date(user.birthDate);
+
       if (isNaN(userBirthDate.getTime())) {
+        await this.prisma.userPartnerProductContract.update({
+          where: { id: contractId },
+          data: { signatureStatus: 'Failed' },
+        });
         response.code = 400;
         response.msg = 'Invalid birth date is NaN';
         console.log('we responded with ' + JSON.stringify(response));
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
-      const formattedSignedDate = `${signedDate.getDate().toString().padStart(2, '0')}/${(signedDate.getMonth() + 1).toString().padStart(2, '0')}/${signedDate.getFullYear()}`;
-      const formattedExpireDate = `${expireDate.getDate().toString().padStart(2, '0')}/${(expireDate.getMonth() + 1).toString().padStart(2, '0')}/${expireDate.getFullYear()}`;
-      const formatedUserBirthDate = `${userBirthDate.getDate().toString().padStart(2, '0')}/${(userBirthDate.getMonth() + 1).toString().padStart(2, '0')}/${userBirthDate.getFullYear()}`;
 
-      pdfbase = pdfbase.replace(
-        /#\{\{policy_number\}\}#/g,
-        metadata.policy_number,
-      );
-      pdfbase = pdfbase.replace(
-        /#\{\{subgroup\}\}#/g,
-        metadata.policy_subgroup,
-      );
+      const formattedSignedDate = signedDate.toLocaleDateString('es-MX');
+      const formattedExpireDate = expireDate.toLocaleDateString('es-MX');
+      const formattedBirthDate = userBirthDate.toLocaleDateString('es-MX');
+
+      pdfbase = pdfbase.replace(/#\{\{policy_number\}\}#/g, '001');
+      pdfbase = pdfbase.replace(/#\{\{subgroup\}\}#/g, 'testamentos.mx');
       pdfbase = pdfbase.replace(/#\{\{user_address\}\}#/g, address);
-      pdfbase = pdfbase.replace(/#\{\{subgroup\}\}#/g, 'Subgroup');
       pdfbase = pdfbase.replace(
         /#\{\{policy_expedition_date\}\}#/g,
         formattedSignedDate,
@@ -2156,107 +2162,82 @@ export class TestamentPdfService {
       );
       pdfbase = pdfbase.replace(
         /#\{\{insurance_plan_selected\}\}#/g,
-        this.getMeta(metadata, 'product.ProductName'),
+        contract.service?.name ?? '',
       );
-      pdfbase = pdfbase.replace(
-        /#\{\{user_name\}\}#/g,
-        this.getMeta(metadata, 'user.name'),
-      );
+      pdfbase = pdfbase.replace(/#\{\{user_name\}\}#/g, user.name);
       pdfbase = pdfbase.replace(
         /#\{\{user_fatherLastName\}\}#/g,
-        this.getMeta(metadata, 'user.fatherLastName'),
+        user.fatherLastName ?? '',
       );
       pdfbase = pdfbase.replace(
         /#\{\{user_motherLastName\}\}#/g,
-        this.getMeta(metadata, 'user.motherLastName'),
+        user.motherLastName ?? '',
       );
       pdfbase = pdfbase.replace(
         /#\{\{user_country\}\}#/g,
-        this.getMeta(metadata, 'user.country'),
+        user.nationality ?? '',
       );
       pdfbase = pdfbase.replace(
         /#\{\{user_TaxRegistrationNumber\}\}#/g,
-        this.getMeta(metadata, 'user.TaxRegistrationNumber'),
+        'PruebaSeguro',
       );
-
       pdfbase = pdfbase.replace(
         /#\{\{user_birth_date\}\}#/g,
-        formatedUserBirthDate,
+        formattedBirthDate,
       );
-      pdfbase = pdfbase.replace(
-        /#\{\{user_sex\}\}#/g,
-        this.getMeta(metadata, 'user.gender'),
-      );
+      pdfbase = pdfbase.replace(/#\{\{user_sex\}\}#/g, user.gender ?? '');
       pdfbase = pdfbase.replace(
         /#\{\{user_civil_state\}\}#/g,
-        this.getMeta(metadata, 'user.maritalStatus'),
+        user.maritalstatus ?? '',
       );
 
-      const noofbeneficiariesNotSet = metadata.beneficiaries.length + 1;
-      for (let index = 0; index < metadata.beneficiaries.length; index++) {
-        const element = metadata?.beneficiaries[index];
-        const fix = index + 1;
+      for (let i = 0; i < 5; i++) {
+        const meta = metadata[i];
+        const fix = i + 1;
 
-        // Construir las expresiones regulares dinámicamente
-        const nameRegex = new RegExp(
-          `#\\{\\{dependant_name_${fix}\\}\\}#`,
-          'g',
-        );
-        const relationshipRegex = new RegExp(
-          `#\\{\\{dependant_relationship_${fix}\\}\\}#`,
-          'g',
-        );
-        const percentageRegex = new RegExp(
-          `#\\{\\{dependant_percentage_${fix}\\}\\}#`,
-          'g',
-        );
-        const birthdayRegex = new RegExp(
-          `#\\{\\{dependant_birthday_${fix}\\}\\}#`,
-          'g',
-        );
-        const addressRegex = new RegExp(
-          `#\\{\\{beneficiaries_adress_${fix}\\}\\}#`,
-          'g',
-        );
+        let name = '---------';
+        let relation = '---------';
+        let perc = '---------';
+        let birth = '---------';
+        const address = 'NO Disponible ahora';
 
-        pdfbase = pdfbase.replace(nameRegex, element.bname);
-        pdfbase = pdfbase.replace(relationshipRegex, element.brelation);
-        pdfbase = pdfbase.replace(percentageRegex, element.bperc);
-        pdfbase = pdfbase.replace(birthdayRegex, element.bbirth); // Asegúrate de que este es el campo correcto, tal vez quisiste usar `element.bbirthday` aquí
-        pdfbase = pdfbase.replace(addressRegex, address); // replace the beneficiaries address with the user's address -REQ BY DE BUSINESS
+        if (meta) {
+          const contact = contacts.find((c) => c.id === meta.contactId);
+          if (contact) {
+            name =
+              `${contact.name} ${contact.fatherLastName ?? ''} ${contact.motherLastName ?? ''}`.trim();
+            relation = contact.relationToUser ?? '---------';
+            perc = meta.percentage?.toString() ?? '---------';
+            birth = contact.birthDate
+              ? new Date(contact.birthDate).toLocaleDateString('es-MX')
+              : '---------';
+          }
+        }
+
+        pdfbase = pdfbase.replace(
+          new RegExp(`#\\{\\{dependant_name_${fix}\\}\\}#`, 'g'),
+          name,
+        );
+        pdfbase = pdfbase.replace(
+          new RegExp(`#\\{\\{dependant_relationship_${fix}\\}\\}#`, 'g'),
+          relation,
+        );
+        pdfbase = pdfbase.replace(
+          new RegExp(`#\\{\\{dependant_percentage_${fix}\\}\\}#`, 'g'),
+          perc,
+        );
+        pdfbase = pdfbase.replace(
+          new RegExp(`#\\{\\{dependant_birthday_${fix}\\}\\}#`, 'g'),
+          birth,
+        );
+        pdfbase = pdfbase.replace(
+          new RegExp(`#\\{\\{beneficiaries_adress_${fix}\\}\\}#`, 'g'),
+          address,
+        );
       }
-      for (let index = noofbeneficiariesNotSet; index < 5; index++) {
-        const nameRegex = new RegExp(
-          `#\\{\\{dependant_name_${index}\\}\\}#`,
-          'g',
-        );
-        const relationshipRegex = new RegExp(
-          `#\\{\\{dependant_relationship_${index}\\}\\}#`,
-          'g',
-        );
-        const percentageRegex = new RegExp(
-          `#\\{\\{dependant_percentage_${index}\\}\\}#`,
-          'g',
-        );
-        const birthdayRegex = new RegExp(
-          `#\\{\\{dependant_birthday_${index}\\}\\}#`,
-          'g',
-        );
-        const addressRegex = new RegExp(
-          `#\\{\\{beneficiaries_adress_${index}\\}\\}#`,
-          'g',
-        );
 
-        pdfbase = pdfbase.replace(nameRegex, '---------');
-        pdfbase = pdfbase.replace(relationshipRegex, '---------');
-        pdfbase = pdfbase.replace(percentageRegex, '---------');
-        pdfbase = pdfbase.replace(birthdayRegex, '---------');
-        pdfbase = pdfbase.replace(addressRegex, '---------');
-      }
-      const htmlKey =
-        'Parner-product' + contract.id + '/' + contract.id + '.html';
-      const pdfKey =
-        'Parner-product' + contract.id + '/' + contract.id + '.pdf';
+      const htmlKey = contract.id + '/' + contract.id + '.html';
+      const pdfKey = contract.id + '/' + contract.id + '.pdf';
       const bucketName = this.getBucketWill;
       const params = {
         Bucket: bucketName,
@@ -2266,7 +2247,15 @@ export class TestamentPdfService {
       };
 
       const s3Client = this.s3Client;
-      await s3Client.send(new PutObjectCommand(params));
+      try {
+        await s3Client.send(new PutObjectCommand(params));
+      } catch (err) {
+        await this.prisma.userPartnerProductContract.update({
+          where: { id: contractId },
+          data: { signatureStatus: 'Failed' },
+        });
+        throw err;
+      }
 
       const queueUrl = process.env.QUEUE_GENERATE_PDF;
       console.log(`[handlePdfProcess] Enqueuing message to SQS =>`, queueUrl);
@@ -2275,7 +2264,15 @@ export class TestamentPdfService {
         pdf: { bucket: bucketName, key: pdfKey },
         proccesId: contract.id,
       };
-      await this.sqsService.sendMessage(queueUrl, payload);
+      try {
+        await this.sqsService.sendMessage(queueUrl, payload);
+      } catch (err) {
+        await this.prisma.userPartnerProductContract.update({
+          where: { id: contractId },
+          data: { signatureStatus: 'Failed' },
+        });
+        throw err;
+      }
       console.log(`[handlePdfProcess] Sent message to SQS =>`, payload);
 
       console.log('File html uploaded successfully:', response);
@@ -2289,74 +2286,16 @@ export class TestamentPdfService {
       console.log('We responded with ' + JSON.stringify(response));
       response.code = 201;
       response.msg = 'Datos procesados y encolados para conversión PDF.';
-      response.response = { response };
+      response.response = { htmlKey, pdfKey };
       console.log('[handlePdfProcess] Response =>', response);
       return response;
     } catch (error) {
+      await this.prisma.userPartnerProductContract.update({
+        where: { id: contractId },
+        data: { signatureStatus: 'Failed' },
+      });
       console.log('Error -> bck3d', error);
       processException(error);
-    }
-  }
-
-  getMeta(obj: any, path: string, defaultValue: string = 'Dato no disponible') {
-    const keys = path.split('.');
-    let current = obj;
-    for (const key of keys) {
-      if (
-        current === null ||
-        current === undefined ||
-        typeof current[key] === 'undefined'
-      ) {
-        return defaultValue;
-      }
-      current = current[key];
-    }
-    return current === null || current === '' ? defaultValue : current;
-  }
-
-  async processMetadata(contract: any) {
-    const response = new GeneralResponseDto();
-    try {
-      const productDetail = await this.prisma.services.findMany({
-        where: { id: contract.serviceId },
-      });
-      console.log('productDetail: ', productDetail);
-      const user = await this.prisma.user.findUnique({
-        where: { id: contract.userId },
-        include: {
-          addresses: true,
-        },
-      });
-      console.log('User: ', user);
-      const draftTestament = await this.prisma.testamentHeader.findFirst({
-        where: {
-          userId: contract.userId,
-          status: 'DRAFT',
-        },
-        select: {
-          documentNumber: true,
-        },
-      });
-      console.log('draftTestament', draftTestament);
-
-      const metadata = {
-        policy_subgroup: draftTestament?.documentNumber ?? null,
-        policy_number: 'POLICY_NUMBER_FAKE',
-        product: draftTestament,
-        user,
-        beneficiaries:
-          productDetail.length > 0 ? productDetail[0].metadata : null,
-      };
-      response.code = 200;
-      response.msg = 'success';
-      response.response = metadata;
-      return response;
-    } catch (error) {
-      console.log('Error processing metadata ', error);
-      console.log('Pastpost Error-> hda7s/220sh');
-      response.code = 500;
-      response.msg = 'error processing metadata';
-      return response;
     }
   }
 

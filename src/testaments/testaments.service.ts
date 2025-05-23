@@ -2051,7 +2051,7 @@ export class TestamentsService {
     };
   }
 
-  async getProductContractById(userId: string, res: Response) {
+  async getProductContractById(contractId: string, res: Response) {
     const response = new GeneralResponseDto();
     try {
       this.prisma = await this.prismaProvider.getPrismaClient();
@@ -2062,12 +2062,28 @@ export class TestamentsService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      const records = await this.prisma.userPartnerProductContract.findFirst({
-        where: { userId },
-        include: { service: true },
+      const record = await this.prisma.userPartnerProductContract.findUnique({
+        where: { id: contractId },
+        select: {
+          id: true,
+          userId: true,
+          serviceId: true,
+          metadata: true,
+          status: true,
+          expireDate: true,
+          service: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              type: true,
+            },
+          },
+        },
       });
+      console.log('record', record);
 
-      if (!records || records.length === 0) {
+      if (!record || record.length === 0) {
         response.code = 404;
         response.msg = 'No subscriptions found for this user';
         throw new HttpException(response, HttpStatus.NOT_FOUND);
@@ -2076,7 +2092,7 @@ export class TestamentsService {
       response.code = 200;
       response.msg = 'User subscriptions retrieved';
       console.log('User subscriptions retrieved');
-      response.response = records;
+      response.response = record;
       return res.status(200).json(response);
     } catch (err) {
       console.log('Error getting contract -> xsemkl8');
@@ -2084,10 +2100,10 @@ export class TestamentsService {
     }
   }
 
-  async streamProductContractPdf(userId: string, res: Response) {
+  async streamProductContractPdf(contractId: string, res: Response) {
     const response = new GeneralResponseDto();
     try {
-      console.log('[streamTestamentPdf] Called with userID:', userId);
+      console.log('[streamTestamentPdf] Called with contractId:', contractId);
       this.prisma = await this.prismaProvider.getPrismaClient();
       if (!this.prisma) {
         response.code = 500;
@@ -2095,17 +2111,8 @@ export class TestamentsService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
-      if (!user) {
-        response.code = 404;
-        response.msg = 'User not found';
-        throw new HttpException(response, HttpStatus.NOT_FOUND);
-      }
-
       const contract = await this.prisma.userPartnerProductContract.findFirst({
-        where: { userId },
+        where: { id: contractId },
         orderBy: { createdAt: 'desc' },
         include: { service: true },
       });
@@ -2116,9 +2123,7 @@ export class TestamentsService {
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
-      const status = contract.signatureStatus;
-
-      const folder = `Parner-product${contract.id}/`;
+      const folder = `${contract.id}/`;
       const nomFile = `${folder}${contract.id}_RGCCNOM151.pdf`;
       const pastpostFile = `${folder}${contract.id}_PASTPOST.pdf`;
 
@@ -2126,9 +2131,9 @@ export class TestamentsService {
       let key: string;
       let isSignedPdf = false;
 
-      if (status === 'Signed') {
+      if (contract.signatureStatus === 'Signed') {
         const processId =
-          contract.signatureStatus?.signprocessinfo?.[0]?.seguridataprocessid;
+          contract.signatureMetadata?.signprocessinfo?.[0]?.seguridataprocessid;
         if (!processId) {
           throw new HttpException(
             'Missing Seguridata process ID in metadata',
@@ -2136,7 +2141,7 @@ export class TestamentsService {
           );
         }
 
-        const keyFile = 'Parner-product' + contract.id + '/' + contract.id;
+        const keyFile = contract.id + '/' + contract.id;
         const getResponse = await this.getNomSignedPdf(keyFile, processId);
         if (getResponse.code !== 200) {
           throw new HttpException(
@@ -2146,14 +2151,14 @@ export class TestamentsService {
         }
 
         await this.prisma.userPartnerProductContract.update({
-          where: { userId },
+          where: { id: contractId },
           data: { signatureStatus: 'SignedPdfDownloaded' },
         });
 
         isSignedPdf = true;
       }
 
-      if (status === 'SignedPdfDownloaded' || isSignedPdf) {
+      if (contract.signatureStatus === 'SignedPdfDownloaded' || isSignedPdf) {
         const [url1, url2] = await Promise.all([
           this.getS3SignedUrl(this.getBucketWill, nomFile),
           this.getS3SignedUrl(this.getBucketWill, pastpostFile),
@@ -2169,6 +2174,11 @@ export class TestamentsService {
         bucket = this.getBucketWill;
         key = pastpostFile;
       } else {
+        // const { bucket: b, key: k } =
+        //   await this.getPdfInsuranceProcessStatus(contractId);
+        // bucket = b;
+        // key = k;
+
         if (contract.status !== 'Processed') {
           throw new HttpException(
             {

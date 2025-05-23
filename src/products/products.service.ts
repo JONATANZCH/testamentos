@@ -118,7 +118,7 @@ export class ProductsService {
           userId,
           serviceId: dto.serviceId,
           metadata: dto.metadata,
-          status: 'created',
+          status: 'Created',
           expireDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 año
         },
         select: {

@@ -70,18 +70,18 @@ export class TestamentsController {
     }
   }
 
-  @Get('/:userId/products')
+  @Get('/:contractId/products')
   async getProductContractByIdOrFile(
-    @Param('userId', ParseUUIDPipe) userId: string,
+    @Param('contractId', ParseUUIDPipe) contractId: string,
     @Query('type') type: 'metadata' | 'pdf' = 'metadata', // por defecto 'metadata'
     @Res() res: Response,
   ) {
     if (type === 'pdf') {
       console.log('streaming pdf');
-      return this.testamentsService.streamProductContractPdf(userId, res);
+      return this.testamentsService.streamProductContractPdf(contractId, res);
     } else {
       console.log('getting metadata');
-      return this.testamentsService.getProductContractById(userId, res);
+      return this.testamentsService.getProductContractById(contractId, res);
     }
   }
 
