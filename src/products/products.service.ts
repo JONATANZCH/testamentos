@@ -58,6 +58,84 @@ export class ProductsService {
     this.signer_hd = this.nestConfigService.get<string>('signer_hd') ?? '';
   }
 
+  async getAllProducts(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma) {
+        console.log('Wills Error-> db-connection-failed');
+        response.code = 500;
+        response.msg = 'Could not connect to the database';
+        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      const pageNumber = parseInt(String(page), 10);
+      const limitNumber = parseInt(String(limit), 10);
+
+      if (isNaN(pageNumber) || isNaN(limitNumber)) {
+        response.code = 400;
+        response.msg = 'Page and limit must be valid numbers';
+        throw new HttpException(response, HttpStatus.BAD_REQUEST);
+      }
+
+      const offset = (pageNumber - 1) * limitNumber;
+
+      const [records, total] = await this.prisma.$transaction([
+        this.prisma.userPartnerProductContract.findMany({
+          where: { userId },
+          skip: offset,
+          take: limitNumber,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            serviceId: true,
+            status: true,
+            signatureStatus: true,
+            expireDate: true,
+            createdAt: true,
+            updatedAt: true,
+            service: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                type: true,
+                country: true,
+              },
+            },
+          },
+        }),
+        this.prisma.userPartnerProductContract.count({
+          where: { userId },
+        }),
+      ]);
+
+      if (total === 0) {
+        response.code = 404;
+        response.msg = 'No product subscriptions found';
+        response.response = {};
+        throw new HttpException(response, HttpStatus.NOT_FOUND);
+      }
+
+      response.code = 200;
+      response.msg = 'Partner product subscriptions retrieved';
+      response.response = {
+        total,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(total / limitNumber),
+        records,
+      };
+      return response;
+    } catch (err) {
+      processException(err);
+    }
+  }
+
   async createUserProductSubscription(
     userId: string,
     dto: CreateUserPartnerProductDto,

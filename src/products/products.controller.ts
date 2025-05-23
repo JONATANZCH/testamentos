@@ -5,12 +5,15 @@ import {
   Param,
   Body,
   ParseUUIDPipe,
+  Get,
+  Query,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { ConfigService } from '../config';
 import { GeneralResponseDto } from '../common/response.dto';
 import { CreateUserPartnerProductDto } from './dto/create-user-partner-product.dto';
 import { UpdateUserPartnerProductDto } from './dto/update-user-partner-product.dto';
+import { PaginationDto } from '../common';
 
 @Controller('wills')
 export class ProductsController {
@@ -24,6 +27,16 @@ export class ProductsController {
     Reflect.defineMetadata('path', this.environment, ProductsController);
     console.log('Version - 20250521 11:00am');
     console.log('Environment running -> ' + this.environment);
+  }
+
+  @Get('/:userId/allProducts')
+  async getAllProducts(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Query() paginationDto: PaginationDto,
+  ): Promise<GeneralResponseDto> {
+    console.log(`[getAllProducts] userId=${userId}`);
+    const { page, limit } = paginationDto;
+    return this.productsService.getAllProducts(userId, page, limit);
   }
 
   @Post('/:userId/products')
