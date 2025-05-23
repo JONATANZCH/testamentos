@@ -75,17 +75,41 @@ export class ProductsService {
         where: { id: dto.serviceId, type: 'partnerProduct' },
       });
       if (!service)
-        throw new HttpException('Service not Found', HttpStatus.BAD_REQUEST);
+        throw new HttpException('ServiceId not Found', HttpStatus.BAD_REQUEST);
 
-      const alreadyExists =
-        await this.prisma.userPartnerProductContract.findFirst({
-          where: { userId, serviceId: dto.serviceId },
-        });
+      // const alreadyExists =
+      //   await this.prisma.userPartnerProductContract.findFirst({
+      //     where: { userId, serviceId: dto.serviceId },
+      //   });
 
-      if (alreadyExists) {
+      // if (alreadyExists) {
+      //   throw new HttpException(
+      //     'Subscription already exists',
+      //     HttpStatus.CONFLICT,
+      //   );
+      // }
+
+      if (!Array.isArray(dto.metadata)) {
         throw new HttpException(
-          'Subscription already exists',
-          HttpStatus.CONFLICT,
+          'metadata must be an array of contact references',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const contactIds = dto.metadata.map((item) => item.contactId);
+      const contacts = await this.prisma.contact.findMany({
+        where: {
+          id: { in: contactIds },
+          userId,
+        },
+      });
+
+      if (contacts.length !== contactIds.length) {
+        const foundIds = new Set(contacts.map((c) => c.id));
+        const missingIds = contactIds.filter((id) => !foundIds.has(id));
+        throw new HttpException(
+          `Invalid contactId(s): ${missingIds.join(', ')}`,
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -96,6 +120,14 @@ export class ProductsService {
           metadata: dto.metadata,
           status: 'created',
           expireDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 año
+        },
+        select: {
+          id: true,
+          userId: true,
+          serviceId: true,
+          metadata: true,
+          status: true,
+          expireDate: true,
         },
       });
 
