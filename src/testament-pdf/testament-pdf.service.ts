@@ -498,8 +498,8 @@ export class TestamentPdfService {
 
   private generateS3Keys(userId: string, version: number) {
     return {
-      htmlKey: `${userId}_${version}.html`,
-      pdfKey: `${userId}_${version}.pdf`,
+      htmlKey: `${userId}/${userId}_${version}.html`,
+      pdfKey: `${userId}/${userId}_${version}.pdf`,
     };
   }
 
@@ -1213,11 +1213,11 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      const matches = await this.prisma.$queryRaw`
-        SELECT *
-        FROM TestamentHeader
-        WHERE JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.signprocessinfo[0].seguridataprocessid')) = ${seguridataprocessId}
-      `;
+      const matches = await this.prisma.signatureProcess.findUnique({
+        where: {
+          seguridataprocessid: seguridataprocessId,
+        },
+      });
       console.log('seguridataprocessId:', seguridataprocessId);
       console.log('Matches:', matches);
 
@@ -1239,7 +1239,7 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      const document = matches[0];
+      const document = matches;
       const user = await this.prisma.user.findUnique({
         where: { id: document.userId },
         select: {
@@ -1252,9 +1252,17 @@ export class TestamentPdfService {
         },
       });
       document.user = user;
-      const testamentMetadata = document.metadata;
-      console.log('Metadata Found:', testamentMetadata);
-      this.validateSignProcessInfo(testamentMetadata, seguridataprocessId);
+      const testamentMetadata = document.seguridataprocessid;
+      console.log('idprc Found:', testamentMetadata);
+      if (
+        !testamentMetadata ||
+        testamentMetadata.signprocessinfo.length === 0
+      ) {
+        throw new HttpException(
+          'Missing or invalid signprocessinfo in testamentMetadata',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
       const testamentId = document.id;
       console.log('TestamentId:', testamentId);
@@ -1407,37 +1415,6 @@ export class TestamentPdfService {
       console.log('Wills Error-> c83js9as', error);
       processException(error);
     }
-  }
-
-  private validateSignProcessInfo(
-    metadata: any,
-    seguridataprocessId: number,
-  ): void {
-    if (
-      !metadata ||
-      !Array.isArray(metadata.signprocessinfo) ||
-      metadata.signprocessinfo.length === 0
-    ) {
-      throw new HttpException(
-        'Missing or invalid signprocessinfo in metadata',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const info = metadata.signprocessinfo[0];
-    if (
-      !info.seguridataprocessid ||
-      info.seguridataprocessid !== seguridataprocessId ||
-      info.fileadded !== true
-    ) {
-      throw new HttpException(
-        'Missing or invalid seguridataprocessid or fileadded flag',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    if ('title' in info) console.log(`title: ${info.title}`);
-    if ('firmantes' in info) console.log(`firmantes: ${info.firmantes}`);
   }
 
   async logSignatureStep(
