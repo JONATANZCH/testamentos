@@ -4,25 +4,16 @@ import { GeneralResponseDto } from '../common/response.dto';
 import { PrismaProvider } from '../providers';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { processException } from '../common/utils/exception.helper';
-import { firstValueFrom } from 'rxjs';
 import { promises as fs } from 'fs';
-import * as FormData from 'form-data';
 import * as path from 'path';
-import * as qs from 'qs';
-import * as unzipper from 'unzipper';
-import {
-  S3Client,
-  GetObjectCommand,
-  PutObjectCommand,
-  HeadObjectCommand,
-} from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConfigService } from '../config';
 import { ConfigService as NestConfigService } from '@nestjs/config';
-import { Readable } from 'stream';
 import { SqsService } from '../config/sqs-validate.service';
 import { HtmlGeneratorService } from './htmlGenerator.service';
 import { v4 as uuidv4 } from 'uuid';
 import { HttpService } from '@nestjs/axios';
+import { SharedOperationsService } from '../config/shared-operations.service';
 
 @Injectable()
 export class TestamentPdfService {
@@ -56,6 +47,7 @@ export class TestamentPdfService {
     private readonly prismaprovider: PrismaProvider,
     private readonly configService: ConfigService,
     private readonly nestConfigService: NestConfigService,
+    private readonly sharedOperationsService: SharedOperationsService,
     readonly sqsservice: SqsService,
     private readonly htmlGeneratorService: HtmlGeneratorService,
     private readonly httpService: HttpService,
@@ -542,9 +534,10 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
       console.log('Contract Found', contract);
-      const resultvalidates3 = await this.getFileFromS3(
+      const userId = contract.userId;
+      const resultvalidates3 = await this.sharedOperationsService.getFileFromS3(
         this.getBucketWill,
-        contract.userId + '_' + contract.version + '.pdf',
+        userId + '/' + userId + '_' + userId + '.pdf',
       );
       if (resultvalidates3 === null) {
         response.code = 404;
@@ -570,28 +563,28 @@ export class TestamentPdfService {
         console.log('Contract already signed. sessionId ->' + sessionId);
         response.code = 400;
         response.msg = 'Contract already signed';
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '0',
           {},
           { error: 'Contract already signed' },
           'failed',
+          { testamentId: contract.id },
         );
         console.log('we responded with ' + JSON.stringify(response));
         throw new HttpException(response, HttpStatus.BAD_REQUEST);
       }
-      await this.sendSignatureLog(
+      await this.sharedOperationsService.sendSignatureLog(
         sessionId,
-        contract.userId,
-        testamentId,
+        userId,
         new Date(),
         '0',
         {},
         { message: 'starting signature process.', url: this.signer_base_rest },
         'ok',
+        { testamentId: contract.id },
       );
       // firmar el contrato
       // devolver el contrato firmado
@@ -606,7 +599,12 @@ export class TestamentPdfService {
         t003c002: this.signer_t003c002,
         t003c004: this.signer_t003c004,
       };
-      let result = await this.makePostRequest(url1, body, headers, true);
+      let result = await this.sharedOperationsService.makePostRequest(
+        url1,
+        body,
+        headers,
+        true,
+      );
       if (
         result.code != 200 ||
         result.response !== 1 ||
@@ -617,29 +615,29 @@ export class TestamentPdfService {
         console.log('error loging to seguridata. sessionId ->' + sessionId);
         response.code = 500;
         response.msg = 'Error signing contract- SessionId-> ' + sessionId;
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '1',
           body,
           result,
           'failed',
+          { testamentId: contract.id },
         );
         console.log('we responded with ' + JSON.stringify(response));
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      await this.sendSignatureLog(
+      await this.sharedOperationsService.sendSignatureLog(
         sessionId,
-        contract.userId,
-        testamentId,
+        userId,
         new Date(),
         '1',
         body,
         result,
         'ok',
+        { testamentId: contract.id },
       );
 
       console.log('loggin success');
@@ -653,7 +651,12 @@ export class TestamentPdfService {
           idsol: this.signer_idsol,
         };
         const url2 = this.signer_base_rest + '/process/new';
-        result = await this.makePostRequest(url2, body2, headers, true);
+        result = await this.sharedOperationsService.makePostRequest(
+          url2,
+          body2,
+          headers,
+          true,
+        );
         console.log('result', result);
         if (
           result.code != 200 ||
@@ -664,29 +667,29 @@ export class TestamentPdfService {
           console.log('error creating process. sessionId ->' + sessionId);
           response.code = 500;
           response.msg = 'Error signing contract- SessionId-> ' + sessionId;
-          await this.sendSignatureLog(
+          await this.sharedOperationsService.sendSignatureLog(
             sessionId,
-            contract.userId,
-            testamentId,
+            userId,
             new Date(),
             '2',
             body2,
             result,
             'failed',
+            { testamentId: contract.id },
           );
           console.log('we responded with ' + JSON.stringify(response));
           throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         console.log('process created' + JSON.stringify(result));
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '2',
           body2,
           result,
           'ok',
+          { testamentId: contract.id },
         );
         seguridataprocessid = result.response;
         const info = {
@@ -710,10 +713,9 @@ export class TestamentPdfService {
           'contract already had a processid, steps to create NEW process discarded. pid ' +
             seguridataprocessid,
         );
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '2',
           seguridataprocessid,
@@ -721,6 +723,7 @@ export class TestamentPdfService {
             info: 'contract alredy had a processid, steps to create NEW process discarded',
           },
           'ok',
+          { testamentId: contract.id },
         );
       }
       //////////3 adding the file////////////////////////
@@ -742,10 +745,10 @@ export class TestamentPdfService {
           },
         ];
 
-        result = await this.postFileAsFormData(
+        result = await this.sharedOperationsService.postFileAsFormData(
           url3,
           this.getBucketWill,
-          contract.userId + '_' + contract.version + '.pdf',
+          userId + '/' + userId + '_' + contract.version + '.pdf',
           headers,
           formData,
         );
@@ -758,15 +761,15 @@ export class TestamentPdfService {
           console.log('error adding file to process. sessionId ->' + sessionId);
           response.code = 500;
           response.msg = 'Error signing contract - SessionId-> ' + sessionId;
-          await this.sendSignatureLog(
+          await this.sharedOperationsService.sendSignatureLog(
             sessionId,
-            contract.userId,
-            testamentId,
+            userId,
             new Date(),
             '3',
             formData,
             result,
             'failed',
+            { testamentId: contract.id },
           );
           console.log('we responded with ' + JSON.stringify(response));
           throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -780,27 +783,27 @@ export class TestamentPdfService {
           },
         });
         console.log('file added to process');
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '3',
           formData,
           result,
           'ok',
+          { testamentId: contract.id },
         );
       } else {
         console.log('file already added to process we will not add it again');
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '3',
           {},
           'file already added to process',
           'ok',
+          { testamentId: contract.id },
         );
       }
       //////////4//////////////////////// AGREGAR TITULO DE EXPENDIENTE
@@ -813,7 +816,12 @@ export class TestamentPdfService {
           data: contract.testamentId + '.pdf',
           tipo: 0,
         };
-        result = await this.makePostRequest(url4, body4, headers, true);
+        result = await this.sharedOperationsService.makePostRequest(
+          url4,
+          body4,
+          headers,
+          true,
+        );
         if (
           result.code != 200 ||
           (typeof result.response == 'string' &&
@@ -823,15 +831,15 @@ export class TestamentPdfService {
           console.log('error setting title. sessionId ->' + sessionId);
           response.code = 500;
           response.msg = 'Error signing contract - SessionId-> ' + sessionId;
-          await this.sendSignatureLog(
+          result = await this.sharedOperationsService.sendSignatureLog(
             sessionId,
-            contract.userId,
-            testamentId,
+            userId,
             new Date(),
             '4',
             body4,
             result,
             'failed',
+            { testamentId: contract.id },
           );
           console.log('we responded with ' + JSON.stringify(response));
           throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -844,27 +852,27 @@ export class TestamentPdfService {
             metadata: metadata,
           },
         });
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '4',
           body4,
           result,
           'ok',
+          { testamentId: contract.id },
         );
       } else {
         console.log('title already added to process we will not add it again');
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '4',
           {},
           'title already added to process',
           'ok',
+          { testamentId: contract.id },
         );
       }
       //////////5//////////////////////// AGREGAR NUMERO FIRMANTES
@@ -877,7 +885,12 @@ export class TestamentPdfService {
           data: 1, //<- numero de firmantes
           tipo: 0,
         };
-        result = await this.makePostRequest(url5, body5, headers, true);
+        result = await this.sharedOperationsService.makePostRequest(
+          url5,
+          body5,
+          headers,
+          true,
+        );
         if (
           result.code != 200 ||
           (typeof result.response == 'string' &&
@@ -887,15 +900,15 @@ export class TestamentPdfService {
           console.log('error setting firmantes. sessionId ->' + sessionId);
           response.code = 500;
           response.msg = 'error setting firmantes 5 - SessionId-> ' + sessionId;
-          await this.sendSignatureLog(
+          await this.sharedOperationsService.sendSignatureLog(
             sessionId,
-            contract.userId,
-            testamentId,
+            userId,
             new Date(),
             '5',
             body5,
             result,
             'failed',
+            { testamentId: contract.id },
           );
           console.log('we responded with ' + JSON.stringify(response));
           throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -908,29 +921,29 @@ export class TestamentPdfService {
           },
         });
         seguridataprocessinfo[0].firmantes = true;
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '5',
           body5,
           result,
           'ok',
+          { testamentId: contract.id },
         );
       } else {
         console.log(
           'firmantes already added to process we will not add it again',
         );
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '5',
           {},
           'firmantes already added to process',
           'ok',
+          { testamentId: contract.id },
         );
       }
       //////////6//////////////////////// getting token
@@ -951,7 +964,12 @@ export class TestamentPdfService {
         org: String(this.signer_org),
         firma: String(this.signer_flujofirma),
       };
-      result = await this.makePostRequest(url6, body6, headers, true);
+      result = await this.sharedOperationsService.makePostRequest(
+        url6,
+        body6,
+        headers,
+        true,
+      );
       console.log('result token', result);
       if (typeof result.response === 'string') {
         console.log('token recibido:', result.response);
@@ -965,15 +983,15 @@ export class TestamentPdfService {
         console.log('error getting token. sessionId ->' + sessionId);
         response.code = 500;
         response.msg = 'error getting token 6 - SessionId-> ' + sessionId;
-        await this.sendSignatureLog(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          contract.userId,
-          testamentId,
+          userId,
           new Date(),
           '6',
           body6,
           result,
           'failed',
+          { testamentId: contract.id },
         );
         console.log('we responded with ' + JSON.stringify(response));
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -995,15 +1013,15 @@ export class TestamentPdfService {
         '&idp=6177';
       response.response = { url: urlcalculated };
       result.urlcalculated = urlcalculated;
-      await this.sendSignatureLog(
+      await this.sharedOperationsService.sendSignatureLog(
         sessionId,
-        contract.userId,
-        testamentId,
+        userId,
         new Date(),
         '6',
         body6,
         result,
         'ok',
+        { testamentId: contract.id },
       );
       console.log('url generada' + JSON.stringify(response));
       return response;
@@ -1023,178 +1041,6 @@ export class TestamentPdfService {
       response.msg = 'error code as22asd&dK';
       console.log('we responded with ' + JSON.stringify(response));
       throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  private async getFileFromS3(
-    bucketName: string,
-    key: string,
-  ): Promise<Buffer> {
-    const command = new GetObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-    });
-    let data;
-    try {
-      data = await this.s3Client.send(command);
-    } catch (error) {
-      console.log('Wills Error-> 2s2z8s2w');
-      console.error('Error getting file from S3:', error);
-      return null;
-    }
-    return new Promise((resolve, reject) => {
-      const chunks: Uint8Array[] = [];
-      (data.Body as Readable).on('data', (chunk) => chunks.push(chunk));
-      (data.Body as Readable).on('end', () => resolve(Buffer.concat(chunks)));
-      (data.Body as Readable).on('error', reject);
-    });
-  }
-
-  async sendSignatureLog(
-    sessionId: string,
-    userId: number,
-    testamentId: string,
-    date: Date,
-    step: string,
-    sendMetadata: any,
-    responseMetadata: any,
-    status: string,
-  ) {
-    try {
-      const s = status.toLowerCase();
-      if (s !== 'ok') {
-        try {
-          const errormsg =
-            'Error in seguridata in ENVIRONMENT ' +
-            this.environment +
-            '. \n Process for testament: ' +
-            testamentId +
-            ' \n - step:' +
-            step +
-            ' \n- status:' +
-            status +
-            ' \n- sessionId: ' +
-            sessionId +
-            ' \n- userId: ' +
-            userId +
-            ' \n- date: ' +
-            date +
-            ' \n-  sendMetadata : ' +
-            JSON.stringify(sendMetadata) +
-            ' \n- responseMetadata: ' +
-            JSON.stringify(responseMetadata);
-          // await this.httpservice.sendSnsMessage(
-          //   errormsg,
-          //   this._pastposterror_sns_topic_arn,
-          // );
-          console.log('SNS message sent' + errormsg);
-        } catch (error) {
-          console.log('Error sending SNS message:', error);
-        }
-      }
-      await this.prisma.signatureStatus.create({
-        data: {
-          signSession: sessionId,
-          userId: userId,
-          testamentId: testamentId,
-          date: date,
-          step: step,
-          sendMetadata: sendMetadata,
-          responseMetadata: responseMetadata,
-          status: status,
-        },
-      });
-      return true;
-    } catch (error) {
-      console.log('wills Error-> sdf2');
-      console.log('Error creating Log of Signature', error);
-      return false;
-    }
-  }
-
-  async makePostRequest(
-    url: string,
-    data: any,
-    headers: any,
-    isUrlEncoded: boolean = false,
-  ): Promise<any> {
-    const responseg = new GeneralResponseDto();
-    try {
-      if (isUrlEncoded) {
-        data = qs.stringify(data);
-        headers['Content-Type'] = 'application/x-www-form-urlencoded';
-      }
-      const response = await firstValueFrom(
-        this.httpService.post(url, data, { headers }),
-      );
-      responseg.code = response.status;
-      responseg.msg = 'Request successful';
-      responseg.response = response.data;
-      return responseg;
-    } catch (error) {
-      console.log('Wills Error-> j20xk2y');
-      responseg.code = 500;
-      responseg.msg = 'Error making POST request';
-      responseg.response = error;
-      console.error('Error making POST request:', error);
-      return responseg;
-    }
-  }
-
-  async postFileAsFormData(
-    url: string,
-    bucketName: string,
-    key: string,
-    headers: any,
-    formData: any,
-  ): Promise<any> {
-    const responseg = new GeneralResponseDto();
-    try {
-      // Obtener el archivo desde S3
-      const fileBuffer = await this.getFileFromS3(bucketName, key);
-      if (!fileBuffer) {
-        console.log(`Archivo ${key} no encontrado en S3`);
-        responseg.code = 404;
-        responseg.msg = 'File not found in S3';
-        return responseg;
-      }
-      console.log(
-        `Archivo ${key} encontrado en S3 de tamaño ${fileBuffer.length} bytes`,
-      );
-      // Preparar el archivo en form-data
-      const form = new FormData();
-      form.append('pze', fileBuffer, { filename: key });
-      for (let index = 0; index < formData.length; index++) {
-        const element = formData[index];
-        //form.append('idprc', idprc);
-        form.append(element.key, element.value);
-      }
-      // Añadir encabezados necesarios para form-data
-      const formHeaders = form.getHeaders();
-      headers = { ...headers, ...formHeaders };
-
-      // Enviar la solicitud POST con el archivo en form-data
-      const response = await firstValueFrom(
-        this.httpService.post(url, form, { headers }),
-      );
-      if (response.data === 1) {
-        responseg.code = 200;
-        responseg.msg = 'File posted as form-data';
-      } else {
-        responseg.code = 500;
-        responseg.msg = 'Error posting file as form-data';
-      }
-      responseg.response = response.data;
-
-      return responseg;
-    } catch (error) {
-      console.log('Pastpost Error-> hsiahx7s');
-      console.error('Error posting file as form-data', error);
-      responseg.code = 500;
-      responseg.msg = 'Error posting file as form-data';
-      responseg.response = error;
-      console.error('Error posting file as form-data:', error);
-      return responseg;
     }
   }
 
@@ -1220,6 +1066,7 @@ export class TestamentPdfService {
       });
       console.log('seguridataprocessId:', seguridataprocessId);
       console.log('Matches:', matches);
+      const userId = matches.userId;
 
       if (matches.length === 0) {
         response.code = 404;
@@ -1316,14 +1163,15 @@ export class TestamentPdfService {
 
       console.log('Happad (sendMetadata):', happadMetadata);
 
-      await this.logSignatureStep(
+      await this.sharedOperationsService.sendSignatureLog(
         sessionId,
-        document.userId,
-        testamentId,
+        userId,
+        new Date(),
         '100',
         {},
         {},
         'ok',
+        { signatureProcessId: matches.seguridataprocessid },
       );
       let testamentHeader;
 
@@ -1371,25 +1219,27 @@ export class TestamentPdfService {
 
         console.log('Parsed body:', parsedBody);
 
-        await this.logSignatureStep(
+        await this.sharedOperationsService.sendSignatureLog(
           sessionId,
-          document.userId,
-          testamentId,
+          userId,
+          new Date(),
           '101',
           parsedBody,
           responseMetadata,
           stepStatus,
+          { signatureProcessId: matches.seguridataprocessid },
         );
       } catch (error) {
         console.log('[Webhook Body Block Error]', error);
       }
 
-      const contract = await this.downloadSeguridataContract(
-        document,
-        testamentId,
-        sessionId,
-        seguridataprocessId,
-      );
+      const contract =
+        await this.sharedOperationsService.downloadSeguridataContract(
+          document,
+          testamentId,
+          sessionId,
+          seguridataprocessId,
+        );
 
       // cuando sales de este paso sabes que en el s3 ya tienes los archivos que necesitas.
       if (contract.code !== 200) {
@@ -1414,421 +1264,6 @@ export class TestamentPdfService {
     } catch (error) {
       console.log('Wills Error-> c83js9as', error);
       processException(error);
-    }
-  }
-
-  async logSignatureStep(
-    sessionId: string,
-    userId: number,
-    testamentId: string,
-    step: string,
-    sendMetadata: any = {},
-    responseMetadata: any = {},
-    status: string,
-  ): Promise<void> {
-    const date = new Date();
-    console.log('Logging signature step data:', {
-      sessionId,
-      userId,
-      testamentId,
-      date,
-      step,
-      sendMetadata,
-      responseMetadata,
-      status,
-    });
-    try {
-      if (!testamentId) {
-        console.error(`Testament with id ${testamentId} does not exist`);
-        throw new HttpException(
-          `Testament with id ${testamentId} not found`,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-      await this.prisma.signatureStatus.create({
-        data: {
-          signSession: sessionId,
-          userId,
-          testamentId,
-          date: date,
-          step,
-          sendMetadata: sendMetadata || {},
-          responseMetadata: responseMetadata || {},
-          status,
-        },
-      });
-      console.log(`Log created successfully for step: ${step}`);
-    } catch (error) {
-      console.error('Error creating log in logSignatureStep:', error);
-      processException(error);
-    }
-  }
-
-  async downloadSeguridataContract(
-    document: any,
-    testamentId: string,
-    sessionId: string,
-    seguridataprocessId: any,
-  ) {
-    try {
-      let response = new GeneralResponseDto();
-      const seguridataPdf =
-        document.userId +
-        '_' +
-        document.version +
-        '/' +
-        document.userId +
-        '_' +
-        document.version +
-        '_RGCCNOM151.pdf';
-      console.log('seguridataPdf', seguridataPdf);
-
-      const pastpostPdf =
-        document.userId +
-        '_' +
-        document.version +
-        '/' +
-        document.userId +
-        '_' +
-        document.version +
-        '_PASTPOST.pdf';
-      console.log('pastpostPdf', pastpostPdf);
-
-      const existsSeguridataPdf = await this.valididatifFileinS3(
-        this.getBucketWill,
-        seguridataPdf,
-      );
-      const existsPastpostPDf = await this.valididatifFileinS3(
-        this.getBucketWill,
-        pastpostPdf,
-      );
-
-      if (existsSeguridataPdf && existsPastpostPDf) {
-        response.code = 200;
-        response.msg = 'boths documents in s3';
-
-        await this.logSignatureStep(
-          sessionId,
-          document.userId,
-          testamentId,
-          '102',
-          { message: 'Both documents already exist in S3.' },
-          {
-            existsSeguridataPdf,
-            existsPastpostPDf,
-            pastpostPdf,
-            seguridataPdf,
-          },
-          'ok',
-        );
-        return response;
-      }
-      if (!existsSeguridataPdf || !existsPastpostPDf) {
-        const keyFile = document.userId + '_' + document.version;
-        response = await this.getNomSignedPdf(keyFile, seguridataprocessId);
-        console.log('response', response);
-        if (response.code !== 200) {
-          console.log('we responded with ' + JSON.stringify(response));
-          await this.logSignatureStep(
-            sessionId,
-            document.userId,
-            testamentId,
-            '102',
-            { action: 'getNomSignedPdf' },
-            { response: response },
-            'failed',
-          );
-          throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        // contract.response  tiene un zip que trae 2 pdfs, ese zip debes enviarlo por mail.
-        // aqui lo vamos a subir a extraer y lo vamos a subir al s3
-        const zipResponse = await this.handleZipFile(
-          response.response,
-          this.getBucketWill,
-          keyFile,
-        );
-        console.log('zipResponse', zipResponse);
-        if (zipResponse.code !== 200) {
-          console.log('we responded with ' + JSON.stringify(zipResponse));
-          await this.logSignatureStep(
-            sessionId,
-            document.userId,
-            testamentId,
-            '102',
-            { action: 'handleZipFile' },
-            { response: zipResponse },
-            'failed',
-          );
-          throw new HttpException(
-            zipResponse,
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
-        }
-
-        await this.logSignatureStep(
-          sessionId,
-          document.userId,
-          testamentId,
-          '102',
-          { action: 'handleZipFile' },
-          { response: zipResponse },
-          'ok',
-        );
-      }
-      return response;
-    } catch (error) {
-      console.log('Pastpost Error-> 3asd212');
-      processException(error);
-    }
-  }
-
-  async valididatifFileinS3(bucketName: string, key: string) {
-    const headCommand = new HeadObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-    });
-
-    const s3Client = new S3Client();
-    try {
-      await s3Client.send(headCommand);
-      return true;
-    } catch (headError) {
-      if (headError.name === 'NotFound') {
-        console.log('File not found:', key);
-        return false;
-      } else {
-        console.error('Error checking if file exists:', headError);
-        throw headError;
-      }
-    }
-  }
-
-  async getNomSignedPdf(keyFile: string, seguridataprocessId: string) {
-    let response = new GeneralResponseDto();
-    try {
-      console.log('Getting NOM signed pdf');
-      const url1 = this.signer_base_rest + '/log/in';
-      const headers = {
-        'Content-Type': 'application/json',
-        Authorization: this.signer_authorization,
-      };
-      const body = {
-        org: this.signer_org_string, // 'pastpost',
-        t003c002: this.signer_t003c002, //'aSDHh123as',
-        t003c004: this.signer_t003c004, //'PuWEas2530',
-      };
-      const result = await this.makePostRequest(url1, body, headers, true);
-      if (
-        result.code != 200 ||
-        result.response !== 1 ||
-        (typeof result.response == 'string' &&
-          result.response.toLowerCase().includes('error'))
-      ) {
-        console.log('result ->' + result.response);
-        console.log('error loging to seguridata');
-        response.code = 500;
-        response.msg = 'Error loging to seguridata';
-        return response;
-      }
-
-      const headers2 = {
-        Authorization: this.signer_authorization,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      };
-      const url3 = this.signer_base_rest + '/process/getprcfiles';
-      //228447
-      response = await this.PostToGetFileAsFormData(
-        url3,
-        this.getBucketWill,
-        headers2,
-        seguridataprocessId,
-        keyFile,
-      );
-      return response;
-    } catch (error) {
-      console.log('Pastpost Error-> nb83h3s');
-      processException(error);
-    }
-  }
-
-  async PostToGetFileAsFormData(
-    url: string,
-    bucketName: string,
-    headers: any,
-    seguridataprocessId: string,
-    keyFile: string,
-  ): Promise<GeneralResponseDto> {
-    const responseg = new GeneralResponseDto();
-    let response;
-    try {
-      // Preparar el archivo en form-data
-      const body = new URLSearchParams();
-      body.append('idprc', seguridataprocessId);
-
-      const postres = await this.httpService.post(url, body.toString(), {
-        headers,
-        responseType: 'arraybuffer',
-      });
-      response = await firstValueFrom(postres);
-      if (response.status === 200) {
-        // Recibir el archivo ZIP
-        const zipBuffer = Buffer.from(response.data);
-        console.log(
-          `ZIP file received from NOM Provider of size ${zipBuffer.length} bytes`,
-        );
-
-        // **Aquí guardamos el ZIP en S3 antes de descomprimirlo**
-        await this.PostFileToS3(bucketName, `${keyFile}.zip`, zipBuffer);
-        console.log(`ZIP file saved to S3 under the folder ${keyFile}`);
-
-        // Procesar el archivo ZIP
-        const handleZipFileResp = await this.handleZipFile(
-          zipBuffer,
-          bucketName,
-          keyFile,
-        );
-        if (handleZipFileResp.code !== 200) {
-          console.error('Error handling ZIP file:', handleZipFileResp.msg);
-          responseg.code = 500;
-          responseg.msg = 'Error handling ZIP file';
-          responseg.response = handleZipFileResp;
-          throw new HttpException(
-            handleZipFileResp,
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
-        }
-
-        responseg.code = 200;
-        responseg.msg =
-          'ZIP file received, processed, and files uploaded to S3';
-      } else {
-        responseg.code = 500;
-        responseg.msg = 'Error getting file as form-data';
-      }
-      responseg.response = response.data;
-
-      return responseg;
-    } catch (error) {
-      console.log('Pastpost Error-> ccnsu9hsfp');
-      let errorMessage = 'Unknown error';
-      if (error.response?.data) {
-        const zipBuffer = Buffer.from(error.response.data);
-        errorMessage = zipBuffer.toString('utf-8');
-      } else if (typeof error.message === 'string') {
-        errorMessage = error.message;
-      }
-
-      console.error('Error getting pdf from NOM Provider', errorMessage);
-      responseg.code = error.response?.status ?? 500;
-      responseg.msg = errorMessage;
-      responseg.response = {};
-      return responseg;
-    }
-  }
-
-  async PostFileToS3(
-    bucketName: string,
-    key: string,
-    buffer: Buffer,
-  ): Promise<string> {
-    try {
-      const putCommand = new PutObjectCommand({
-        Bucket: bucketName,
-        Key: key,
-        Body: buffer,
-      });
-
-      await this.s3Client.send(putCommand);
-      return 'ok';
-    } catch (error) {
-      console.log('Wills Error-> 2s2z8w');
-      console.error('Error posting file to S3:', error);
-      throw error;
-    }
-  }
-
-  async handleZipFile(
-    zipBuffer: Buffer,
-    bucketName: string,
-    keyFile: string,
-  ): Promise<GeneralResponseDto> {
-    const response = new GeneralResponseDto();
-    try {
-      // Descomprimir el archivo zip
-      const directory = await unzipper.Open.buffer(zipBuffer);
-      console.log(`Files found in ZIP: ${directory.files.length}`);
-
-      let files = '';
-      const filesuploaded: string[] = [];
-      let pdfCount = 0;
-
-      if (directory.files.length !== 3) {
-        for (const file of directory.files) {
-          files += file.path + '\n';
-        }
-
-        const errormsg = `Error in seguridata in ENVIRONMENT ${this.environment}
-  Handlezipfile: Files extracted from ZIP are not 3 
-  for will id: ${keyFile}
-  Files found in ZIP: ${files}`;
-
-        console.log('SNS message sent' + errormsg);
-        // await this.sendSnsMessage(errormsg, this.topicArnEnv);
-      }
-
-      for (let i = 0; i < directory.files.length; i++) {
-        const file = directory.files[i];
-        const fileContent = await file.buffer();
-        const isPdf = fileContent.slice(0, 4).toString() === '%PDF';
-
-        console.log(
-          `File ${file.path} found in ZIP size ${fileContent.length} bytes`,
-        );
-
-        if (!isPdf) {
-          console.log(`Archivo ${file.path} no es un PDF real, no se subirá`);
-          continue;
-        }
-
-        const filename =
-          pdfCount === 0
-            ? `${keyFile}_RGCCNOM151.pdf`
-            : `${keyFile}_PASTPOST.pdf`;
-        const s3Key = `${keyFile}/${filename}`;
-        try {
-          console.log(`Guardando archivo ${s3Key} en S3`);
-          await this.PostFileToS3(bucketName, s3Key, fileContent);
-          console.log(`File ${s3Key} uploaded to S3 successfully`);
-          filesuploaded.push(s3Key);
-          pdfCount++;
-        } catch (error) {
-          console.log(
-            `File ${s3Key} failed to be uploaded to S3 with error:`,
-            error,
-          );
-        }
-      }
-      if (pdfCount < 2) {
-        response.code = 500;
-        response.msg = 'Not all required PDF files were found and uploaded';
-        response.response = filesuploaded;
-        return response;
-      }
-
-      console.log(
-        `Archivos del ZIP guardados en S3 bajo la carpeta ${keyFile}`,
-      );
-      response.code = 200;
-      response.msg = 'Files extracted and uploaded to S3 successfully';
-      response.response = keyFile;
-      return response;
-    } catch (error) {
-      console.log('Pastpost Error-> 2asuidj20xks8');
-      console.error('Error unzipping and saving files to S3:', error);
-      response.code = 500;
-      response.msg = 'Error extracting and uploading files to S3';
-      response.response = error.message || error;
-      return response;
     }
   }
 
@@ -1860,23 +1295,9 @@ export class TestamentPdfService {
 
       // Definir las claves de S3 para los dos archivos
       const seguridataPdfKey =
-        user.id +
-        '_' +
-        document.version +
-        '/' +
-        user.id +
-        '_' +
-        document.version +
-        '_RGCCNOM151.pdf';
+        user.id + '/' + user.id + '_' + document.version + '_RGCCNOM151.pdf';
       const pastpostPdfKey =
-        user.id +
-        '_' +
-        document.version +
-        '/' +
-        user.id +
-        '_' +
-        document.version +
-        '_PASTPOST.pdf';
+        user.id + '/' + user.id + '_' + document.version + '_PASTPOST.pdf';
 
       const emailEvent = {
         type: 'new',
@@ -1947,14 +1368,15 @@ export class TestamentPdfService {
         },
       });
 
-      await this.logSignatureStep(
+      await this.sharedOperationsService.sendSignatureLog(
         sessionId,
         document.userId,
-        document.id,
+        new Date(),
         '103',
         { emailEvent },
         { sqsResponse },
         'ok',
+        { signatureProcessId: document.seguridataprocessid },
       );
 
       // Retornar una respuesta exitosa
@@ -1962,16 +1384,15 @@ export class TestamentPdfService {
       response.msg = 'Email event created successfully';
       return response;
     } catch (error) {
-      const currentDate = new Date();
-      await this.sendSignatureLog(
+      await this.sharedOperationsService.sendSignatureLog(
         sessionId,
         document.userId,
-        document.id,
-        currentDate,
+        new Date(),
         '103',
         { error: error || 'Unknown error' },
         {},
         'failed',
+        { signatureProcessId: document.seguridataprocessid },
       );
       console.log('Error in sendMailWithAttachments:', error);
       processException(error);

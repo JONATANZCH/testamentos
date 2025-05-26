@@ -14,6 +14,7 @@ import { GeneralResponseDto } from '../common/response.dto';
 import { CreateUserPartnerProductDto } from './dto/create-user-partner-product.dto';
 import { UpdateUserPartnerProductDto } from './dto/update-user-partner-product.dto';
 import { PaginationDto } from '../common';
+import { CreateSignPdfDto } from '../common/dto/create-sign-pdf.dto';
 
 @Controller('wills')
 export class ProductsController {
@@ -63,5 +64,11 @@ export class ProductsController {
   ): Promise<GeneralResponseDto> {
     console.log(`[signProductContract] contractId=${contractId}`);
     return this.productsService.signProductContract(contractId);
+  }
+
+  @Post('/sign')
+  async signPdf(@Body() body: CreateSignPdfDto): Promise<GeneralResponseDto> {
+    console.log(`[signPdf] dto=${JSON.stringify(body)}`);
+    return this.productsService.signPdf(body);
   }
 }

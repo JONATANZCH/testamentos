@@ -8,6 +8,7 @@ import { SharedOperationsService } from '../config/shared-operations.service';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '../config';
 import { ConfigService as NestConfigService } from '@nestjs/config';
+import { CreateSignPdfDto } from '../common/dto/create-sign-pdf.dto';
 
 @Injectable()
 export class ProductsService {
@@ -155,18 +156,6 @@ export class ProductsService {
       if (!service)
         throw new HttpException('ServiceId not Found', HttpStatus.BAD_REQUEST);
 
-      // const alreadyExists =
-      //   await this.prisma.userPartnerProductContract.findFirst({
-      //     where: { userId, serviceId: dto.serviceId },
-      //   });
-
-      // if (alreadyExists) {
-      //   throw new HttpException(
-      //     'Subscription already exists',
-      //     HttpStatus.CONFLICT,
-      //   );
-      // }
-
       if (!Array.isArray(dto.metadata)) {
         throw new HttpException(
           'metadata must be an array of contact references',
@@ -301,7 +290,7 @@ export class ProductsService {
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
       console.log('Contract Found', contract);
-      const folder = `Parner-product${contract.id}/`;
+      const folder = `${contract.id}/`;
       const resultvalidates3 = await this.sharedOperationsService.getFileFromS3(
         this.getBucketWill,
         `${folder}${contract.id}.pdf`,
@@ -813,6 +802,620 @@ export class ProductsService {
       response.msg = 'error code as22asd&dK';
       console.log('we responded with ' + JSON.stringify(response));
       throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  private createError(
+    response: GeneralResponseDto,
+    code: number,
+    msg: string,
+    logCode: string,
+    sessionId: string,
+  ): HttpException {
+    response.code = code;
+    response.msg = `${msg} - SessionId-> ${sessionId}`;
+    console.error(`[${sessionId}] Error ${logCode}: ${msg}`);
+    throw new HttpException(response, code);
+  }
+
+  async signPdf(dto: CreateSignPdfDto): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    const sessionId = uuidv4();
+    const { processtosign } = dto;
+    try {
+      this.prisma = await this.prismaProvider.getPrismaClient();
+      if (!this.prisma)
+        throw new HttpException('DB error', HttpStatus.INTERNAL_SERVER_ERROR);
+
+      console.log(`[${sessionId}] Starting signPdf process with DTO:`, dto);
+      const firstProcessItem = processtosign[0];
+      let userId: string | null = null;
+      console.log(
+        `[${sessionId}] Getting userId from first item:`,
+        firstProcessItem,
+      );
+
+      if (firstProcessItem.type === 'will') {
+        const testament = await this.prisma.testamentHeader.findUnique({
+          where: { id: firstProcessItem.id },
+          select: { userId: true },
+        });
+        if (!testament) {
+          throw this.createError(
+            response,
+            404,
+            `Testament with ID ${firstProcessItem.id} not found.`,
+            'WILL_NOT_FOUND',
+            sessionId,
+          );
+        }
+        userId = testament.userId;
+      } else if (firstProcessItem.type === 'insurance') {
+        const contract =
+          await this.prisma.userPartnerProductContract.findUnique({
+            where: { id: firstProcessItem.id },
+            select: { userId: true },
+          });
+        if (!contract) {
+          throw this.createError(
+            response,
+            404,
+            `Contract with ID ${firstProcessItem.id} not found.`,
+            'CONTRACT_NOT_FOUND',
+            sessionId,
+          );
+        }
+        userId = contract.userId;
+      } else {
+        throw this.createError(
+          response,
+          400,
+          `Invalid document type: ${firstProcessItem.type}`,
+          'INVALID_TYPE',
+          sessionId,
+        );
+      }
+
+      if (!userId) {
+        throw this.createError(
+          response,
+          400,
+          `Could not retrieve a valid userId from document ${firstProcessItem.id}.`,
+          'NO_USERID_FOUND',
+          sessionId,
+        );
+      }
+      console.log(`[${sessionId}] Found userId: ${userId}`);
+
+      const signatureProcess = await this.prisma.signatureProcess.create({
+        data: {
+          userId: userId,
+          status: 'initiated',
+          metadata: dto as any,
+        },
+      });
+      console.log(
+        `[${sessionId}] Created SignatureProcess record: ${signatureProcess.id}`,
+      );
+
+      const documentsToSign: any[] = [];
+      const userDetails = {
+        name: '',
+        fatherLastName: '',
+        motherLastName: '',
+        email: '',
+      };
+
+      for (const item of processtosign) {
+        let doc: any;
+        let s3Path: string;
+        let metadataField: string;
+        let prismaModel: any;
+        if (item.type === 'will') {
+          doc = await this.prisma.testamentHeader.findUniqueOrThrow({
+            where: { id: item.id },
+            include: { user: true },
+          });
+          s3Path = `${doc.userId}_${doc.version}.pdf`;
+          metadataField = 'metadata';
+          prismaModel = this.prisma.testamentHeader;
+        } else if (item.type === 'insurance') {
+          doc = await this.prisma.userPartnerProductContract.findUniqueOrThrow({
+            where: { id: item.id },
+            include: { user: true },
+          });
+          const folder = `${doc.id}/`;
+          s3Path = `${folder}${doc.id}.pdf`;
+          metadataField = 'signatureMetadata';
+          prismaModel = this.prisma.userPartnerProductContract;
+        } else {
+          throw this.createError(
+            response,
+            400,
+            `Unknown type in processtosign: ${item.type}`,
+            'UNKNOWN_TYPE',
+            sessionId,
+          );
+        }
+
+        if (!doc || !doc.user) {
+          throw this.createError(
+            response,
+            404,
+            `Document or User not found for ID ${item.id}`,
+            'DOC_USER_NOT_FOUND',
+            sessionId,
+          );
+        }
+        if (doc.userId !== userId) {
+          throw this.createError(
+            response,
+            400,
+            `Document ${item.id} does not belong to user ${userId}`,
+            'USER_MISMATCH',
+            sessionId,
+          );
+        }
+        if (doc.signatureStatus === 'Signed') {
+          throw this.createError(
+            response,
+            400,
+            `Document ${item.id} is already signed.`,
+            'ALREADY_SIGNED',
+            sessionId,
+          );
+        }
+        const s3File = await this.sharedOperationsService.getFileFromS3(
+          this.getBucketWill,
+          s3Path,
+        );
+        if (!s3File) {
+          throw this.createError(
+            response,
+            404,
+            `PDF not found for document ${item.id} at ${s3Path}`,
+            'S3_NOT_FOUND',
+            sessionId,
+          );
+        }
+
+        await prismaModel.update({
+          where: { id: doc.id },
+          data: { idSignatureProcess: signatureProcess.id },
+        });
+
+        documentsToSign.push({
+          ...doc,
+          s3Path: s3Path,
+          pdfTitle: `${doc.id}.pdf`,
+          type: item.type,
+          originalId: item.id,
+          metadataField: metadataField,
+        });
+
+        userDetails.name = doc.user.name;
+        userDetails.fatherLastName = doc.user.fatherLastName;
+        userDetails.motherLastName = doc.user.motherLastName;
+        userDetails.email = doc.user.email;
+
+        await this.sharedOperationsService.sendSignatureLog(
+          sessionId,
+          userId,
+          new Date(),
+          '0',
+          {},
+          {
+            message: `Starting signature process for ${item.type} ${item.id}.`,
+          },
+          'ok',
+          item.type === 'will'
+            ? { testamentId: item.id }
+            : { contractId: item.id },
+        );
+      }
+
+      console.log(
+        `[${sessionId}] All ${documentsToSign.length} documents validated and linked.`,
+      );
+
+      // 2. Flujo Seguridata - Login (Una vez)
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: this.signer_authorization,
+      };
+      const loginBody = {
+        org: this.signer_org_string,
+        t003c002: this.signer_t003c002,
+        t003c004: this.signer_t003c004,
+      };
+      const url1 = this.signer_base_rest + '/log/in';
+      let result = await this.sharedOperationsService.makePostRequest(
+        url1,
+        loginBody,
+        headers,
+        true,
+      );
+
+      if (result.code != 200 || result.response !== 1) {
+        await this.sharedOperationsService.sendSignatureLog(
+          sessionId,
+          userId,
+          new Date(),
+          '1',
+          loginBody,
+          result,
+          'failed',
+          { signatureProcessId: signatureProcess.id },
+        );
+        throw this.createError(
+          response,
+          500,
+          'Error logging in to Seguridata.',
+          'SEG_LOGIN_FAIL',
+          sessionId,
+        );
+      }
+      await this.sharedOperationsService.sendSignatureLog(
+        sessionId,
+        userId,
+        new Date(),
+        '1',
+        loginBody,
+        result,
+        'ok',
+        { signatureProcessId: signatureProcess.id },
+      );
+      console.log(`[${sessionId}] Seguridata login successful.`);
+
+      // 3. Flujo Seguridata - New Process (Una vez)
+      const newProcessBody = {
+        idcat: this.signer_idcat,
+        idsol: this.signer_idsol,
+      };
+      const url2 = this.signer_base_rest + '/process/new';
+      result = await this.sharedOperationsService.makePostRequest(
+        url2,
+        newProcessBody,
+        headers,
+        true,
+      );
+
+      if (
+        result.code != 200 ||
+        (typeof result.response === 'string' &&
+          result.response.toLowerCase().includes('error'))
+      ) {
+        await this.sharedOperationsService.sendSignatureLog(
+          sessionId,
+          userId,
+          new Date(),
+          '2',
+          newProcessBody,
+          result,
+          'failed',
+          { signatureProcessId: signatureProcess.id },
+        );
+        throw this.createError(
+          response,
+          500,
+          'Error creating Seguridata process.',
+          'SEG_NEW_FAIL',
+          sessionId,
+        );
+      }
+      const seguridataprocessid = String(result.response);
+      await this.sharedOperationsService.sendSignatureLog(
+        sessionId,
+        userId,
+        new Date(),
+        '2',
+        newProcessBody,
+        result,
+        'ok',
+        { signatureProcessId: signatureProcess.id },
+      );
+      console.log(
+        `[${sessionId}] Seguridata process created: ${seguridataprocessid}.`,
+      );
+
+      // 4. Actualizar nuestro SignatureProcess con el ID de Seguridata
+      const currentMetadata = (signatureProcess.metadata as any) || {};
+      currentMetadata.seguridataSteps = currentMetadata.seguridataSteps || {};
+      currentMetadata.seguridataSteps.login = {
+        date: new Date(),
+        status: 'ok',
+      };
+      currentMetadata.seguridataSteps.newProcess = {
+        date: new Date(),
+        status: 'ok',
+        id: seguridataprocessid,
+      };
+
+      await this.prisma.signatureProcess.update({
+        where: { id: signatureProcess.id },
+        data: {
+          seguridataprocessid: parseInt(seguridataprocessid, 10),
+          status: 'seguridata_created',
+          metadata: currentMetadata as any,
+        },
+      });
+
+      // 5. Flujo Seguridata - Add Files (Múltiples veces)
+      const url3 = this.signer_base_rest + '/process/addfiletoprc';
+      currentMetadata.seguridataSteps.addFiles = [];
+
+      for (const doc of documentsToSign) {
+        console.log(`[${sessionId}] Adding file to Seguridata: ${doc.s3Path}`);
+        const formData = [
+          { key: 'idprc', value: seguridataprocessid },
+          { key: 'idcto', value: this.signer_idsol },
+          { key: 'idorg', value: this.signer_org },
+        ];
+
+        // ** ¡¡¡PUNTO CRÍTICO!!! **x
+        const addFileResult =
+          await this.sharedOperationsService.postFileAsFormData(
+            url3,
+            this.getBucketWill,
+            doc.s3Path,
+            headers,
+            formData,
+          );
+
+        const logOptions =
+          doc.type === 'will'
+            ? { testamentId: doc.originalId }
+            : { contractId: doc.originalId };
+
+        if (
+          addFileResult.code != 200 ||
+          (typeof addFileResult.response == 'string' &&
+            addFileResult.response.toLowerCase().includes('error'))
+        ) {
+          await this.sharedOperationsService.sendSignatureLog(
+            sessionId,
+            userId,
+            new Date(),
+            '3',
+            formData,
+            addFileResult,
+            'failed',
+            logOptions,
+          );
+          currentMetadata.seguridataSteps.addFiles.push({
+            file: doc.s3Path,
+            status: 'failed',
+            result: addFileResult,
+          });
+          await this.prisma.signatureProcess.update({
+            where: { id: signatureProcess.id },
+            data: { metadata: currentMetadata as any },
+          });
+          throw this.createError(
+            response,
+            500,
+            `Error adding file ${doc.s3Path} to Seguridata.`,
+            'SEG_ADD_FAIL',
+            sessionId,
+          );
+        }
+        await this.sharedOperationsService.sendSignatureLog(
+          sessionId,
+          userId,
+          new Date(),
+          '3',
+          formData,
+          addFileResult,
+          'ok',
+          logOptions,
+        );
+        currentMetadata.seguridataSteps.addFiles.push({
+          file: doc.s3Path,
+          status: 'ok',
+          result: addFileResult,
+        });
+        console.log(`[${sessionId}] File ${doc.s3Path} added successfully.`);
+      }
+      await this.prisma.signatureProcess.update({
+        where: { id: signatureProcess.id },
+        data: { metadata: currentMetadata as any },
+      });
+
+      // 6. Flujo Seguridata - Set Title (Una vez)
+      const url4 = this.signer_base_rest + '/process/update';
+      const titleBody = {
+        idprc: parseInt(seguridataprocessid, 10),
+        fld: 'p8',
+        data: `${signatureProcess.id}_batch.pdf`,
+        tipo: 0,
+      };
+      result = await this.sharedOperationsService.makePostRequest(
+        url4,
+        titleBody,
+        headers,
+        true,
+      );
+
+      if (result.code != 200) {
+        await this.sharedOperationsService.sendSignatureLog(
+          sessionId,
+          userId,
+          new Date(),
+          '4',
+          titleBody,
+          result,
+          'failed',
+          { signatureProcessId: signatureProcess.id },
+        );
+        throw this.createError(
+          response,
+          500,
+          'Error setting title in Seguridata.',
+          'SEG_TITLE_FAIL',
+          sessionId,
+        );
+      }
+      await this.sharedOperationsService.sendSignatureLog(
+        sessionId,
+        userId,
+        new Date(),
+        '4',
+        titleBody,
+        result,
+        'ok',
+        { signatureProcessId: signatureProcess.id },
+      );
+      currentMetadata.seguridataSteps.setTitle = {
+        date: new Date(),
+        status: 'ok',
+      };
+      await this.prisma.signatureProcess.update({
+        where: { id: signatureProcess.id },
+        data: { metadata: currentMetadata as any },
+      });
+      console.log(`[${sessionId}] Seguridata title set.`);
+
+      // 7. Flujo Seguridata - Set Signers (Una vez)
+      const signersBody = {
+        idprc: parseInt(seguridataprocessid, 10),
+        fld: 'p33',
+        data: 1,
+        tipo: 0,
+      }; // Asumimos 1 firmante
+      result = await this.sharedOperationsService.makePostRequest(
+        url4,
+        signersBody,
+        headers,
+        true,
+      ); // Reusa url4
+
+      if (result.code != 200) {
+        await this.sharedOperationsService.sendSignatureLog(
+          sessionId,
+          userId,
+          new Date(),
+          '5',
+          signersBody,
+          result,
+          'failed',
+          { signatureProcessId: signatureProcess.id },
+        );
+        throw this.createError(
+          response,
+          500,
+          'Error setting signers in Seguridata.',
+          'SEG_SIGNERS_FAIL',
+          sessionId,
+        );
+      }
+      await this.sharedOperationsService.sendSignatureLog(
+        sessionId,
+        userId,
+        new Date(),
+        '5',
+        signersBody,
+        result,
+        'ok',
+        { signatureProcessId: signatureProcess.id },
+      );
+      currentMetadata.seguridataSteps.setSigners = {
+        date: new Date(),
+        status: 'ok',
+      };
+      await this.prisma.signatureProcess.update({
+        where: { id: signatureProcess.id },
+        data: { metadata: currentMetadata as any },
+      });
+      console.log(`[${sessionId}] Seguridata signers set.`);
+
+      // 8. Flujo Seguridata - Get Token (Una vez)
+      const url6 = this.signer_base_rest + '/process/addtkzphtrltr';
+      const tokenBody = {
+        idprc: parseInt(seguridataprocessid, 10),
+        nombre: [
+          userDetails.name,
+          userDetails.fatherLastName,
+          userDetails.motherLastName,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        email: userDetails.email,
+        tipo: String(this.signer_tipo),
+        perfil: String(this.signer_perfil),
+        org: String(this.signer_org),
+        firma: String(this.signer_flujofirma),
+      };
+      result = await this.sharedOperationsService.makePostRequest(
+        url6,
+        tokenBody,
+        headers,
+        true,
+      );
+
+      if (
+        result.code != 200 ||
+        typeof result.response !== 'string' ||
+        result.response.toLowerCase().includes('error')
+      ) {
+        await this.sharedOperationsService.sendSignatureLog(
+          sessionId,
+          userId,
+          new Date(),
+          '6',
+          tokenBody,
+          result,
+          'failed',
+          { signatureProcessId: signatureProcess.id },
+        );
+        throw this.createError(
+          response,
+          500,
+          'Error getting token from Seguridata.',
+          'SEG_TOKEN_FAIL',
+          sessionId,
+        );
+      }
+
+      const token = result.response;
+      const signingUrl = `${this.signer_base}/Extr.hd?task=access&hd=${this.signer_hd}&idorg=${this.signer_org}&org=${this.signer_org}&idprc=${seguridataprocessid}&token=${token}&idp=6177`;
+
+      await this.sharedOperationsService.sendSignatureLog(
+        sessionId,
+        userId,
+        new Date(),
+        '6',
+        tokenBody,
+        { ...result, urlcalculated: signingUrl },
+        'ok',
+        { signatureProcessId: signatureProcess.id },
+      );
+      currentMetadata.seguridataSteps.getToken = {
+        date: new Date(),
+        status: 'ok',
+        url: signingUrl,
+      };
+      await this.prisma.signatureProcess.update({
+        where: { id: signatureProcess.id },
+        data: { status: 'waiting_signature', metadata: currentMetadata as any },
+      });
+      console.log(
+        `[${sessionId}] Seguridata token received, URL generated: ${signingUrl}.`,
+      );
+
+      response.code = 200;
+      response.msg = `Success - SessionId-> ${sessionId}`;
+      response.response = {
+        url: signingUrl,
+        signatureProcessId: signatureProcess.id,
+      };
+      console.log(
+        `[${sessionId}] Process finished successfully. Sending response.`,
+      );
+
+      return response;
+    } catch (error) {
+      console.error('Error in signPdf-> noxc7', error);
+      processException(error);
     }
   }
 }

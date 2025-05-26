@@ -415,9 +415,11 @@ export class SharedOperationsService {
     options?: {
       testamentId?: string;
       contractId?: string;
+      signatureProcessId?: string;
     },
   ) {
     try {
+      this.prisma = await this.prismaprovider.getPrismaClient();
       const s = status.toLowerCase();
       if (s !== 'ok') {
         try {
@@ -436,7 +438,7 @@ export class SharedOperationsService {
           console.log('Error sending SNS message:', error);
         }
       }
-      this.prisma = await this.prismaprovider.getPrismaClient();
+
       await this.prisma.signatureStatus.create({
         data: {
           signSession: sessionId,
@@ -448,11 +450,12 @@ export class SharedOperationsService {
           status,
           testamentId: options?.testamentId ?? null,
           contractId: options?.contractId ?? null,
+          signatureProcessId: options?.signatureProcessId ?? null,
         },
       });
       return true;
     } catch (error) {
-      console.log('wills Error-> sdf2');
+      console.log('Wills/Contract Error-> sdf2 / Logging Error');
       console.log('Error creating Log of Signature', error);
       return false;
     }
@@ -512,6 +515,124 @@ export class SharedOperationsService {
       responseg.response = error;
       console.error('Error posting file as form-data:', error);
       return responseg;
+    }
+  }
+
+  async downloadSeguridataContract(
+    document: any,
+    testamentId: string,
+    sessionId: string,
+    seguridataprocessId: any,
+  ) {
+    try {
+      let response = new GeneralResponseDto();
+      const seguridataPdf =
+        document.userId +
+        '/' +
+        document.userId +
+        '_' +
+        document.version +
+        '_RGCCNOM151.pdf';
+      console.log('seguridataPdf', seguridataPdf);
+
+      const pastpostPdf =
+        document.userId +
+        '/' +
+        document.userId +
+        '_' +
+        document.version +
+        '_PASTPOST.pdf';
+      console.log('pastpostPdf', pastpostPdf);
+
+      const existsSeguridataPdf = await this.valididatifFileinS3(
+        this.getBucketWill,
+        seguridataPdf,
+      );
+      const existsPastpostPDf = await this.valididatifFileinS3(
+        this.getBucketWill,
+        pastpostPdf,
+      );
+
+      if (existsSeguridataPdf && existsPastpostPDf) {
+        response.code = 200;
+        response.msg = 'boths documents in s3';
+
+        await this.sendSignatureLog(
+          sessionId,
+          document.userId,
+          new Date(),
+          '102',
+          { message: 'Both documents already exist in S3.' },
+          {
+            existsSeguridataPdf,
+            existsPastpostPDf,
+            pastpostPdf,
+            seguridataPdf,
+          },
+          'ok',
+          { signatureProcessId: document.seguridataprocessid },
+        );
+        return response;
+      }
+      if (!existsSeguridataPdf || !existsPastpostPDf) {
+        const keyFile = document.userId + '_' + document.version;
+        response = await this.getNomSignedPdf(keyFile, seguridataprocessId);
+        console.log('response', response);
+        if (response.code !== 200) {
+          console.log('we responded with ' + JSON.stringify(response));
+          await this.sendSignatureLog(
+            sessionId,
+            document.userId,
+            new Date(),
+            '102',
+            { action: 'getNomSignedPdf' },
+            { response: response },
+            'failed',
+            { signatureProcessId: document.seguridataprocessid },
+          );
+          throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        // contract.response  tiene un zip que trae 2 pdfs, ese zip debes enviarlo por mail.
+        // aqui lo vamos a subir a extraer y lo vamos a subir al s3
+        const zipResponse = await this.handleZipFile(
+          response.response,
+          this.getBucketWill,
+          keyFile,
+        );
+        console.log('zipResponse', zipResponse);
+        if (zipResponse.code !== 200) {
+          console.log('we responded with ' + JSON.stringify(zipResponse));
+          await this.sendSignatureLog(
+            sessionId,
+            document.userId,
+            new Date(),
+            '102',
+            { action: 'handleZipFile' },
+            { response: zipResponse },
+            'failed',
+            { signatureProcessId: document.seguridataprocessid },
+          );
+          throw new HttpException(
+            zipResponse,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+
+        await this.sendSignatureLog(
+          sessionId,
+          document.userId,
+          new Date(),
+          '102',
+          { action: 'handleZipFile' },
+          { response: zipResponse },
+          'ok',
+          { signatureProcessId: document.seguridataprocessid },
+        );
+      }
+      return response;
+    } catch (error) {
+      console.log('Pastpost Error-> 3asd212');
+      processException(error);
     }
   }
 }

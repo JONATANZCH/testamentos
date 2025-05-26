@@ -7,9 +7,10 @@ import { ConfigService } from '../config';
 import { PdfProcessRepository } from './rempository/pdf-process.repository';
 import { SqsService } from '../config/sqs-validate.service';
 import { HtmlGeneratorService } from './htmlGenerator.service';
+import { SqsModule } from '../config/sqs.module';
 
 @Module({
-  imports: [HttpModule],
+  imports: [HttpModule, SqsModule],
   controllers: [TestamentPdfController],
   providers: [
     TestamentPdfService,
