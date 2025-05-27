@@ -574,7 +574,7 @@ export class ProductsService {
         const body4 = {
           idprc: parseInt(seguridataprocessid, 10),
           fld: 'p8',
-          data: contract.testamentId + '.pdf',
+          data: contract.id + '.pdf',
           tipo: 0,
         };
         result = await this.sharedOperationsService.makePostRequest(

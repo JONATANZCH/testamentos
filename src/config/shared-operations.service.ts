@@ -16,6 +16,10 @@ import { processException } from '../common/utils/exception.helper';
 import * as unzipper from 'unzipper';
 import { GeneralResponseDto } from '../common/response.dto'; // Adjust path as needed
 import { Readable } from 'stream';
+import {
+  ProcessToSignItemDto,
+  SignProcessType,
+} from '../common/dto/create-sign-pdf.dto';
 
 @Injectable()
 export class SharedOperationsService {
@@ -126,6 +130,8 @@ export class SharedOperationsService {
     headers: any,
     seguridataprocessId: string,
     keyFile: string, // Base key for S3 (e.g., userId_version)
+    processtosignList: ProcessToSignItemDto[],
+    userId: string,
   ): Promise<GeneralResponseDto> {
     const responseg = new GeneralResponseDto();
     try {
@@ -156,6 +162,8 @@ export class SharedOperationsService {
           zipBuffer,
           bucketName,
           keyFile,
+          processtosignList,
+          userId,
         );
 
         if (handleZipFileResp.code !== 200) {
@@ -227,84 +235,170 @@ export class SharedOperationsService {
   async handleZipFile(
     zipBuffer: Buffer,
     bucketName: string,
-    keyFile: string,
+    _batchKeyFileBase: string,
+    processtosignList: ProcessToSignItemDto[],
+    userId: string,
   ): Promise<GeneralResponseDto> {
     const response = new GeneralResponseDto();
+    const filesUploadedToS3: {
+      originalZipPath: string;
+      finalS3Key: string;
+      docId: string;
+      type: SignProcessType;
+    }[] = [];
+    let allExpectedDocsHaveTheirFiles = true; // Para verificar que cada doc del lote tenga sus archivos
+
+    console.log(
+      `[SharedOps/handleZipFile] Processing ZIP for user ${userId}, batch ref: ${_batchKeyFileBase}. Expecting docs for:`,
+      processtosignList.map((p) => p.id),
+    );
+
     try {
-      // Descomprimir el archivo zip
       const directory = await unzipper.Open.buffer(zipBuffer);
-      console.log(`Files found in ZIP: ${directory.files.length}`);
+      console.log(
+        `[SharedOps/handleZipFile] Files found in ZIP: ${directory.files.length}.`,
+      );
 
-      let files = '';
-      const filesuploaded: string[] = [];
-      let pdfCount = 0;
+      // 1. Obtener versiones para todos los testamentos en el lote de una vez
+      const testamentVersions = new Map<string, number>();
+      const willIdsInProcess = processtosignList
+        .filter((p) => p.type === SignProcessType.WILL)
+        .map((p) => p.id);
 
-      if (directory.files.length !== 3) {
-        for (const file of directory.files) {
-          files += file.path + '\n';
-        }
-
-        const errormsg = `Error in seguridata in ENVIRONMENT ${this.environment}
-    Handlezipfile: Files extracted from ZIP are not 3 
-    for will id: ${keyFile}
-    Files found in ZIP: ${files}`;
-
-        console.log('SNS message sent' + errormsg);
-        // await this.sendSnsMessage(errormsg, this.topicArnEnv);
+      if (willIdsInProcess.length > 0) {
+        const testaments = await this.prisma.testamentHeader.findMany({
+          where: { id: { in: willIdsInProcess }, userId: userId },
+          select: { id: true, version: true },
+        });
+        testaments.forEach((t) => testamentVersions.set(t.id, t.version));
       }
 
-      for (let i = 0; i < directory.files.length; i++) {
-        const file = directory.files[i];
-        const fileContent = await file.buffer();
-        const isPdf = fileContent.slice(0, 4).toString() === '%PDF';
-
+      // 2. Procesar cada archivo del ZIP
+      for (const fileInZip of directory.files) {
+        const originalZipPath = fileInZip.path;
         console.log(
-          `File ${file.path} found in ZIP size ${fileContent.length} bytes`,
+          `[SharedOps/handleZipFile] Processing file from ZIP: ${originalZipPath}`,
         );
 
-        if (!isPdf) {
-          console.log(`Archivo ${file.path} no es un PDF real, no se subirá`);
+        const fileContent = await fileInZip.buffer();
+        if (fileContent.slice(0, 4).toString() !== '%PDF') {
+          console.log(
+            `[SharedOps/handleZipFile] File ${originalZipPath} is not a PDF, skipping.`,
+          );
           continue;
         }
 
-        const filename =
-          pdfCount === 0
-            ? `${keyFile}_RGCCNOM151.pdf`
-            : `${keyFile}_PASTPOST.pdf`;
-        const s3Key = `${keyFile}/${filename}`;
-        try {
-          console.log(`Guardando archivo ${s3Key} en S3`);
-          await this.PostFileToS3(bucketName, s3Key, fileContent);
-          console.log(`File ${s3Key} uploaded to S3 successfully`);
-          filesuploaded.push(s3Key);
-          pdfCount++;
-        } catch (error) {
-          console.log(
-            `File ${s3Key} failed to be uploaded to S3 with error:`,
-            error,
+        let associatedDocItem: ProcessToSignItemDto | undefined = undefined;
+        for (const docItem of processtosignList) {
+          if (
+            originalZipPath.toLowerCase().includes(docItem.id.toLowerCase())
+          ) {
+            associatedDocItem = docItem;
+            break;
+          }
+        }
+
+        if (!associatedDocItem) {
+          console.warn(
+            `[SharedOps/handleZipFile] Could not associate ZIP file ${originalZipPath} with any document in processtosignList. Skipping.`,
           );
+          allExpectedDocsHaveTheirFiles = false;
+          continue;
+        }
+
+        let finalS3Key: string;
+        let fileTypeSuffix: string;
+
+        // Determinar el sufijo basado en el contenido del nombre del archivo en el ZIP
+        if (originalZipPath.toUpperCase().includes('RGCCNOM151')) {
+          fileTypeSuffix =
+            associatedDocItem.type === SignProcessType.WILL
+              ? '_RGCCNOM151.pdf'
+              : '_INSURANCE_RGCCNOM151.pdf';
+        } else {
+          // Si no es RGCCNOM151 y es PDF, asumimos que es el "PASTPOST" o equivalente
+          fileTypeSuffix =
+            associatedDocItem.type === SignProcessType.WILL
+              ? '_PASTPOST.pdf'
+              : '_INSURANCE_PASTPOST.pdf';
+        }
+
+        if (associatedDocItem.type === SignProcessType.WILL) {
+          const version = testamentVersions.get(associatedDocItem.id);
+          if (!version) {
+            console.error(
+              `[SharedOps/handleZipFile] No version found for will ${associatedDocItem.id}. Cannot save file ${originalZipPath}.`,
+            );
+            allExpectedDocsHaveTheirFiles = false;
+            continue;
+          }
+          finalS3Key = `${userId}/${associatedDocItem.id}_${version}${fileTypeSuffix}`;
+        } else {
+          // INSURANCE
+          finalS3Key = `${userId}/${associatedDocItem.id}${fileTypeSuffix}`;
+        }
+
+        try {
+          console.log(
+            `[SharedOps/handleZipFile] Saving extracted file ${originalZipPath} to S3 as ${finalS3Key}`,
+          );
+          await this.PostFileToS3(bucketName, finalS3Key, fileContent);
+          filesUploadedToS3.push({
+            originalZipPath,
+            finalS3Key,
+            docId: associatedDocItem.id,
+            type: associatedDocItem.type,
+          });
+        } catch (s3Error) {
+          console.error(
+            `[SharedOps/handleZipFile] Failed to upload ${finalS3Key} to S3 for original ${originalZipPath}:`,
+            s3Error,
+          );
+          allExpectedDocsHaveTheirFiles = false;
         }
       }
-      if (pdfCount < 2) {
+
+      for (const docItem of processtosignList) {
+        const filesForThisDoc = filesUploadedToS3.filter(
+          (f) => f.docId === docItem.id,
+        );
+        if (filesForThisDoc.length < 2) {
+          console.warn(
+            `[SharedOps/handleZipFile] Document ${docItem.id} (type: ${docItem.type}) has only ${filesForThisDoc.length} files processed, expected 2.`,
+          );
+          allExpectedDocsHaveTheirFiles = false;
+        }
+      }
+
+      if (!allExpectedDocsHaveTheirFiles) {
+        console.log(
+          `[SharedOps/handleZipFile] Not all expected PDF files were successfully processed and uploaded from batch ${_batchKeyFileBase}. Check warnings above.`,
+        );
         response.code = 500;
-        response.msg = 'Not all required PDF files were found and uploaded';
-        response.response = filesuploaded;
+        response.msg =
+          'Failed to process and upload all required PDF files from ZIP.';
+        response.response = {
+          uploadedFiles: filesUploadedToS3,
+          details: 'Some files may be missing or failed to upload.',
+        };
         return response;
       }
 
       console.log(
-        `Archivos del ZIP guardados en S3 bajo la carpeta ${keyFile}`,
+        `[SharedOps/handleZipFile] All ${filesUploadedToS3.length} PDF files extracted from ZIP and saved to S3 successfully for batch ${_batchKeyFileBase}`,
       );
       response.code = 200;
       response.msg = 'Files extracted and uploaded to S3 successfully';
-      response.response = keyFile;
+      response.response = { uploadedFiles: filesUploadedToS3 };
       return response;
     } catch (error) {
-      console.log('Pastpost Error-> 2asuidj20xks8');
-      console.error('Error unzipping and saving files to S3:', error);
+      console.log(
+        `[SharedOps/handleZipFile] Pastpost Error-> 2asuidj20xks8 for batch ${_batchKeyFileBase}:`,
+        error,
+      );
       response.code = 500;
-      response.msg = 'Error extracting and uploading files to S3';
-      response.response = error.message || error;
+      response.msg = error.message || 'Error unzipping and saving files to S3';
+      response.response = { originalError: error.message };
       return response;
     }
   }
@@ -356,7 +450,12 @@ export class SharedOperationsService {
     });
   }
 
-  async getNomSignedPdf(keyFile: string, seguridataprocessId: string) {
+  async getNomSignedPdf(
+    keyFile: string,
+    seguridataprocessId: string,
+    processtosignList?: ProcessToSignItemDto[],
+    userId?: string,
+  ) {
     let response = new GeneralResponseDto();
     try {
       console.log('Getting NOM signed pdf');
@@ -396,6 +495,8 @@ export class SharedOperationsService {
         headers2,
         seguridataprocessId,
         keyFile,
+        processtosignList,
+        userId,
       );
       return response;
     } catch (error) {
@@ -519,117 +620,183 @@ export class SharedOperationsService {
   }
 
   async downloadSeguridataContract(
-    document: any,
-    testamentId: string,
+    signatureProcess: any,
+    processtosignList: any[],
     sessionId: string,
-    seguridataprocessId: any,
-  ) {
+    numericSeguridataId: number,
+  ): Promise<GeneralResponseDto> {
+    const response = new GeneralResponseDto();
+    console.log(
+      `[${sessionId}] downloadSeguridataContract for SP_ID ${signatureProcess.id}, Seguridata ID ${numericSeguridataId}`,
+    );
+
+    if (!signatureProcess.user || !signatureProcess.userId) {
+      console.log(
+        `[${sessionId}] User information missing in SignatureProcess for S3 paths (SP_ID ${signatureProcess.id}).`,
+      );
+      response.code = 500;
+      response.msg = 'User information missing in SignatureProcess.';
+      return response;
+    }
+    const userId = signatureProcess.userId;
+
     try {
-      let response = new GeneralResponseDto();
-      const seguridataPdf =
-        document.userId +
-        '/' +
-        document.userId +
-        '_' +
-        document.version +
-        '_RGCCNOM151.pdf';
-      console.log('seguridataPdf', seguridataPdf);
+      let allFinalFilesExist = true;
+      const expectedFinalS3Keys: {
+        docId: string;
+        type: SignProcessType;
+        keys: string[];
+      }[] = [];
 
-      const pastpostPdf =
-        document.userId +
-        '/' +
-        document.userId +
-        '_' +
-        document.version +
-        '_PASTPOST.pdf';
-      console.log('pastpostPdf', pastpostPdf);
+      for (const docItem of processtosignList) {
+        const currentDocKeys: string[] = [];
+        if (docItem.type === SignProcessType.WILL) {
+          const testament = await this.prisma.testamentHeader.findUnique({
+            where: { id: docItem.id, userId: userId },
+            select: { version: true },
+          });
+          if (!testament) {
+            console.log(
+              `[${sessionId}] TestamentHeader not found for ID ${docItem.id} to get version. Cannot check S3.`,
+            );
+            allFinalFilesExist = false;
+            break;
+          }
+          const version = testament.version;
+          currentDocKeys.push(`${userId}/${userId}_${version}_RGCCNOM151.pdf`);
+          currentDocKeys.push(`${userId}/${userId}_${version}_PASTPOST.pdf`);
+        } else if (docItem.type === SignProcessType.INSURANCE) {
+          currentDocKeys.push(
+            `${userId}/${docItem.id}_INSURANCE_RGCCNOM151.pdf`,
+          );
+          currentDocKeys.push(`${userId}/${docItem.id}_INSURANCE_PASTPOST.pdf`);
+        }
 
-      const existsSeguridataPdf = await this.valididatifFileinS3(
-        this.getBucketWill,
-        seguridataPdf,
-      );
-      const existsPastpostPDf = await this.valididatifFileinS3(
-        this.getBucketWill,
-        pastpostPdf,
-      );
+        if (currentDocKeys.length === 0 && processtosignList.length > 0) {
+          console.log(
+            `[${sessionId}] Could not determine S3 keys for docItem:`,
+            docItem,
+          );
+          allFinalFilesExist = false;
+          break;
+        }
 
-      if (existsSeguridataPdf && existsPastpostPDf) {
+        if (currentDocKeys.length > 0) {
+          expectedFinalS3Keys.push({
+            docId: docItem.id,
+            type: docItem.type,
+            keys: currentDocKeys,
+          });
+
+          for (const key of currentDocKeys) {
+            if (!(await this.valididatifFileinS3(this.getBucketWill, key))) {
+              console.log(
+                `[${sessionId}] Expected signed file ${key} for doc ${docItem.id} (type ${docItem.type}) not found in S3.`,
+              );
+              allFinalFilesExist = false;
+              break;
+            }
+          }
+        }
+
+        if (!allFinalFilesExist) {
+          break;
+        }
+      }
+
+      if (allFinalFilesExist && processtosignList.length > 0) {
         response.code = 200;
-        response.msg = 'boths documents in s3';
+        response.msg = 'All expected signed documents already exist in S3.';
+        console.log(
+          `[${sessionId}] All signed PDFs for SP_ID ${signatureProcess.id} (Seguridata ID ${numericSeguridataId}) exist in S3. Skipping download.`,
+        );
 
         await this.sendSignatureLog(
           sessionId,
-          document.userId,
+          userId,
           new Date(),
           '102',
-          { message: 'Both documents already exist in S3.' },
-          {
-            existsSeguridataPdf,
-            existsPastpostPDf,
-            pastpostPdf,
-            seguridataPdf,
-          },
+          { message: 'All signed files for the batch already exist in S3.' },
+          { checkedKeys: expectedFinalS3Keys.flatMap((e) => e.keys) },
           'ok',
-          { signatureProcessId: document.seguridataprocessid },
+          { signatureProcessId: signatureProcess.id },
         );
         return response;
       }
-      if (!existsSeguridataPdf || !existsPastpostPDf) {
-        const keyFile = document.userId + '_' + document.version;
-        response = await this.getNomSignedPdf(keyFile, seguridataprocessId);
-        console.log('response', response);
-        if (response.code !== 200) {
-          console.log('we responded with ' + JSON.stringify(response));
-          await this.sendSignatureLog(
-            sessionId,
-            document.userId,
-            new Date(),
-            '102',
-            { action: 'getNomSignedPdf' },
-            { response: response },
-            'failed',
-            { signatureProcessId: document.seguridataprocessid },
-          );
-          throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        // contract.response  tiene un zip que trae 2 pdfs, ese zip debes enviarlo por mail.
-        // aqui lo vamos a subir a extraer y lo vamos a subir al s3
-        const zipResponse = await this.handleZipFile(
-          response.response,
-          this.getBucketWill,
-          keyFile,
-        );
-        console.log('zipResponse', zipResponse);
-        if (zipResponse.code !== 200) {
-          console.log('we responded with ' + JSON.stringify(zipResponse));
-          await this.sendSignatureLog(
-            sessionId,
-            document.userId,
-            new Date(),
-            '102',
-            { action: 'handleZipFile' },
-            { response: zipResponse },
-            'failed',
-            { signatureProcessId: document.seguridataprocessid },
-          );
-          throw new HttpException(
-            zipResponse,
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
-        }
 
+      if (processtosignList.length === 0) {
+        console.log(
+          `[${sessionId}] No documents in processtosignList for SP_ID ${signatureProcess.id}. Cannot proceed with download.`,
+        );
+        response.code = 400;
+        response.msg = 'No documents specified for signature process.';
+        return response;
+      }
+
+      console.log(
+        `[${sessionId}] Not all signed files found in S3 for SP_ID ${signatureProcess.id}. Proceeding to download from Seguridata.`,
+      );
+
+      const batchKeyFileBase = `${userId}/${signatureProcess.id}_SIGNED_FILES_BATCH`;
+
+      console.log(
+        `[${sessionId}] Calling getNomSignedPdf for SP_ID ${signatureProcess.id} with batchKeyFileBase: ${batchKeyFileBase}`,
+      );
+
+      const nomResponse = await this.getNomSignedPdf(
+        batchKeyFileBase,
+        String(numericSeguridataId),
+        processtosignList,
+        userId,
+      );
+
+      console.log(
+        `[${sessionId}] Response from getNomSignedPdf for SP_ID ${signatureProcess.id}:`,
+        nomResponse,
+      );
+
+      if (nomResponse.code !== 200) {
+        console.log(
+          `[${sessionId}] Error response from getNomSignedPdf for SP_ID ${signatureProcess.id}: ` +
+            JSON.stringify(nomResponse),
+        );
         await this.sendSignatureLog(
           sessionId,
-          document.userId,
+          userId,
           new Date(),
           '102',
-          { action: 'handleZipFile' },
-          { response: zipResponse },
-          'ok',
-          { signatureProcessId: document.seguridataprocessid },
+          {
+            action: 'getNomSignedPdf',
+            batchKeyFileBase: batchKeyFileBase,
+            seguridataProcessId: numericSeguridataId,
+          },
+          { response: nomResponse },
+          'failed',
+          { signatureProcessId: signatureProcess.id },
+        );
+        throw new HttpException(
+          nomResponse,
+          nomResponse.code || HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
-      return response;
+
+      console.log(
+        `[${sessionId}] getNomSignedPdf and implicit handleZipFile successful for SP_ID ${signatureProcess.id}.`,
+      );
+      await this.sendSignatureLog(
+        sessionId,
+        userId,
+        new Date(),
+        '102',
+        {
+          action: 'getNomSignedPdf_and_handleZipFile_implicit',
+          batchKeyFileBase: batchKeyFileBase,
+        },
+        { response: nomResponse },
+        'ok',
+        { signatureProcessId: signatureProcess.id },
+      );
+      return nomResponse;
     } catch (error) {
       console.log('Pastpost Error-> 3asd212');
       processException(error);

@@ -14,6 +14,10 @@ import { HtmlGeneratorService } from './htmlGenerator.service';
 import { v4 as uuidv4 } from 'uuid';
 import { HttpService } from '@nestjs/axios';
 import { SharedOperationsService } from '../config/shared-operations.service';
+import {
+  CreateSignPdfDto,
+  SignProcessType,
+} from '../common/dto/create-sign-pdf.dto';
 
 @Injectable()
 export class TestamentPdfService {
@@ -813,7 +817,7 @@ export class TestamentPdfService {
         const body4 = {
           idprc: parseInt(seguridataprocessid, 10),
           fld: 'p8',
-          data: contract.testamentId + '.pdf',
+          data: contract.id + '.pdf',
           tipo: 0,
         };
         result = await this.sharedOperationsService.makePostRequest(
@@ -1044,9 +1048,10 @@ export class TestamentPdfService {
     }
   }
 
-  async processSignedContract(seguridataprocessId: number, body: any) {
+  async processSignedContract(seguridataprocessIdParam: number, body: any) {
     const response = new GeneralResponseDto();
-    console.log('Body received:', body);
+    console.log(`[Webhook/${seguridataprocessIdParam}] Body received:`, body);
+    let currentSignatureProcess: any = null;
     try {
       this.prisma = await this.prismaprovider.getPrismaClient();
       if (this.prisma == null) {
@@ -1059,81 +1064,77 @@ export class TestamentPdfService {
         throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
-      const matches = await this.prisma.signatureProcess.findUnique({
-        where: {
-          seguridataprocessid: seguridataprocessId,
-        },
+      currentSignatureProcess = await this.prisma.signatureProcess.findUnique({
+        where: { seguridataprocessid: seguridataprocessIdParam },
+        include: { user: true },
       });
-      console.log('seguridataprocessId:', seguridataprocessId);
-      console.log('Matches:', matches);
-      const userId = matches.userId;
 
-      if (matches.length === 0) {
+      console.log(
+        `[Webhook/${seguridataprocessIdParam}] Seguridata ID from param:`,
+        seguridataprocessIdParam,
+      );
+      console.log(
+        `[Webhook/${seguridataprocessIdParam}] Matches (SignatureProcess found):`,
+        currentSignatureProcess ? currentSignatureProcess.id : 'None',
+      );
+
+      if (!currentSignatureProcess) {
         response.code = 404;
-        response.msg = 'Seguridata process ID not found';
-        console.log('Wills Error-> csvd15y');
-        console.log('No testament record found for given seguridataprocessId');
+        response.msg = 'Seguridata process ID not found in our records';
+        console.log(
+          `[Webhook/${seguridataprocessIdParam}] Wills Error-> csvd15y - No SignatureProcess found`,
+        );
         throw new HttpException(response, HttpStatus.NOT_FOUND);
       }
 
-      if (matches.length > 1) {
-        response.code = 500;
-        response.msg = 'Multiple records found with same Seguridata ID';
-        console.log('Wills Error-> jdv4165k2y');
+      const userId = currentSignatureProcess.userId;
+      const internalSignatureProcessId = currentSignatureProcess.id;
+
+      if (!userId || !currentSignatureProcess.user) {
         console.log(
-          'Multiple testament records found for same seguridataprocessId',
+          `[Webhook/${seguridataprocessIdParam}] User info missing in SP_ID ${internalSignatureProcessId}`,
         );
-        throw new HttpException(response, HttpStatus.INTERNAL_SERVER_ERROR);
-      }
-
-      const document = matches;
-      const user = await this.prisma.user.findUnique({
-        where: { id: document.userId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          fatherLastName: true,
-          motherLastName: true,
-          oauthId: true,
-        },
-      });
-      document.user = user;
-      const testamentMetadata = document.seguridataprocessid;
-      console.log('idprc Found:', testamentMetadata);
-      if (
-        !testamentMetadata ||
-        testamentMetadata.signprocessinfo.length === 0
-      ) {
         throw new HttpException(
-          'Missing or invalid signprocessinfo in testamentMetadata',
-          HttpStatus.BAD_REQUEST,
+          'User information missing for signature process',
+          HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
 
-      const testamentId = document.id;
-      console.log('TestamentId:', testamentId);
+      console.log(
+        `[Webhook/${seguridataprocessIdParam}] Internal SignatureProcess ID:`,
+        internalSignatureProcessId,
+      );
 
-      const [signatureRecord] = await this.prisma.$queryRaw`
-        SELECT *
-        FROM SignatureStatus
-        WHERE step = '6'
-          AND JSON_UNQUOTE(JSON_EXTRACT(sendMetadata, '$.idprc')) = ${seguridataprocessId}
+      const signatureRecord = await this.prisma.$queryRaw<any[]>`
+          SELECT *
+          FROM SignatureStatus
+          WHERE step = '6'
+            AND signatureProcessId = ${internalSignatureProcessId}
+            AND JSON_UNQUOTE(JSON_EXTRACT(sendMetadata, '$.idprc')) = ${seguridataprocessIdParam}
+          ORDER BY date DESC
+          LIMIT 1
       `;
 
-      if (!signatureRecord || !signatureRecord.signSession) {
-        throw new HttpException('Session ID not found', HttpStatus.NOT_FOUND);
+      if (!signatureRecord) {
+        console.log(
+          `[${internalSignatureProcessId}] Session ID not found in SignatureStatus for Seguridata ID ${seguridataprocessIdParam}`,
+        );
+        throw new HttpException(
+          'Original session ID for process not found',
+          HttpStatus.NOT_FOUND,
+        );
       }
+      const sessionId = signatureRecord[0].signSession;
+      console.log(
+        `[${sessionId}] Session ID retrieved from SignatureStatus: ${sessionId}`,
+      );
 
-      const sessionId = signatureRecord.signSession;
-      console.log('Session ID retrieved from SignatureStatus:', sessionId);
-
-      let happadMetadata = signatureRecord.sendMetadata;
+      let happadMetadata = signatureRecord[0].sendMetadata;
       if (typeof happadMetadata === 'string') {
         try {
           happadMetadata = JSON.parse(happadMetadata);
         } catch (err) {
-          console.log('Invalid JSON in sendMetadata', err);
+          console.log(`[${sessionId}] Invalid JSON in sendMetadata:`, err);
           throw new HttpException(
             'Invalid sendMetadata format',
             HttpStatus.BAD_REQUEST,
@@ -1150,117 +1151,192 @@ export class TestamentPdfService {
         'perfil',
       ];
       const missing = requiredFields.filter((key) => !(key in happadMetadata));
-
       if (missing.length > 0) {
         console.log(
-          `[Happad Check] Some expected fields are missing: ${missing.join(', ')}`,
+          `[${sessionId}] [Happad Check] Some expected fields are missing in logged sendMetadata: ${missing.join(', ')}`,
         );
       } else {
         console.log(
-          '[Happad Check] All expected fields are present in sendMetadata.',
+          `[${sessionId}] [Happad Check] All expected fields are present in logged sendMetadata.`,
         );
       }
-
-      console.log('Happad (sendMetadata):', happadMetadata);
+      console.log(
+        `[${sessionId}] Happad (sendMetadata from token step log):`,
+        happadMetadata,
+      );
 
       await this.sharedOperationsService.sendSignatureLog(
         sessionId,
         userId,
         new Date(),
         '100',
-        {},
-        {},
+        { originalWebhookBody: body },
+        { note: 'Webhook received from Seguridata' },
         'ok',
-        { signatureProcessId: matches.seguridataprocessid },
+        { signatureProcessId: internalSignatureProcessId },
       );
-      let testamentHeader;
 
-      if (document.signatureStatus !== 'Signed') {
-        testamentHeader = await this.prisma.testamentHeader.update({
-          where: { id: testamentId },
-          data: {
-            signatureStatus: 'Signed',
-          },
-        });
-        console.log('Updated contract status to Signed:', testamentHeader);
-      }
-
-      let parsedBody: any = {};
-      let stepStatus = 'failed';
-
+      console.log(
+        `[${sessionId}] Webhook body content for SP_ID ${internalSignatureProcessId}:`,
+        body,
+      );
+      let parsedBodyForLog: any = {};
+      let stepStatusForLog = 'failed';
       try {
-        if (body) {
-          parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
-
+        if (body && Object.keys(body).length > 0) {
+          parsedBodyForLog = typeof body === 'string' ? JSON.parse(body) : body;
           const isValid =
-            typeof parsedBody === 'object' &&
-            parsedBody.code === 200 &&
-            parsedBody.msg &&
-            parsedBody.response &&
-            typeof parsedBody.response.publish === 'object' &&
-            typeof parsedBody.response.publish.data === 'string';
-
-          if (isValid) {
-            stepStatus = 'ok';
-          } else {
+            typeof parsedBodyForLog === 'object' &&
+            parsedBodyForLog.code === 200 &&
+            parsedBodyForLog.msg &&
+            parsedBodyForLog.response &&
+            typeof parsedBodyForLog.response.publish === 'object' &&
+            typeof parsedBodyForLog.response.publish.data === 'string';
+          stepStatusForLog = isValid ? 'ok' : 'failed_body_validation';
+          if (!isValid)
             console.log(
-              '[Body Validation] Body does not meet expected structure:',
-              parsedBody,
+              `[${sessionId}] [Body Validation] Body does not meet expected structure for SP_ID ${internalSignatureProcessId}:`,
+              parsedBodyForLog,
             );
-          }
         } else {
-          console.log('[Body Check] No body received in request.');
+          console.log(
+            `[${sessionId}] [Body Check] No body received in request for SP_ID ${internalSignatureProcessId}.`,
+          );
+          stepStatusForLog = 'no_body_received_ok';
         }
-
-        const responseMetadata = {
-          note: 'Webhook or endpoint call received',
-          validation: stepStatus,
-        };
-
-        console.log('Parsed body:', parsedBody);
-
-        await this.sharedOperationsService.sendSignatureLog(
-          sessionId,
-          userId,
-          new Date(),
-          '101',
-          parsedBody,
-          responseMetadata,
-          stepStatus,
-          { signatureProcessId: matches.seguridataprocessid },
-        );
       } catch (error) {
-        console.log('[Webhook Body Block Error]', error);
-      }
-
-      const contract =
-        await this.sharedOperationsService.downloadSeguridataContract(
-          document,
-          testamentId,
-          sessionId,
-          seguridataprocessId,
+        console.log(
+          `[${sessionId}] [Webhook Body Block Error] for SP_ID ${internalSignatureProcessId}:`,
+          error,
         );
+        stepStatusForLog = 'body_parse_error';
+        parsedBodyForLog = { error: error.message, originalBody: body };
+      }
+      await this.sharedOperationsService.sendSignatureLog(
+        sessionId,
+        userId,
+        new Date(),
+        '101',
+        parsedBodyForLog,
+        { note: 'Webhook body processed', validation: stepStatusForLog },
+        stepStatusForLog.startsWith('failed') ? 'failed' : 'ok',
+        { signatureProcessId: internalSignatureProcessId },
+      );
 
-      // cuando sales de este paso sabes que en el s3 ya tienes los archivos que necesitas.
-      if (contract.code !== 200) {
-        console.log('we responded with ' + JSON.stringify(contract));
-        throw new HttpException(contract, HttpStatus.INTERNAL_SERVER_ERROR);
+      const originalRequestDto = currentSignatureProcess.metadata
+        ?.originalRequest as CreateSignPdfDto;
+      if (!originalRequestDto?.processtosign?.length) {
+        console.log(
+          `[${sessionId}] No 'originalRequest.processtosign' in metadata for SP_ID ${internalSignatureProcessId}.`,
+        );
+        throw new HttpException(
+          'Original document list metadata missing',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
       }
 
-      // aqui ya termino de subir los archivos que saca del zip al s3.
-      // actualiza la db con el estado de archivos descargados
-      testamentHeader = await this.prisma.testamentHeader.update({
-        where: { id: testamentId },
-        data: {
-          signatureStatus: 'SignedPdfDownloaded',
-        },
+      for (const docItem of originalRequestDto.processtosign) {
+        if (docItem.type === SignProcessType.WILL) {
+          await this.prisma.testamentHeader.update({
+            where: { id: docItem.id },
+            data: { signatureStatus: 'Signed' },
+          });
+          console.log(
+            `[${sessionId}] Testament ${docItem.id} status updated to Signed.`,
+          );
+        } else if (docItem.type === SignProcessType.INSURANCE) {
+          await this.prisma.userPartnerProductContract.update({
+            where: { id: docItem.id },
+            data: { signatureStatus: 'Signed' },
+          });
+          console.log(
+            `[${sessionId}] Contract ${docItem.id} status updated to Signed.`,
+          );
+        }
+      }
+      await this.prisma.signatureProcess.update({
+        where: { id: internalSignatureProcessId },
+        data: { status: 'signed_confirmed_by_webhook' },
       });
 
-      // aqui termina el proceso .. lo que abajo quitalo.
-      // crea un nuevo metodo que mande el mail con los attachments.
-      const res = await this.sendMailWithAttachments(document, sessionId);
-      console.log('RES sendMailWithAttachments: ', res);
-      return res;
+      console.log(
+        `[${sessionId}] Initiating download for SP_ID ${internalSignatureProcessId}, Seguridata ID ${seguridataprocessIdParam}.`,
+      );
+      const downloadResult =
+        await this.sharedOperationsService.downloadSeguridataContract(
+          currentSignatureProcess,
+          originalRequestDto.processtosign,
+          sessionId,
+          seguridataprocessIdParam,
+        );
+
+      if (downloadResult.code !== 200) {
+        console.log(
+          `[${sessionId}] Error downloading docs for SP_ID ${internalSignatureProcessId}: ${JSON.stringify(downloadResult)}`,
+        );
+        throw new HttpException(
+          downloadResult.msg ||
+            'Failed to download signed documents from provider',
+          downloadResult.code || HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+      console.log(
+        `[${sessionId}] Signed docs downloaded and stored in S3 for SP_ID ${internalSignatureProcessId}.`,
+      );
+      for (const docItem of originalRequestDto.processtosign) {
+        if (docItem.type === SignProcessType.WILL) {
+          await this.prisma.testamentHeader.update({
+            where: { id: docItem.id },
+            data: { signatureStatus: 'SignedPdfDownloaded' },
+          });
+        } else if (docItem.type === SignProcessType.INSURANCE) {
+          await this.prisma.userPartnerProductContract.update({
+            where: { id: docItem.id },
+            data: { signatureStatus: 'SignedPdfDownloaded' },
+          });
+        }
+      }
+      await this.prisma.signatureProcess.update({
+        where: { id: internalSignatureProcessId },
+        data: { status: 'signed_documents_stored' },
+      });
+      console.log(
+        `[${sessionId}] Preparing email for SP_ID ${internalSignatureProcessId}.`,
+      );
+      // const mailResponse = await this.sendMailWithAttachments(
+      //   currentSignatureProcess,
+      //   originalRequestDto.processtosign,
+      //   sessionId,
+      // );
+      // console.log(
+      //   `[${sessionId}] RES sendMailWithAttachments for SP_ID ${internalSignatureProcessId}: `,
+      //   mailResponse,
+      // );
+
+      // if (mailResponse.code === 200) {
+      //   await this.prisma.signatureProcess.update({
+      //     where: { id: internalSignatureProcessId },
+      //     data: { status: 'signed_documents_emailed' },
+      //   });
+      // } else {
+      //   console.log(
+      //     `[${sessionId}] Email sending failed for SP_ID ${internalSignatureProcessId}, but core process completed.`,
+      //   );
+      //   const metadataUpdate = (currentSignatureProcess.metadata as any) || {};
+      //   metadataUpdate.lastEmailError = {
+      //     message: mailResponse.msg,
+      //     code: mailResponse.code,
+      //     timestamp: new Date().toISOString(),
+      //   };
+      //   await this.prisma.signatureProcess.update({
+      //     where: { id: currentSignatureProcess.id },
+      //     data: { status: 'email_sending_failed', metadata: metadataUpdate },
+      //   });
+      // }
+      response.code = 200;
+      response.msg = 'Signature process callback processed successfully.';
+      response.response = { signatureProcessId: internalSignatureProcessId };
+      return response;
     } catch (error) {
       console.log('Wills Error-> c83js9as', error);
       processException(error);
