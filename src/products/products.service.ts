@@ -916,7 +916,7 @@ export class ProductsService {
             where: { id: item.id },
             include: { user: true },
           });
-          s3Path = `${doc.userId}_${doc.version}.pdf`;
+          s3Path = `${doc.userId}/${doc.userId}_${doc.version}.pdf`;
           metadataField = 'metadata';
           prismaModel = this.prisma.testamentHeader;
         } else if (item.type === 'insurance') {
