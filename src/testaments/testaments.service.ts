@@ -1039,7 +1039,7 @@ export class TestamentsService {
       console.log('[streamTestamentPdf] signatureStatus:', status);
       console.log('[streamTestamentPdf] metadata:', testament.metadata);
 
-      const folder = `${userId}_${version}/`;
+      const folder = `${userId}/`;
       const nomFile = `${folder}${userId}_${version}_RGCCNOM151.pdf`;
       const pastpostFile = `${folder}${userId}_${version}_PASTPOST.pdf`;
 

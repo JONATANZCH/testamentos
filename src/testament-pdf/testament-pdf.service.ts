@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { HttpService } from '@nestjs/axios';
 import { SharedOperationsService } from '../config/shared-operations.service';
 import {
-  CreateSignPdfDto,
+  ProcessToSignItemDto,
   SignProcessType,
 } from '../common/dto/create-sign-pdf.dto';
 
@@ -1223,19 +1223,23 @@ export class TestamentPdfService {
         { signatureProcessId: internalSignatureProcessId },
       );
 
-      const originalRequestDto = currentSignatureProcess.metadata
-        ?.originalRequest as CreateSignPdfDto;
-      if (!originalRequestDto?.processtosign?.length) {
+      const metadataFromDB = currentSignatureProcess.metadata as any;
+      const originalRequestDtoProcesstosign =
+        metadataFromDB?.processtosign as ProcessToSignItemDto[];
+      if (
+        !originalRequestDtoProcesstosign ||
+        originalRequestDtoProcesstosign.length === 0
+      ) {
         console.log(
-          `[${sessionId}] No 'originalRequest.processtosign' in metadata for SP_ID ${internalSignatureProcessId}.`,
+          `[${sessionId}] No 'processtosign' array found directly in metadata for SP_ID ${internalSignatureProcessId}.`,
         );
         throw new HttpException(
-          'Original document list metadata missing',
+          'Original document list (processtosign) missing or empty in metadata',
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
 
-      for (const docItem of originalRequestDto.processtosign) {
+      for (const docItem of originalRequestDtoProcesstosign) {
         if (docItem.type === SignProcessType.WILL) {
           await this.prisma.testamentHeader.update({
             where: { id: docItem.id },
@@ -1265,7 +1269,7 @@ export class TestamentPdfService {
       const downloadResult =
         await this.sharedOperationsService.downloadSeguridataContract(
           currentSignatureProcess,
-          originalRequestDto.processtosign,
+          originalRequestDtoProcesstosign,
           sessionId,
           seguridataprocessIdParam,
         );
@@ -1283,7 +1287,7 @@ export class TestamentPdfService {
       console.log(
         `[${sessionId}] Signed docs downloaded and stored in S3 for SP_ID ${internalSignatureProcessId}.`,
       );
-      for (const docItem of originalRequestDto.processtosign) {
+      for (const docItem of originalRequestDtoProcesstosign) {
         if (docItem.type === SignProcessType.WILL) {
           await this.prisma.testamentHeader.update({
             where: { id: docItem.id },
